@@ -150,12 +150,41 @@ export default function WallPage() {
     if (!user) return;
 
     async function load() {
-      const { data } = await supabase
+      // Fetch messages and profiles as two separate queries instead of
+      // an embedded join — the embedded-resource join relies on
+      // PostgREST's schema cache recognizing the foreign key, which can
+      // momentarily fail right after a migration and made the wall
+      // appear empty. Two plain queries are more robust.
+      const { data: rawMessages, error: msgError } = await supabase
         .from("wall_messages")
-        .select("*, profiles(display_name, avatar_url)")
+        .select("*")
         .order("created_at", { ascending: true })
         .limit(200);
-      const rows = (data as unknown as WallMessage[]) ?? [];
+
+      if (msgError) {
+        console.error("wall load error", msgError);
+        setMessages([]);
+        return;
+      }
+
+      const rows = (rawMessages as WallMessage[]) ?? [];
+
+      if (rows.length > 0) {
+        const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, display_name, avatar_url")
+          .in("id", userIds);
+
+        const profileMap = new Map(
+          (profilesData ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+        );
+
+        rows.forEach((r) => {
+          r.profiles = profileMap.get(r.user_id) ?? null;
+        });
+      }
+
       setMessages(rows);
 
       if (rows.length > 0) {

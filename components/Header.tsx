@@ -33,12 +33,12 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 glass border-b border-black/5">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
           {user && (
             <button
               onClick={handleLogout}
-              className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50"
+              className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-1.5 sm:text-xs"
             >
               خروج
             </button>
@@ -46,7 +46,7 @@ export default function Header() {
           {user && (
             <Link
               href="/business/manage"
-              className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-50 sm:flex"
+              className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-700 transition hover:bg-slate-50 sm:px-4 sm:py-1.5 sm:text-xs"
             >
               🏬 پنل کسب و کار
             </Link>
@@ -54,14 +54,14 @@ export default function Header() {
           {isAdmin && (
             <Link
               href="/admin"
-              className="hidden items-center gap-1 rounded-full bg-jam-navy px-4 py-1.5 text-xs font-bold text-white transition hover:brightness-110 sm:flex"
+              className="flex items-center gap-1 whitespace-nowrap rounded-full bg-jam-navy px-2 py-1 text-[9px] font-bold text-white transition hover:brightness-110 sm:px-4 sm:py-1.5 sm:text-xs"
             >
               ⚙️ پنل مدیریت
             </Link>
           )}
           <a
             href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${encodeURIComponent("سوال درباره شهر جم")}`}
-            className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 sm:flex"
+            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-1.5 sm:text-xs"
           >
             ☎️ تماس با مدیر
           </a>
@@ -93,7 +93,7 @@ export default function Header() {
           {!user ? (
             <Link
               href="/login"
-              className="rounded-xl2 bg-jam-green px-4 py-2 text-sm font-bold text-white shadow-glow transition hover:brightness-110"
+              className="rounded-xl2 bg-jam-green px-3 py-1.5 text-xs font-bold text-white shadow-glow transition hover:brightness-110 sm:px-4 sm:py-2 sm:text-sm"
             >
               ورود / ثبت‌نام
             </Link>
@@ -101,15 +101,15 @@ export default function Header() {
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-2 rounded-xl2 px-2 py-1.5 text-right transition hover:bg-black/5"
+                className="flex items-center gap-1.5 rounded-xl2 px-1.5 py-1 text-right transition hover:bg-black/5 sm:gap-2 sm:px-2 sm:py-1.5"
               >
                 <span className="flex flex-col items-end leading-tight">
-                  <span className="text-sm font-bold text-slate-800">شهر جم</span>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] font-bold text-slate-800 sm:text-sm">شهر جم</span>
+                  <span className="text-[9px] text-slate-400 sm:text-[11px]">
                     {profile?.display_name || "کاربر"}
                   </span>
                 </span>
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500 text-white shadow">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm text-white shadow sm:h-9 sm:w-9 sm:text-base">
                   📍
                 </span>
               </button>

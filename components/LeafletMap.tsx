@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import type L from "leaflet";
 
 export type MapMarker = {
@@ -23,7 +22,6 @@ const JAM_BOUNDS: [[number, number], [number, number]] = [
 ];
 
 export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
-  const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
@@ -53,6 +51,10 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       }).addTo(map);
 
       map.fitBounds(JAM_BOUNDS);
+
+      // Fade the info popup away as soon as the map is panned/zoomed
+      // to somewhere else.
+      map.on("movestart", () => map.closePopup());
 
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
@@ -90,18 +92,19 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           icon: makeIcon(m.emoji || "📍"),
         });
         const popupHtml = `
-          <div style="font-family: Vazirmatn, sans-serif; direction: rtl; text-align: right; min-width:140px;">
+          <div style="font-family: Vazirmatn, sans-serif; direction: rtl; text-align: right; min-width:150px;">
             <strong>${m.title}</strong>
             ${m.subtitle ? `<div style="font-size:12px;color:#666;margin-top:2px;">${m.subtitle}</div>` : ""}
-            <div style="font-size:11px;color:#f97316;font-weight:bold;margin-top:4px;">برای جزئیات کلیک کنید ›</div>
+            ${
+              m.href
+                ? `<a href="${m.href}" style="display:block;font-size:12px;color:#0b6e4f;font-weight:bold;margin-top:6px;">مشاهده جزئیات ›</a>`
+                : ""
+            }
           </div>`;
-        marker.bindPopup(popupHtml, { closeButton: false, autoPan: false, offset: [0, -8] });
-
+        // Tapping/clicking the marker opens this popup (works on both
+        // touch and mouse). Hovering on desktop also previews it.
+        marker.bindPopup(popupHtml, { closeButton: true, autoPan: false, offset: [0, -8] });
         marker.on("mouseover", () => marker.openPopup());
-        marker.on("mouseout", () => marker.closePopup());
-        marker.on("click", () => {
-          if (m.href) router.push(m.href);
-        });
 
         marker.addTo(layerRef.current!);
       });
