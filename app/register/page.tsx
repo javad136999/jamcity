@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/Feedback";
 export default function RegisterPage() {
   const router = useRouter();
 
+  const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
@@ -20,28 +21,33 @@ export default function RegisterPage() {
     setError(null);
     setLoading(true);
 
-    const response = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        phone,
-        password,
-        recoveryPhrase,
-      }),
-    });
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          displayName,
+          phone,
+          password,
+          recoveryPhrase,
+        }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    setLoading(false);
+      if (!response.ok) {
+        setError(data.error || "ثبت‌نام انجام نشد.");
+        return;
+      }
 
-    if (!response.ok) {
-      setError(data.error || "ثبت‌نام انجام نشد.");
-      return;
+      router.push("/login");
+    } catch {
+      setError("خطایی رخ داد. دوباره تلاش کنید.");
+    } finally {
+      setLoading(false);
     }
-
-    router.push("/login");
   }
 
   return (
@@ -59,7 +65,7 @@ export default function RegisterPage() {
         </h1>
 
         <p className="mt-2 text-sm text-slate-400">
-          با شماره موبایل خود حساب بسازید
+          اطلاعات خود را برای ساخت حساب وارد کنید
         </p>
       </div>
 
@@ -68,6 +74,27 @@ export default function RegisterPage() {
         className="space-y-4 rounded-xl2 glass p-6 shadow-soft"
       >
         {error && <ErrorState message={error} />}
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-600">
+            نام نمایشی
+          </label>
+
+          <input
+            type="text"
+            required
+            minLength={2}
+            maxLength={50}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="مثلاً علی رضایی"
+            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
+          />
+
+          <p className="text-xs leading-5 text-slate-400">
+            این نام در پروفایل، چت، دیوار و آگهی‌های شما نمایش داده می‌شود.
+          </p>
+        </div>
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">
@@ -113,7 +140,7 @@ export default function RegisterPage() {
             minLength={6}
             value={recoveryPhrase}
             onChange={(e) => setRecoveryPhrase(e.target.value)}
-            placeholder="مثلاً: گل آبی جم 1405"
+            placeholder="مثلاً گل آبی جم ۱۴۰۵"
             className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
           />
 

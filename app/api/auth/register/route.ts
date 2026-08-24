@@ -24,12 +24,29 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
+    const displayName = String(body.displayName || "").trim();
     const phone = String(body.phone || "").trim();
     const password = String(body.password || "");
     const recoveryPhrase = String(body.recoveryPhrase || "").trim();
 
     const normalizedPhone = phone.replace(/\D/g, "");
 
+    // بررسی نام نمایشی
+    if (displayName.length < 2) {
+      return NextResponse.json(
+        { error: "نام نمایشی باید حداقل ۲ کاراکتر باشد." },
+        { status: 400 }
+      );
+    }
+
+    if (displayName.length > 50) {
+      return NextResponse.json(
+        { error: "نام نمایشی نمی‌تواند بیشتر از ۵۰ کاراکتر باشد." },
+        { status: 400 }
+      );
+    }
+
+    // بررسی شماره موبایل
     if (!/^09\d{9}$/.test(normalizedPhone)) {
       return NextResponse.json(
         { error: "شماره موبایل صحیح نیست." },
@@ -37,6 +54,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // بررسی رمز عبور
     if (password.length < 6) {
       return NextResponse.json(
         { error: "رمز عبور باید حداقل ۶ کاراکتر باشد." },
@@ -44,6 +62,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // بررسی عبارت بازیابی
     if (recoveryPhrase.length < 6) {
       return NextResponse.json(
         { error: "عبارت بازیابی باید حداقل ۶ کاراکتر باشد." },
@@ -51,9 +70,10 @@ export async function POST(request: Request) {
       );
     }
 
+    // ایمیل داخلی برای سیستم احراز هویت Supabase
     const email = `${normalizedPhone}@wall.jamcity.local`;
 
-    // Check whether this username already exists
+    // بررسی اینکه شماره قبلاً ثبت نشده باشد
     const { data: existingProfile, error: profileCheckError } =
       await supabaseAdmin
         .from("profiles")
@@ -77,7 +97,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create Supabase Auth user
+    // ساخت حساب در Supabase Auth
     const { data: userData, error: createUserError } =
       await supabaseAdmin.auth.admin.createUser({
         email,
@@ -85,7 +105,7 @@ export async function POST(request: Request) {
         email_confirm: true,
         user_metadata: {
           username: normalizedPhone,
-          display_name: normalizedPhone,
+          display_name: displayName,
           account_source: "phone",
         },
       });
@@ -94,19 +114,23 @@ export async function POST(request: Request) {
       console.error(createUserError);
 
       return NextResponse.json(
-        { error: createUserError?.message || "ساخت حساب انجام نشد." },
+        {
+          error:
+            createUserError?.message || "ساخت حساب انجام نشد.",
+        },
         { status: 400 }
       );
     }
 
     const userId = userData.user.id;
 
-    // Store only the hash of the recovery phrase
+    // ذخیره اطلاعات پروفایل
+    // عبارت بازیابی فقط به صورت Hash ذخیره می‌شود
     const { error: profileError } = await supabaseAdmin
       .from("profiles")
       .update({
         username: normalizedPhone,
-        display_name: normalizedPhone,
+        display_name: displayName,
         recovery_phrase_hash: hashPhrase(recoveryPhrase),
         onboarded: true,
       })
@@ -115,7 +139,7 @@ export async function POST(request: Request) {
     if (profileError) {
       console.error(profileError);
 
-      // Roll back Auth user if profile creation/update fails
+      // اگر ساخت پروفایل شکست خورد، حساب Auth هم حذف شود
       await supabaseAdmin.auth.admin.deleteUser(userId);
 
       return NextResponse.json(
