@@ -83,8 +83,6 @@ builder.then(({ data, error }) => {
     return;
   }
 
-  console.log("ADMIN BUSINESSES:", data);
-  alert("ADMIN QUERY اجرا شد");
   setBusinesses((data as unknown as Business[]) ?? []);
 });  }, [tab, isAdmin, supabase]);
 
