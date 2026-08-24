@@ -395,7 +395,7 @@ export default function WallPage() {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in flex h-[calc(100dvh-7rem)] flex-col overflow-hidden">
+    <div className="fade-in flex h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden">
       {memberCount !== null && (
         <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -456,7 +456,7 @@ export default function WallPage() {
       </div>
 
       {browse ? (
-        <div className="flex-1 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
+        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-bold text-slate-500">
               {browseResults.length > 0
@@ -530,7 +530,7 @@ export default function WallPage() {
           )}
         </div>
       ) : (
-      <div className="flex-1 space-y-3 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
         {messages === null ? (
           <Spinner label="در حال بارگذاری پیام‌ها..." />
         ) : messages.length === 0 ? (
