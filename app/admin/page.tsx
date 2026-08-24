@@ -74,8 +74,7 @@ export default function AdminPage() {
     if (!isAdmin) return;
     let builder = supabase
       .from("businesses")
-      .select("*, profiles(display_name, username)")
-      .order("submitted_at", { ascending: false });
+.select("*, profiles!businesses_owner_id_fkey(display_name, username)")      .order("submitted_at", { ascending: false });
     if (tab !== "all") builder = builder.eq("subscription_status", tab);
 builder.then(({ data, error }) => {
   if (error) {
