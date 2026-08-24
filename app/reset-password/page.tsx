@@ -1,5 +1,4 @@
-```tsx
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
@@ -85,7 +84,9 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">شماره موبایل</label>
+          <label className="text-xs text-slate-500">
+            شماره موبایل
+          </label>
 
           <input
             type="tel"
@@ -99,7 +100,9 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">عبارت بازیابی</label>
+          <label className="text-xs text-slate-500">
+            عبارت بازیابی
+          </label>
 
           <input
             type="text"
@@ -112,7 +115,9 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">رمز عبور جدید</label>
+          <label className="text-xs text-slate-500">
+            رمز عبور جدید
+          </label>
 
           <input
             type="password"
@@ -147,4 +152,3 @@ export default function ResetPasswordPage() {
     </div>
   );
 }
-```
