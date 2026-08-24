@@ -51,27 +51,26 @@ export const PAYMENT_CARD_HOLDER = "جواد حسینی";
 
 export const SUBSCRIPTION_TIERS = [
   {
-    value: "bronze",
-    name: "اشتراک برنزی",
-    price: 500000,
-    color: "from-amber-700 to-amber-500",
-    perks: ["نمایش روی نقشه و صفحه اصلی", "ثبت منو و محصولات"],
+    value: "gold",
+    name: "اشتراک طلایی",
+    price: 2000000,
+    color: "from-yellow-500 to-amber-300",
+    perks: [
+      "⭐ درج روی نقشه با نشان ستاره طلایی",
+      "📢 ارسال خودکار روزانه یک آگهی در دیوار شهر جم (ساعت ۹ صبح)",
+      "🏬 پنل کامل مدیریت منو و محصولات",
+    ],
   },
   {
     value: "silver",
     name: "اشتراک نقره‌ای",
     price: 1000000,
     color: "from-slate-400 to-slate-300",
-    perks: ["همه امکانات برنزی", "اولویت نمایش بالاتر در لیست"],
-  },
-  {
-    value: "gold",
-    name: "اشتراک طلایی",
-    price: 2000000,
-    color: "from-yellow-500 to-amber-300",
-    perks: ["همه امکانات نقره‌ای", "ارسال روزانه تبلیغ در دیوار شهر جم"],
+    perks: ["📍 درج روی نقشه شهر جم", "🏬 پنل کامل مدیریت منو و محصولات"],
   },
 ] as const;
+
+export type SubscriptionTierValue = (typeof SUBSCRIPTION_TIERS)[number]["value"];
 
 export function tierMeta(value: string | null) {
   return SUBSCRIPTION_TIERS.find((t) => t.value === value) ?? null;

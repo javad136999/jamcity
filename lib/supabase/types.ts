@@ -17,6 +17,7 @@ export type Database = {
           avatar_url: string | null;
           onboarded: boolean;
           is_wall_account: boolean;
+          banned: boolean;
           created_at: string;
         };
         Insert: {
@@ -26,6 +27,7 @@ export type Database = {
           avatar_url?: string | null;
           onboarded?: boolean;
           is_wall_account?: boolean;
+          banned?: boolean;
           created_at?: string;
         };
         Update: {
@@ -35,6 +37,7 @@ export type Database = {
           avatar_url?: string | null;
           onboarded?: boolean;
           is_wall_account?: boolean;
+          banned?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -239,6 +242,7 @@ export type Database = {
           image_url: string | null;
           is_promo: boolean;
           business_id: string | null;
+          category: "car" | "realestate" | null;
           created_at: string;
         };
         Insert: {
@@ -248,6 +252,7 @@ export type Database = {
           image_url?: string | null;
           is_promo?: boolean;
           business_id?: string | null;
+          category?: "car" | "realestate" | null;
           created_at?: string;
         };
         Update: {
@@ -257,6 +262,40 @@ export type Database = {
           image_url?: string | null;
           is_promo?: boolean;
           business_id?: string | null;
+          category?: "car" | "realestate" | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          reported_user_id: string;
+          context: "wall" | "chat";
+          message_content: string | null;
+          reason: string | null;
+          resolved: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          reporter_id: string;
+          reported_user_id: string;
+          context: "wall" | "chat";
+          message_content?: string | null;
+          reason?: string | null;
+          resolved?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          reporter_id?: string;
+          reported_user_id?: string;
+          context?: "wall" | "chat";
+          message_content?: string | null;
+          reason?: string | null;
+          resolved?: boolean;
           created_at?: string;
         };
         Relationships: [];

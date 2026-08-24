@@ -223,7 +223,7 @@ export default function ConversationPage() {
         <span className="flex h-10 w-10 overflow-hidden rounded-full bg-jam-darkgreen">
           <Avatar url={other?.avatar_url} name={other?.display_name} size={40} />
         </span>
-        <div>
+        <div className="flex-1">
           <p className="text-sm font-bold text-slate-800">
             {other?.display_name ?? "کاربر جم‌سیتی"}
           </p>
@@ -231,6 +231,23 @@ export default function ConversationPage() {
             @{other?.username ?? "unknown"}
           </p>
         </div>
+        <button
+          onClick={async () => {
+            if (!user || !other) return;
+            const reason = window.prompt("دلیل گزارش این کاربر را بنویسید (اختیاری):") ?? "";
+            await supabase.from("reports").insert({
+              reporter_id: user.id,
+              reported_user_id: other.id,
+              context: "chat",
+              reason: reason.trim() || null,
+            });
+            window.alert("گزارش شما برای بررسی به پنل مدیریت ارسال شد.");
+          }}
+          className="text-sm text-slate-300"
+          title="گزارش این کاربر"
+        >
+          🚩
+        </button>
       </div>
 
       <div className="flex-1 space-y-2 overflow-y-auto p-4">

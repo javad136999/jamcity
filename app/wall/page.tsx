@@ -19,8 +19,14 @@ type WallMessage = {
   image_url: string | null;
   is_promo: boolean;
   business_id: string | null;
+  category: "car" | "realestate" | null;
   created_at: string;
   profiles?: { display_name: string; avatar_url: string | null } | null;
+};
+
+const CATEGORY_META: Record<string, { label: string; icon: string }> = {
+  car: { label: "خودرو", icon: "🚗" },
+  realestate: { label: "املاک", icon: "🏠" },
 };
 
 function sanitizeUsername(raw: string) {
@@ -145,6 +151,10 @@ export default function WallPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
+  const [postCategory, setPostCategory] = useState<"car" | "realestate" | null>(null);
+  const [searchInput, setSearchInput] = useState("");
+  const [browse, setBrowse] = useState<{ query: string; category: "car" | "realestate" | null } | null>(null);
+  const [browseIndex, setBrowseIndex] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -302,10 +312,12 @@ export default function WallPage() {
         user_id: user.id,
         content: text.trim() || null,
         image_url,
+        category: postCategory,
       });
       if (error) throw error;
       setText("");
       setImage(null);
+      setPostCategory(null);
     } catch (e) {
       console.error("wall send error", e);
       setSendError("ارسال پیام با خطا مواجه شد. دوباره تلاش کنید.");
@@ -343,6 +355,36 @@ export default function WallPage() {
     if (id) router.push(`/chat/${id}`);
   }
 
+  async function reportUser(reportedUserId: string, messageContent: string | null) {
+    if (!user || reportedUserId === user.id) return;
+    const reason = window.prompt("دلیل گزارش این کاربر را بنویسید (اختیاری):") ?? "";
+    await supabase.from("reports").insert({
+      reporter_id: user.id,
+      reported_user_id: reportedUserId,
+      context: "wall",
+      message_content: messageContent,
+      reason: reason.trim() || null,
+    });
+    window.alert("گزارش شما برای بررسی به پنل مدیریت ارسال شد.");
+  }
+
+  function startBrowse(query: string, category: "car" | "realestate" | null) {
+    setBrowse({ query: query.trim(), category });
+    setBrowseIndex(0);
+  }
+
+  const browseResults =
+    browse && messages
+      ? messages
+          .filter(
+            (m) =>
+              (!browse.category || m.category === browse.category) &&
+              (!browse.query || (m.content ?? "").includes(browse.query))
+          )
+          .slice()
+          .reverse()
+      : [];
+
   if (authLoading) return <Spinner label="در حال بررسی ورود..." />;
 
   if (!user) return <WallGate />;
@@ -371,6 +413,118 @@ export default function WallPage() {
         </Link>
       </div>
 
+      <div className="mb-3 space-y-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (searchInput.trim()) startBrowse(searchInput, null);
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="جستجو در آگهی‌های دیوار (مثلاً خودرو، اجاره، ...)"
+            className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-800 outline-none focus:border-jam-green"
+          />
+          <button
+            type="submit"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-jam-green text-white shadow-glow"
+          >
+            🔍
+          </button>
+        </form>
+        <div className="flex gap-2">
+          <button
+            onClick={() => startBrowse("", "car")}
+            className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
+          >
+            🚗 آگهی‌های خودرو
+          </button>
+          <button
+            onClick={() => startBrowse("", "realestate")}
+            className="flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700"
+          >
+            🏠 آگهی‌های املاک
+          </button>
+        </div>
+      </div>
+
+      {browse ? (
+        <div className="flex-1 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-xs font-bold text-slate-500">
+              {browseResults.length > 0
+                ? `${browseIndex + 1} از ${browseResults.length} آگهی`
+                : "نتیجه‌ای یافت نشد"}
+            </p>
+            <button
+              onClick={() => setBrowse(null)}
+              className="rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-slate-600"
+            >
+              ✕ بستن جستجو
+            </button>
+          </div>
+
+          {browseResults.length === 0 ? (
+            <p className="py-16 text-center text-sm text-slate-400">
+              آگهی‌ای با این مشخصات پیدا نشد.
+            </p>
+          ) : (
+            (() => {
+              const m = browseResults[browseIndex];
+              const cat = m.category ? CATEGORY_META[m.category] : null;
+              return (
+                <div className="space-y-3 rounded-xl2 border border-slate-200 bg-white p-4">
+                  <button
+                    onClick={() => openChatWith(m.user_id)}
+                    className="flex items-center gap-2 text-xs font-bold text-orange-500"
+                  >
+                    <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={24} />
+                    {m.profiles?.display_name || "کاربر"}
+                  </button>
+                  {cat && (
+                    <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                      {cat.icon} {cat.label}
+                    </span>
+                  )}
+                  {m.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m.image_url} alt="" className="max-h-72 w-full rounded-xl object-cover" loading="lazy" />
+                  )}
+                  {m.content && <p className="whitespace-pre-wrap text-sm text-slate-800">{m.content}</p>}
+                  <p className="text-[10px] text-slate-400">{timeAgo(m.created_at)}</p>
+
+                  <div className="flex items-center justify-between border-t border-black/5 pt-3">
+                    <button
+                      onClick={() => reportUser(m.user_id, m.content)}
+                      className="text-[11px] font-bold text-slate-400"
+                    >
+                      🚩 گزارش
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setBrowseIndex((i) => Math.min(browseResults.length - 1, i + 1))}
+                        disabled={browseIndex >= browseResults.length - 1}
+                        className="rounded-full bg-jam-green px-4 py-2 text-xs font-bold text-white shadow-glow disabled:opacity-40"
+                      >
+                        ▲ بعدی
+                      </button>
+                      <button
+                        onClick={() => setBrowseIndex((i) => Math.max(0, i - 1))}
+                        disabled={browseIndex <= 0}
+                        className="rounded-full bg-black/5 px-4 py-2 text-xs font-bold text-slate-600 disabled:opacity-40"
+                      >
+                        ▼ قبلی
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          )}
+        </div>
+      ) : (
       <div className="flex-1 space-y-3 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
         {messages === null ? (
           <Spinner label="در حال بارگذاری پیام‌ها..." />
@@ -399,19 +553,35 @@ export default function WallPage() {
                         <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={20} />
                         {m.profiles?.display_name || "کاربر"}
                       </button>
+                      {m.category && (
+                        <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
+                          {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
+                        </span>
+                      )}
                       <p className="whitespace-pre-wrap text-sm font-bold text-slate-800">
                         {m.content}
                       </p>
                       <div className="flex items-center justify-between">
                         <p className="text-[10px] text-slate-400">{timeAgo(m.created_at)}</p>
-                        <button
-                          onClick={() => toggleLike(m.id)}
-                          className={`flex items-center gap-1 text-xs font-bold ${
-                            liked ? "text-red-500" : "text-slate-400"
-                          }`}
-                        >
-                          {liked ? "❤️" : "🤍"} {count > 0 && count}
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {!mine && (
+                            <button
+                              onClick={() => reportUser(m.user_id, m.content)}
+                              className="text-[10px] text-slate-300"
+                              title="گزارش"
+                            >
+                              🚩
+                            </button>
+                          )}
+                          <button
+                            onClick={() => toggleLike(m.id)}
+                            className={`flex items-center gap-1 text-xs font-bold ${
+                              liked ? "text-red-500" : "text-slate-400"
+                            }`}
+                          >
+                            {liked ? "❤️" : "🤍"} {count > 0 && count}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -440,25 +610,43 @@ export default function WallPage() {
                         {m.profiles?.display_name || "کاربر"}
                       </button>
                     )}
+                    {m.category && (
+                      <span className="mb-0.5 mr-1 inline-block rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold">
+                        {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
+                      </span>
+                    )}
                     {m.image_url && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={m.image_url}
                         alt=""
                         className="mb-1 max-h-64 w-full rounded-xl object-cover"
+                        loading="lazy"
+                        decoding="async"
                       />
                     )}
                     {m.content && <p className="whitespace-pre-wrap text-sm">{m.content}</p>}
                     <div className="mt-1 flex items-center justify-between gap-3">
                       <p className="text-[10px] opacity-60">{timeAgo(m.created_at)}</p>
-                      <button
-                        onClick={() => toggleLike(m.id)}
-                        className={`flex items-center gap-1 text-[11px] font-bold ${
-                          mine ? "text-white/80" : liked ? "text-red-500" : "text-slate-400"
-                        }`}
-                      >
-                        {liked ? "❤️" : "🤍"} {count > 0 && count}
-                      </button>
+                      <div className="flex items-center gap-3">
+                        {!mine && (
+                          <button
+                            onClick={() => reportUser(m.user_id, m.content)}
+                            className="text-[10px] opacity-50"
+                            title="گزارش"
+                          >
+                            🚩
+                          </button>
+                        )}
+                        <button
+                          onClick={() => toggleLike(m.id)}
+                          className={`flex items-center gap-1 text-[11px] font-bold ${
+                            mine ? "text-white/80" : liked ? "text-red-500" : "text-slate-400"
+                          }`}
+                        >
+                          {liked ? "❤️" : "🤍"} {count > 0 && count}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -468,9 +656,33 @@ export default function WallPage() {
         )}
         <div ref={bottomRef} />
       </div>
+      )}
 
       <div className="mt-3 space-y-1">
         {sendError && <ErrorState message={sendError} />}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPostCategory(postCategory === "car" ? null : "car")}
+            className={`rounded-full px-3 py-1 text-[11px] font-bold transition ${
+              postCategory === "car" ? "bg-blue-500 text-white" : "bg-blue-50 text-blue-700"
+            }`}
+          >
+            🚗 خودرو
+          </button>
+          <button
+            type="button"
+            onClick={() => setPostCategory(postCategory === "realestate" ? null : "realestate")}
+            className={`rounded-full px-3 py-1 text-[11px] font-bold transition ${
+              postCategory === "realestate" ? "bg-purple-500 text-white" : "bg-purple-50 text-purple-700"
+            }`}
+          >
+            🏠 املاک
+          </button>
+          {postCategory && (
+            <span className="text-[10px] text-slate-400">آگهی با این دسته‌بندی ارسال می‌شود</span>
+          )}
+        </div>
         <div className="flex items-end gap-2 rounded-xl2 glass p-2 shadow-soft">
           <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-lg">
             📷

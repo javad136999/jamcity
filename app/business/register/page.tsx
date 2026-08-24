@@ -12,6 +12,7 @@ import {
   PAYMENT_CARD_NUMBER,
   PAYMENT_CARD_HOLDER,
   formatPrice,
+  type SubscriptionTierValue,
 } from "@/lib/constants";
 import { uploadImages, uploadSingleFile } from "@/lib/upload";
 import { ErrorState, Spinner } from "@/components/Feedback";
@@ -35,7 +36,7 @@ export default function BusinessRegisterPage() {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [tier, setTier] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [tier, setTier] = useState<SubscriptionTierValue>("gold");
   const [receipt, setReceipt] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -224,7 +225,7 @@ export default function BusinessRegisterPage() {
 
         <div className="space-y-3 rounded-xl2 border border-slate-200 bg-white p-4">
           <label className="text-sm font-bold text-slate-700">نوع اشتراک</label>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {SUBSCRIPTION_TIERS.map((t) => (
               <button
                 type="button"
@@ -235,7 +236,7 @@ export default function BusinessRegisterPage() {
                 }`}
               >
                 <p className="font-extrabold">{t.name}</p>
-                <p className="mb-2 text-sm">{formatPrice(t.price)}</p>
+                <p className="mb-2 text-sm">{formatPrice(t.price)} در ماه</p>
                 <ul className="space-y-0.5 text-[11px] text-white/90">
                   {t.perks.map((p) => (
                     <li key={p}>• {p}</li>

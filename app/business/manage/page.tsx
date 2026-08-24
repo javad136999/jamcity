@@ -11,6 +11,7 @@ import {
   SUBSCRIPTION_TIERS,
   PAYMENT_CARD_NUMBER,
   PAYMENT_CARD_HOLDER,
+  type SubscriptionTierValue,
 } from "@/lib/constants";
 import { uploadImages, uploadSingleFile } from "@/lib/upload";
 import { Spinner, EmptyState, ErrorState } from "@/components/Feedback";
@@ -56,7 +57,7 @@ export default function BusinessManagePage() {
   const [error, setError] = useState<string | null>(null);
 
   const [renewOpen, setRenewOpen] = useState(false);
-  const [renewTier, setRenewTier] = useState<"bronze" | "silver" | "gold">("bronze");
+  const [renewTier, setRenewTier] = useState<SubscriptionTierValue>("gold");
   const [renewReceipt, setRenewReceipt] = useState<File | null>(null);
   const [renewSaving, setRenewSaving] = useState(false);
   const [renewError, setRenewError] = useState<string | null>(null);
@@ -251,16 +252,45 @@ export default function BusinessManagePage() {
       )}
 
       {active && active.subscription_status === "approved" && active.expires_at && (
-        <p className="rounded-xl2 border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-          اشتراک این کسب و کار تا تاریخ {new Date(active.expires_at).toLocaleDateString("fa-IR")} فعال است.
-        </p>
+        <div className="space-y-3 rounded-xl2 border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
+          <p>
+            {(() => {
+              const daysLeft = Math.ceil(
+                (new Date(active.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+              );
+              return daysLeft > 0
+                ? `${daysLeft} روز دیگر از اشتراک این کسب و کار باقی مانده (تا ${new Date(
+                    active.expires_at
+                  ).toLocaleDateString("fa-IR")})`
+                : "اشتراک این کسب و کار به‌زودی منقضی می‌شود.";
+            })()}
+          </p>
+          {!renewOpen ? (
+            <button
+              onClick={() => setRenewOpen(true)}
+              className="rounded-xl2 bg-jam-green px-5 py-2 text-sm font-bold text-white shadow-glow"
+            >
+              🔄 تمدید زودهنگام
+            </button>
+          ) : (
+            <RenewalForm
+              renewTier={renewTier}
+              setRenewTier={setRenewTier}
+              renewReceipt={renewReceipt}
+              setRenewReceipt={setRenewReceipt}
+              renewError={renewError}
+              renewSaving={renewSaving}
+              onSubmit={submitRenewal}
+            />
+          )}
+        </div>
       )}
 
       {active && active.subscription_status === "suspended" && (
         <div className="space-y-3 rounded-xl2 border border-slate-200 bg-slate-50 p-5">
           <p className="text-sm text-slate-600">
-            مدت اشتراک ۳۰ روزه این کسب و کار به پایان رسیده و از نقشه حذف شده است. برای فعال‌سازی
-            مجدد، اشتراک را تمدید کنید.
+            مدت اشتراک این کسب و کار به پایان رسیده و از نقشه حذف شده است (کسب و کار حذف نشده،
+            فقط غیرفعال است). برای فعال‌سازی مجدد، اشتراک را تمدید کنید.
           </p>
           {!renewOpen ? (
             <button
@@ -270,46 +300,15 @@ export default function BusinessManagePage() {
               🔄 تمدید اشتراک
             </button>
           ) : (
-            <div className="space-y-3">
-              {renewError && <ErrorState message={renewError} />}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                {SUBSCRIPTION_TIERS.map((t) => (
-                  <button
-                    key={t.value}
-                    type="button"
-                    onClick={() => setRenewTier(t.value)}
-                    className={`rounded-xl2 bg-gradient-to-l ${t.color} p-3 text-right text-white shadow-soft transition ${
-                      renewTier === t.value ? "ring-4 ring-jam-green" : "opacity-80"
-                    }`}
-                  >
-                    <p className="text-sm font-extrabold">{t.name}</p>
-                    <p className="text-xs">{formatPrice(t.price)}</p>
-                  </button>
-                ))}
-              </div>
-              <div className="rounded-xl2 bg-white p-4 text-sm text-slate-700">
-                <p>
-                  مبلغ را به شماره کارت زیر واریز کرده و فیش را آپلود کنید:
-                </p>
-                <p dir="ltr" className="mt-2 text-center text-lg font-extrabold tracking-widest text-jam-navy">
-                  {PAYMENT_CARD_NUMBER}
-                </p>
-                <p className="text-center text-xs text-slate-500">به نام {PAYMENT_CARD_HOLDER}</p>
-              </div>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => setRenewReceipt(e.target.files?.[0] ?? null)}
-                className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500"
-              />
-              <button
-                onClick={submitRenewal}
-                disabled={renewSaving}
-                className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow disabled:opacity-50"
-              >
-                {renewSaving ? "در حال ارسال..." : "ارسال درخواست تمدید"}
-              </button>
-            </div>
+            <RenewalForm
+              renewTier={renewTier}
+              setRenewTier={setRenewTier}
+              renewReceipt={renewReceipt}
+              setRenewReceipt={setRenewReceipt}
+              renewError={renewError}
+              renewSaving={renewSaving}
+              onSubmit={submitRenewal}
+            />
           )}
         </div>
       )}
@@ -416,6 +415,65 @@ export default function BusinessManagePage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RenewalForm({
+  renewTier,
+  setRenewTier,
+  renewReceipt,
+  setRenewReceipt,
+  renewError,
+  renewSaving,
+  onSubmit,
+}: {
+  renewTier: SubscriptionTierValue;
+  setRenewTier: (v: SubscriptionTierValue) => void;
+  renewReceipt: File | null;
+  setRenewReceipt: (f: File | null) => void;
+  renewError: string | null;
+  renewSaving: boolean;
+  onSubmit: () => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {renewError && <ErrorState message={renewError} />}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {SUBSCRIPTION_TIERS.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            onClick={() => setRenewTier(t.value)}
+            className={`rounded-xl2 bg-gradient-to-l ${t.color} p-3 text-right text-white shadow-soft transition ${
+              renewTier === t.value ? "ring-4 ring-jam-green" : "opacity-80"
+            }`}
+          >
+            <p className="text-sm font-extrabold">{t.name}</p>
+            <p className="text-xs">{formatPrice(t.price)} در ماه</p>
+          </button>
+        ))}
+      </div>
+      <div className="rounded-xl2 bg-white p-4 text-sm text-slate-700">
+        <p>مبلغ را به شماره کارت زیر واریز کرده و فیش را آپلود کنید:</p>
+        <p dir="ltr" className="mt-2 text-center text-lg font-extrabold tracking-widest text-jam-navy">
+          {PAYMENT_CARD_NUMBER}
+        </p>
+        <p className="text-center text-xs text-slate-500">به نام {PAYMENT_CARD_HOLDER}</p>
+      </div>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => setRenewReceipt(e.target.files?.[0] ?? null)}
+        className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-3 text-sm text-slate-500"
+      />
+      <button
+        onClick={onSubmit}
+        disabled={renewSaving}
+        className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow disabled:opacity-50"
+      >
+        {renewSaving ? "در حال ارسال..." : "ارسال درخواست تمدید"}
+      </button>
     </div>
   );
 }

@@ -18,6 +18,7 @@ type Profile = {
   avatar_url: string | null;
   onboarded: boolean;
   is_wall_account: boolean;
+  banned: boolean;
   created_at: string;
 };
 
@@ -53,7 +54,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .select("*")
         .eq("id", uid)
         .maybeSingle();
-      setProfile(data as Profile | null);
+      const p = data as Profile | null;
+      if (p?.banned) {
+        setProfile(p);
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        if (typeof window !== "undefined") {
+          window.alert("این حساب کاربری به دلیل تخلف مسدود شده است.");
+        }
+        return;
+      }
+      setProfile(p);
     },
     [supabase]
   );

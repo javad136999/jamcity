@@ -11,6 +11,7 @@ export type MapMarker = {
   subtitle?: string;
   href?: string;
   emoji?: string;
+  tier?: "gold" | "silver" | "bronze" | null;
 };
 
 const JAM_CENTER: [number, number] = [27.8194, 52.3242];
@@ -56,6 +57,35 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       // to somewhere else.
       map.on("movestart", () => map.closePopup());
 
+      // Mobile has no mouse hover — so as the user drags/zooms the map,
+      // whichever marker ends up nearest the map's center automatically
+      // shows its preview popup, and it swaps to the next one as they
+      // keep panning past it.
+      map.on("move", () => {
+        const layer = layerRef.current;
+        if (!layer) return;
+        const center = map.getSize().divideBy(2);
+        let closest: L.Marker | null = null;
+        let closestDist = 42; // px threshold to "catch" a marker
+        layer.eachLayer((l) => {
+          const marker = l as L.Marker;
+          const pt = map.latLngToContainerPoint(marker.getLatLng());
+          const d = pt.distanceTo(center);
+          if (d < closestDist) {
+            closestDist = d;
+            closest = marker;
+          }
+        });
+        layer.eachLayer((l) => {
+          const marker = l as L.Marker;
+          if (closest && marker === closest) {
+            if (!marker.isPopupOpen()) marker.openPopup();
+          } else if (marker.isPopupOpen()) {
+            marker.closePopup();
+          }
+        });
+      });
+
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
     })();
@@ -79,17 +109,27 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
       layerRef.current.clearLayers();
 
-      const makeIcon = (emoji: string) =>
+      const makeIcon = (emoji: string, isGold: boolean) =>
         L.divIcon({
           className: "jam-marker",
-          html: `<div style="background:#fff;color:#000;font-weight:bold;border-radius:9999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 14px rgba(0,0,0,0.25);border:2px solid #f97316;">${emoji}</div>`,
+          html: `
+            <div style="position:relative;width:36px;height:36px;">
+              <div style="background:#fff;color:#000;font-weight:bold;border-radius:9999px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 14px rgba(0,0,0,0.25);border:2px solid ${
+                isGold ? "#eab308" : "#f97316"
+              };">${emoji}</div>
+              ${
+                isGold
+                  ? '<div style="position:absolute;top:-6px;right:-6px;font-size:14px;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.4));">⭐</div>'
+                  : ""
+              }
+            </div>`,
           iconSize: [36, 36],
           iconAnchor: [18, 36],
         });
 
       markers.forEach((m) => {
         const marker = L.marker([m.lat, m.lng], {
-          icon: makeIcon(m.emoji || "📍"),
+          icon: makeIcon(m.emoji || "📍", m.tier === "gold"),
         });
         const popupHtml = `
           <div style="font-family: Vazirmatn, sans-serif; direction: rtl; text-align: right; min-width:150px;">

@@ -67,6 +67,7 @@ export default function HomePage() {
         subtitle: businessCategoryLabel(b.category),
         href: `/business/${b.id}`,
         emoji: b.icon,
+        tier: b.subscription_tier,
       }));
   }, [allBusinesses, activeCategory]);
 
