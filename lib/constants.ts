@@ -30,8 +30,7 @@ export const BUSINESS_CATEGORIES = [
   { slug: "other", name: "سایر", icon: "✨" },
 ] as const;
 
-export const ADMIN_EMAIL = "exina30@gmail.com";
-export const ADMIN_CONTACT_EMAIL = "javad.hosseini199167@gmail.com";
+export const ADMIN_EMAIL = "09174057031@wall.jamcity.local";export const ADMIN_CONTACT_EMAIL = "javad.hosseini199167@gmail.com";
 
 export const AVATAR_PRESETS = {
   female: ["👩‍🦰", "👩‍🦱", "👩‍🦳", "👱‍♀️", "🧕", "👸", "🧑‍🎤", "🧑‍🚀".replace("🧑", "👩"), "🧝‍♀️", "🧚‍♀️", "🦸‍♀️", "🧙‍♀️"],
