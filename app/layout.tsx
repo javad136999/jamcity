@@ -6,7 +6,7 @@ import BottomNav from "@/components/BottomNav";
 import VisitTracker from "@/components/VisitTracker";
 
 export const metadata: Metadata = {
-  title: "35770718",
+  title: "جم‌سیتی | همه‌چیز برای زندگی بهتر در جم",
   description:
     "جم‌سیتی؛ پلتفرم شهری جم برای ثبت آگهی، پیدا کردن کسب‌وکارها و خدمات شهری و گفتگو با شهروندان جم.",
   manifest: "/manifest.json",
