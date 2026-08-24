@@ -82,96 +82,96 @@ export default function HomePage() {
   const bronze = (featured ?? []).filter((b) => b.subscription_tier === "bronze" || b.subscription_tier === "silver");
 
   return (
-    <div className="fade-in space-y-8">
-      <section className="rounded-2xl glass px-5 py-4 shadow-soft">
+    <div className="fade-in space-y-3 sm:space-y-8">
+      <section className="rounded-2xl glass px-3 py-2.5 shadow-soft sm:px-5 sm:py-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-lg font-extrabold text-slate-800">شهر جم</p>
-            <p className="text-xs text-slate-400">
+            <p className="text-sm font-extrabold text-slate-800 sm:text-lg">شهر جم</p>
+            <p className="text-[10px] text-slate-400 sm:text-xs">
               {user ? `خوش آمدید، ${profile?.display_name || "کاربر"}` : "پلتفرم شهری جم"}
             </p>
           </div>
           {user ? (
             <button
               onClick={handleLogout}
-              className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-bold text-red-500 shadow-soft transition hover:bg-red-50"
+              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold text-red-500 shadow-soft transition hover:bg-red-50 sm:px-5 sm:py-2 sm:text-sm"
             >
               خروج
             </button>
           ) : (
             <Link
               href="/login"
-              className="rounded-full bg-jam-green px-5 py-2 text-sm font-bold text-white shadow-glow transition hover:brightness-110"
+              className="rounded-full bg-jam-green px-3 py-1 text-[10px] font-bold text-white shadow-glow transition hover:brightness-110 sm:px-5 sm:py-2 sm:text-sm"
             >
               ورود / ثبت‌نام
             </Link>
           )}
         </div>
-        <p className="mt-3 text-sm leading-7 text-slate-500">
+        <p className="mt-2 hidden text-sm leading-7 text-slate-500 sm:block">
           به وب‌شهر زیبای جم خوش آمدید 🌿 در دیوار شهر می‌توانید آگهی‌های خود را تبلیغ کنید و
           همچنین روی نقشه، کسب و کار خود را نمایش دهید و قیمت محصولات یا خدمات خود را مدیریت کنید.
         </p>
       </section>
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <section className="grid grid-cols-2 gap-2 sm:gap-4">
         <Link
           href="/business/register"
-          className="group relative overflow-hidden rounded-3xl bg-gradient-to-l from-teal-500 to-cyan-500 p-8 text-white shadow-soft transition hover:-translate-y-0.5"
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-l from-teal-500 to-cyan-500 p-3 text-white shadow-soft transition hover:-translate-y-0.5 sm:rounded-3xl sm:p-8"
         >
-          <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-3xl">
+          <span className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 text-lg sm:mb-6 sm:h-14 sm:w-14 sm:rounded-2xl sm:text-3xl">
             🏪
           </span>
-          <h2 className="mb-2 text-2xl font-extrabold">ثبت کسب و کار</h2>
-          <p className="mb-4 text-sm text-white/85">
+          <h2 className="mb-0.5 text-xs font-extrabold sm:mb-2 sm:text-2xl">ثبت کسب و کار</h2>
+          <p className="mb-1 hidden text-sm text-white/85 sm:mb-4 sm:block">
             کسب و کار خود را ثبت کنید و روی نقشه نمایش دهید
           </p>
-          <span className="text-sm font-bold">شروع ثبت ‹</span>
+          <span className="text-[10px] font-bold sm:text-sm">شروع ثبت ‹</span>
         </Link>
 
         <Link
           href="/wall"
-          className="group relative overflow-hidden rounded-3xl bg-gradient-to-l from-orange-500 to-amber-500 p-8 text-white shadow-soft transition hover:-translate-y-0.5"
+          className="group relative overflow-hidden rounded-2xl bg-gradient-to-l from-orange-500 to-amber-500 p-3 text-white shadow-soft transition hover:-translate-y-0.5 sm:rounded-3xl sm:p-8"
         >
-          <span className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/20 text-3xl">
+          <span className="mb-1.5 flex h-8 w-8 items-center justify-center rounded-xl bg-white/20 text-lg sm:mb-6 sm:h-14 sm:w-14 sm:rounded-2xl sm:text-3xl">
             💬
           </span>
-          <h2 className="mb-2 text-2xl font-extrabold">دیوار شهر جم</h2>
-          <p className="mb-4 text-sm text-white/85">
+          <h2 className="mb-0.5 text-xs font-extrabold sm:mb-2 sm:text-2xl">دیوار شهر جم</h2>
+          <p className="mb-1 hidden text-sm text-white/85 sm:mb-4 sm:block">
             چت عمومی شهر، آگهی و تبلیغات، صحبت با کاربران
           </p>
-          <span className="text-sm font-bold">ورود به چت ‹</span>
+          <span className="text-[10px] font-bold sm:text-sm">ورود به چت ‹</span>
         </Link>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="flex items-center gap-2 text-lg font-extrabold text-slate-800">
+      <section className="space-y-2">
+        <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-800 sm:text-lg">
           📍 نقشه کسب و کارهای شهر جم
         </h2>
 
         {presentCategories.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-1.5 overflow-x-auto pb-1 sm:gap-2">
             <button
               onClick={() => setActiveCategory(null)}
-              className={`flex shrink-0 flex-col items-center gap-1 rounded-2xl px-4 py-2 text-xs font-bold transition ${
+              className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[10px] font-bold transition sm:gap-1 sm:rounded-2xl sm:px-4 sm:py-2 sm:text-xs ${
                 activeCategory === null
                   ? "bg-jam-green text-white shadow-glow"
                   : "bg-white text-slate-500 shadow-soft"
               }`}
             >
-              <span className="text-lg">🗂️</span>
+              <span className="text-sm sm:text-lg">🗂️</span>
               همه
             </button>
             {presentCategories.map((c) => (
               <button
                 key={c.slug}
                 onClick={() => setActiveCategory(c.slug)}
-                className={`flex shrink-0 flex-col items-center gap-1 rounded-2xl px-4 py-2 text-xs font-bold transition ${
+                className={`flex shrink-0 flex-col items-center gap-0.5 rounded-xl px-2.5 py-1.5 text-[10px] font-bold transition sm:gap-1 sm:rounded-2xl sm:px-4 sm:py-2 sm:text-xs ${
                   activeCategory === c.slug
                     ? "bg-jam-green text-white shadow-glow"
                     : "bg-white text-slate-500 shadow-soft"
                 }`}
               >
-                <span className="text-lg">{c.icon}</span>
+                <span className="text-sm sm:text-lg">{c.icon}</span>
                 {c.name}
               </button>
             ))}

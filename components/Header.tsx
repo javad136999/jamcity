@@ -34,34 +34,26 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 glass border-b border-black/5">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
           {user && (
             <button
               onClick={handleLogout}
-              className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-1.5 sm:text-xs"
+              className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-2 sm:text-sm"
             >
               خروج
             </button>
           )}
-          {user && (
-            <Link
-              href="/business/manage"
-              className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-700 transition hover:bg-slate-50 sm:px-4 sm:py-1.5 sm:text-xs"
-            >
-              🏬 پنل کسب و کار
-            </Link>
-          )}
           {isAdmin && (
             <Link
               href="/admin"
-              className="flex items-center gap-1 whitespace-nowrap rounded-full bg-jam-navy px-2 py-1 text-[9px] font-bold text-white transition hover:brightness-110 sm:px-4 sm:py-1.5 sm:text-xs"
+              className="flex items-center gap-1 whitespace-nowrap rounded-full bg-jam-navy px-3 py-1.5 text-[11px] font-bold text-white transition hover:brightness-110 sm:px-4 sm:py-2 sm:text-sm"
             >
               ⚙️ پنل مدیریت
             </Link>
           )}
           <a
             href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${encodeURIComponent("سوال درباره شهر جم")}`}
-            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 bg-white px-2 py-1 text-[9px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-1.5 sm:text-xs"
+            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-2 sm:text-sm"
           >
             ☎️ تماس با مدیر
           </a>
@@ -125,10 +117,10 @@ export default function Header() {
                   </Link>
                   <Link
                     href="/business/manage"
-                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-black/5"
+                    className="block px-4 py-3 text-sm font-bold text-jam-darkgreen hover:bg-black/5"
                     onClick={() => setMenuOpen(false)}
                   >
-                    پنل کسب و کار
+                    🏬 پنل کسب و کار
                   </Link>
                   <Link
                     href="/chat"
@@ -136,6 +128,13 @@ export default function Header() {
                     onClick={() => setMenuOpen(false)}
                   >
                     پیام‌ها
+                  </Link>
+                  <Link
+                    href="/discounts"
+                    className="block px-4 py-3 text-sm font-bold text-red-500 hover:bg-black/5"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    🏷️ تخفیف‌ها
                   </Link>
                   <Link
                     href="/settings"
@@ -172,6 +171,17 @@ export default function Header() {
           )}
         </div>
       </div>
+
+      {user && (
+        <div className="flex justify-center border-t border-black/5 bg-white/40 px-3 py-2">
+          <Link
+            href="/business/manage"
+            className="flex w-full max-w-sm items-center justify-center gap-2 rounded-xl2 bg-jam-green py-2.5 text-sm font-extrabold text-white shadow-glow transition hover:brightness-110 sm:py-3 sm:text-base"
+          >
+            🏬 پنل کسب و کار من
+          </Link>
+        </div>
+      )}
     </header>
   );
 }

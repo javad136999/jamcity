@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
+import VisitTracker from "@/components/VisitTracker";
 
 export const metadata: Metadata = {
   title: "جم‌سیتی | همه‌چیز برای زندگی بهتر در جم",
@@ -36,6 +37,7 @@ export default function RootLayout({
     <html lang="fa" dir="rtl">
       <body className="gradient-bg min-h-screen">
         <AuthProvider>
+          <VisitTracker />
           <Header />
           <main className="mx-auto min-h-[70vh] max-w-6xl px-4 pb-24 pt-6 md:pb-10">
             {children}

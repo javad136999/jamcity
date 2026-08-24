@@ -118,7 +118,7 @@ export default async function BusinessDetailPage({
               <div key={p.id} className="overflow-hidden rounded-xl2 border border-slate-200 bg-white">
                 {p.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image_url} alt={p.name} className="h-36 w-full object-cover" />
+                  <img src={p.image_url} alt={p.name} className="h-36 w-full object-cover" loading="lazy" decoding="async" />
                 )}
                 <div className="space-y-1 p-4">
                   <p className="font-bold text-slate-800">{p.name}</p>

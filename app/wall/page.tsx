@@ -144,7 +144,34 @@ export default function WallPage() {
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
+  const [memberCount, setMemberCount] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("site_stats")
+      .select("member_count")
+      .eq("id", 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setMemberCount(data.member_count);
+      });
+
+    const channel = supabase
+      .channel("site-stats")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "site_stats" },
+        (payload) => setMemberCount(payload.new.member_count as number)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -322,6 +349,12 @@ export default function WallPage() {
 
   return (
     <div className="fade-in flex h-[calc(100vh-8rem)] flex-col">
+      {memberCount !== null && (
+        <div className="mb-2 flex items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1.5 text-[11px] font-bold text-emerald-700">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+          {memberCount.toLocaleString("fa-IR")} عضو در دیوار شهر جم
+        </div>
+      )}
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-slate-800">دیوار شهر جم</h1>
@@ -357,7 +390,7 @@ export default function WallPage() {
                 <div key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
                   <div className="max-w-[85%] overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-soft">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" />
+                    <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
                     <div className="space-y-2 p-3">
                       <button
                         onClick={() => openChatWith(m.user_id)}

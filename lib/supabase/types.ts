@@ -173,6 +173,7 @@ export type Database = {
           price: number | null;
           description: string | null;
           image_url: string | null;
+          discount_percent: number | null;
           created_at: string;
         };
         Insert: {
@@ -182,6 +183,7 @@ export type Database = {
           price?: number | null;
           description?: string | null;
           image_url?: string | null;
+          discount_percent?: number | null;
           created_at?: string;
         };
         Update: {
@@ -191,7 +193,41 @@ export type Database = {
           price?: number | null;
           description?: string | null;
           image_url?: string | null;
+          discount_percent?: number | null;
           created_at?: string;
+        };
+        Relationships: [];
+      };
+      site_visits: {
+        Row: {
+          id: string;
+          visited_at: string;
+          path: string | null;
+        };
+        Insert: {
+          id?: string;
+          visited_at?: string;
+          path?: string | null;
+        };
+        Update: {
+          id?: string;
+          visited_at?: string;
+          path?: string | null;
+        };
+        Relationships: [];
+      };
+      site_stats: {
+        Row: {
+          id: number;
+          member_count: number;
+        };
+        Insert: {
+          id?: number;
+          member_count: number;
+        };
+        Update: {
+          id?: number;
+          member_count?: number;
         };
         Relationships: [];
       };

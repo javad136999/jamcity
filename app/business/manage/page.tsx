@@ -32,6 +32,7 @@ type Product = {
   price: number | null;
   description: string | null;
   image_url: string | null;
+  discount_percent: number | null;
 };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -124,6 +125,10 @@ export default function BusinessManagePage() {
   async function deleteProduct(id: string) {
     await supabase.from("business_products").delete().eq("id", id);
     setProducts((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  async function saveDiscount(id: string, discount_percent: number | null) {
+    await supabase.from("business_products").update({ discount_percent }).eq("id", id);
   }
 
   async function submitRenewal() {
@@ -364,12 +369,41 @@ export default function BusinessManagePage() {
               <div key={p.id} className="overflow-hidden rounded-xl2 border border-slate-200 bg-white">
                 {p.image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.image_url} alt={p.name} className="h-32 w-full object-cover" />
+                  <img src={p.image_url} alt={p.name} className="h-32 w-full object-cover" loading="lazy" decoding="async" />
                 )}
-                <div className="space-y-1 p-3">
+                <div className="space-y-2 p-3">
                   <p className="font-bold text-slate-800">{p.name}</p>
                   {p.price !== null && <p className="text-sm text-jam-darkgreen">{formatPrice(p.price)}</p>}
                   {p.description && <p className="text-xs text-slate-500">{p.description}</p>}
+
+                  <div className="flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 p-2">
+                    <span className="text-xs font-bold text-red-500">🏷️ تخفیف</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={p.discount_percent ?? ""}
+                      onChange={(e) =>
+                        setProducts((prev) =>
+                          prev.map((x) =>
+                            x.id === p.id
+                              ? { ...x, discount_percent: e.target.value === "" ? null : Number(e.target.value) }
+                              : x
+                          )
+                        )
+                      }
+                      placeholder="٪"
+                      className="w-14 rounded-lg border border-red-200 bg-white px-2 py-1 text-xs text-slate-800 outline-none"
+                    />
+                    <span className="text-[10px] text-slate-400">درصد</span>
+                    <button
+                      onClick={() => saveDiscount(p.id, p.discount_percent)}
+                      className="mr-auto rounded-lg bg-red-500 px-2 py-1 text-[10px] font-bold text-white"
+                    >
+                      ذخیره
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => deleteProduct(p.id)}
                     className="text-xs font-bold text-red-500"

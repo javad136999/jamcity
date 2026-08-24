@@ -14,11 +14,11 @@ export type MapMarker = {
 };
 
 const JAM_CENTER: [number, number] = [27.8194, 52.3242];
-// Rough bounding box around the city of Jam so the map can't be
-// panned/zoomed out past the city limits.
+// Tighter bounding box around just the city core of Jam (not the
+// whole county) — the user pans by hand within this box to explore.
 const JAM_BOUNDS: [[number, number], [number, number]] = [
-  [27.72, 52.19],
-  [27.92, 52.46],
+  [27.78, 52.27],
+  [27.87, 52.38],
 ];
 
 export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
@@ -37,8 +37,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
       const map = L.map(containerRef.current, {
         center: JAM_CENTER,
-        zoom: 13,
-        minZoom: 12,
+        zoom: 14,
+        minZoom: 13,
         maxZoom: 18,
         zoomControl: true,
         maxBounds: JAM_BOUNDS,
@@ -118,7 +118,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
   return (
     <div
       ref={containerRef}
-      className="h-[70vh] w-full overflow-hidden rounded-xl2 shadow-soft"
+      className="h-52 w-full overflow-hidden rounded-xl2 shadow-soft sm:h-72 md:h-80"
     />
   );
 }

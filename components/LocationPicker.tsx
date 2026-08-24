@@ -5,8 +5,8 @@ import type L from "leaflet";
 
 const JAM_CENTER: [number, number] = [27.8194, 52.3242];
 const JAM_BOUNDS: [[number, number], [number, number]] = [
-  [27.72, 52.19],
-  [27.92, 52.46],
+  [27.78, 52.27],
+  [27.87, 52.38],
 ];
 
 export default function LocationPicker({

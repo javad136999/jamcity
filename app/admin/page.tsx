@@ -31,15 +31,37 @@ export default function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
+  const [view, setView] = useState<"businesses" | "stats">("businesses");
   const [tab, setTab] = useState<(typeof TABS)[number]["value"]>("pending");
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [visitCounts, setVisitCounts] = useState<{ today: number; month: number; year: number } | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
       router.replace("/");
     }
   }, [authLoading, user, isAdmin, router]);
+
+  useEffect(() => {
+    if (!isAdmin || view !== "stats") return;
+
+    async function loadVisits() {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
+
+      const [{ count: today }, { count: month }, { count: year }] = await Promise.all([
+        supabase.from("site_visits").select("id", { count: "exact", head: true }).gte("visited_at", startOfDay),
+        supabase.from("site_visits").select("id", { count: "exact", head: true }).gte("visited_at", startOfMonth),
+        supabase.from("site_visits").select("id", { count: "exact", head: true }).gte("visited_at", startOfYear),
+      ]);
+
+      setVisitCounts({ today: today ?? 0, month: month ?? 0, year: year ?? 0 });
+    }
+    loadVisits();
+  }, [isAdmin, view, supabase]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -101,6 +123,48 @@ export default function AdminPage() {
         <p className="text-sm text-slate-500">بررسی، تایید و مدیریت کسب و کارهای شهر جم</p>
       </div>
 
+      <div className="flex gap-2">
+        <button
+          onClick={() => setView("businesses")}
+          className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+            view === "businesses" ? "bg-jam-green text-white shadow-glow" : "bg-black/5 text-slate-500"
+          }`}
+        >
+          🏬 کسب‌وکارها
+        </button>
+        <button
+          onClick={() => setView("stats")}
+          className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+            view === "stats" ? "bg-jam-green text-white shadow-glow" : "bg-black/5 text-slate-500"
+          }`}
+        >
+          📊 آمار بازدید
+        </button>
+      </div>
+
+      {view === "stats" ? (
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl2 glass p-6 text-center shadow-soft">
+            <p className="text-3xl font-extrabold text-jam-green">
+              {visitCounts ? visitCounts.today.toLocaleString("fa-IR") : "…"}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">بازدید امروز</p>
+          </div>
+          <div className="rounded-xl2 glass p-6 text-center shadow-soft">
+            <p className="text-3xl font-extrabold text-jam-green">
+              {visitCounts ? visitCounts.month.toLocaleString("fa-IR") : "…"}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">بازدید این ماه</p>
+          </div>
+          <div className="rounded-xl2 glass p-6 text-center shadow-soft">
+            <p className="text-3xl font-extrabold text-jam-green">
+              {visitCounts ? visitCounts.year.toLocaleString("fa-IR") : "…"}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">بازدید امسال</p>
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="flex flex-wrap gap-2">
         {TABS.map((t) => (
           <button
@@ -212,6 +276,8 @@ export default function AdminPage() {
             );
           })}
         </div>
+      )}
+      </>
       )}
     </div>
   );
