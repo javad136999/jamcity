@@ -151,9 +151,8 @@ export default function WallPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
-  const [postCategory, setPostCategory] = useState<"car" | "realestate" | null>(null);
-  const [searchInput, setSearchInput] = useState("");
   const [browse, setBrowse] = useState<{ query: string; category: "car" | "realestate" | null } | null>(null);
+  const [searchInput, setSearchInput] = useState("");
   const [browseIndex, setBrowseIndex] = useState(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -312,15 +311,21 @@ export default function WallPage() {
         user_id: user.id,
         content: text.trim() || null,
         image_url,
-        category: postCategory,
       });
       if (error) throw error;
       setText("");
       setImage(null);
-      setPostCategory(null);
     } catch (e) {
       console.error("wall send error", e);
-      setSendError("ارسال پیام با خطا مواجه شد. دوباره تلاش کنید.");
+      const msg =
+        e instanceof Error
+          ? e.message
+          : e && typeof e === "object" && "message" in e
+          ? String((e as { message: unknown }).message)
+          : null;
+      setSendError(
+        msg ? `ارسال پیام با خطا مواجه شد: ${msg}` : "ارسال پیام با خطا مواجه شد. دوباره تلاش کنید."
+      );
     } finally {
       setSending(false);
     }
@@ -390,30 +395,30 @@ export default function WallPage() {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in flex h-[calc(100vh-8rem)] flex-col">
+    <div className="fade-in flex h-[calc(100dvh-7rem)] flex-col overflow-hidden">
       {memberCount !== null && (
-        <div className="mb-2 flex items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1.5 text-[11px] font-bold text-emerald-700">
+        <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
           {memberCount.toLocaleString("fa-IR")} عضو در دیوار شهر جم
         </div>
       )}
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-2 flex shrink-0 items-center justify-between">
         <div>
-          <h1 className="text-xl font-extrabold text-slate-800">دیوار شهر جم</h1>
-          <p className="text-xs text-slate-400">
+          <h1 className="text-base font-extrabold text-slate-800 sm:text-xl">دیوار شهر جم</h1>
+          <p className="text-[10px] text-slate-400 sm:text-xs">
             وارد شده‌اید با نام کاربری «{profile?.display_name}»
           </p>
         </div>
         <Link
           href="/chat"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-black/5 text-lg"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-base sm:h-10 sm:w-10 sm:text-lg"
           title="لیست چت‌های من"
         >
           ✉️
         </Link>
       </div>
 
-      <div className="mb-3 space-y-2">
+      <div className="mb-2 shrink-0 space-y-1.5">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -436,14 +441,14 @@ export default function WallPage() {
         </form>
         <div className="flex gap-2">
           <button
-            onClick={() => startBrowse("", "car")}
-            className="flex items-center gap-1.5 rounded-full bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-700"
+            onClick={() => startBrowse("خودرو", null)}
+            className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"
           >
             🚗 آگهی‌های خودرو
           </button>
           <button
-            onClick={() => startBrowse("", "realestate")}
-            className="flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1.5 text-xs font-bold text-purple-700"
+            onClick={() => startBrowse("املاک", null)}
+            className="flex items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700"
           >
             🏠 آگهی‌های املاک
           </button>
@@ -658,31 +663,8 @@ export default function WallPage() {
       </div>
       )}
 
-      <div className="mt-3 space-y-1">
+      <div className="mt-2 shrink-0 space-y-1">
         {sendError && <ErrorState message={sendError} />}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setPostCategory(postCategory === "car" ? null : "car")}
-            className={`rounded-full px-3 py-1 text-[11px] font-bold transition ${
-              postCategory === "car" ? "bg-blue-500 text-white" : "bg-blue-50 text-blue-700"
-            }`}
-          >
-            🚗 خودرو
-          </button>
-          <button
-            type="button"
-            onClick={() => setPostCategory(postCategory === "realestate" ? null : "realestate")}
-            className={`rounded-full px-3 py-1 text-[11px] font-bold transition ${
-              postCategory === "realestate" ? "bg-purple-500 text-white" : "bg-purple-50 text-purple-700"
-            }`}
-          >
-            🏠 املاک
-          </button>
-          {postCategory && (
-            <span className="text-[10px] text-slate-400">آگهی با این دسته‌بندی ارسال می‌شود</span>
-          )}
-        </div>
         <div className="flex items-end gap-2 rounded-xl2 glass p-2 shadow-soft">
           <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-lg">
             📷

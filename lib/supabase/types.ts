@@ -122,6 +122,8 @@ export type Database = {
           submitted_at: string;
           reviewed_at: string | null;
           expires_at: string | null;
+          rating_avg: number;
+          rating_count: number;
           created_at: string;
         };
         Insert: {
@@ -143,6 +145,8 @@ export type Database = {
           submitted_at?: string;
           reviewed_at?: string | null;
           expires_at?: string | null;
+          rating_avg?: number;
+          rating_count?: number;
           created_at?: string;
         };
         Update: {
@@ -164,6 +168,29 @@ export type Database = {
           submitted_at?: string;
           reviewed_at?: string | null;
           expires_at?: string | null;
+          rating_avg?: number;
+          rating_count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      business_ratings: {
+        Row: {
+          business_id: string;
+          user_id: string;
+          rating: number;
+          created_at: string;
+        };
+        Insert: {
+          business_id: string;
+          user_id: string;
+          rating: number;
+          created_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          user_id?: string;
+          rating?: number;
           created_at?: string;
         };
         Relationships: [];

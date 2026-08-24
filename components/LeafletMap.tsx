@@ -12,6 +12,7 @@ export type MapMarker = {
   href?: string;
   emoji?: string;
   tier?: "gold" | "silver" | "bronze" | null;
+  rating?: number | null;
 };
 
 const JAM_CENTER: [number, number] = [27.8194, 52.3242];
@@ -109,7 +110,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
       layerRef.current.clearLayers();
 
-      const makeIcon = (emoji: string, isGold: boolean) =>
+      const makeIcon = (emoji: string, isGold: boolean, rating: number | null | undefined) =>
         L.divIcon({
           className: "jam-marker",
           html: `
@@ -122,6 +123,13 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
                   ? '<div style="position:absolute;top:-6px;right:-6px;font-size:14px;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.4));">⭐</div>'
                   : ""
               }
+              ${
+                rating
+                  ? `<div style="position:absolute;bottom:-4px;left:-4px;background:#0b6e4f;color:#fff;font-size:9px;font-weight:bold;border-radius:9999px;min-width:16px;height:16px;padding:0 3px;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff;">${rating.toFixed(
+                      1
+                    )}</div>`
+                  : ""
+              }
             </div>`,
           iconSize: [36, 36],
           iconAnchor: [18, 36],
@@ -129,21 +137,21 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
       markers.forEach((m) => {
         const marker = L.marker([m.lat, m.lng], {
-          icon: makeIcon(m.emoji || "📍", m.tier === "gold"),
+          icon: makeIcon(m.emoji || "📍", m.tier === "gold", m.rating),
         });
         const popupHtml = `
-          <div style="font-family: Vazirmatn, sans-serif; direction: rtl; text-align: right; min-width:150px;">
-            <strong>${m.title}</strong>
-            ${m.subtitle ? `<div style="font-size:12px;color:#666;margin-top:2px;">${m.subtitle}</div>` : ""}
+          <div style="font-family: Vazirmatn, sans-serif; direction: rtl; text-align: right; min-width:100px; max-width:150px;">
+            <strong style="font-size:12px;">${m.title}</strong>
+            ${m.subtitle ? `<div style="font-size:10px;color:#666;margin-top:1px;">${m.subtitle}</div>` : ""}
             ${
               m.href
-                ? `<a href="${m.href}" style="display:block;font-size:12px;color:#0b6e4f;font-weight:bold;margin-top:6px;">مشاهده جزئیات ›</a>`
+                ? `<a href="${m.href}" style="display:block;font-size:10px;color:#0b6e4f;font-weight:bold;margin-top:4px;">جزئیات ›</a>`
                 : ""
             }
           </div>`;
         // Tapping/clicking the marker opens this popup (works on both
         // touch and mouse). Hovering on desktop also previews it.
-        marker.bindPopup(popupHtml, { closeButton: true, autoPan: false, offset: [0, -8] });
+        marker.bindPopup(popupHtml, { closeButton: true, autoPan: false, offset: [0, -8], minWidth: 90, maxWidth: 160 });
         marker.on("mouseover", () => marker.openPopup());
 
         marker.addTo(layerRef.current!);
@@ -158,7 +166,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
   return (
     <div
       ref={containerRef}
-      className="h-52 w-full overflow-hidden rounded-xl2 shadow-soft sm:h-72 md:h-80"
+      className="h-64 w-full overflow-hidden rounded-xl2 shadow-soft sm:h-80 md:h-96"
     />
   );
 }

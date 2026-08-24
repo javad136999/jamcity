@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { businessCategoryLabel, tierMeta, formatPrice } from "@/lib/constants";
+import BusinessRating from "@/components/BusinessRating";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +73,12 @@ export default async function BusinessDetailPage({
         {business.description && (
           <p className="text-sm leading-7 text-slate-600">{business.description}</p>
         )}
+
+        <BusinessRating
+          businessId={business.id}
+          initialAvg={business.rating_avg}
+          initialCount={business.rating_count}
+        />
 
         <div className="space-y-2 text-sm text-slate-500">
           <p>📍 {business.address}</p>

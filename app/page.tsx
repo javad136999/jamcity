@@ -23,6 +23,8 @@ type BizRow = {
   lat: number | null;
   lng: number | null;
   subscription_tier: "bronze" | "silver" | "gold" | null;
+  rating_avg: number;
+  rating_count: number;
 };
 
 export default function HomePage() {
@@ -42,7 +44,7 @@ export default function HomePage() {
     async function load() {
       const { data } = await supabase
         .from("businesses")
-        .select("id, name, category, icon, lat, lng, subscription_tier")
+        .select("id, name, category, icon, lat, lng, subscription_tier, rating_avg, rating_count")
         .eq("subscription_status", "approved");
 
       const rows = (data ?? []) as BizRow[];
@@ -68,6 +70,7 @@ export default function HomePage() {
         href: `/business/${b.id}`,
         emoji: b.icon,
         tier: b.subscription_tier,
+        rating: b.rating_count > 0 ? b.rating_avg : null,
       }));
   }, [allBusinesses, activeCategory]);
 
