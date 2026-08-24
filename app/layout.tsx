@@ -10,19 +10,11 @@ export const metadata: Metadata = {
   description:
     "جم‌سیتی؛ پلتفرم شهری جم برای ثبت آگهی، پیدا کردن کسب‌وکارها و خدمات شهری و گفتگو با شهروندان جم.",
   manifest: "/manifest.json",
-
-  other: {
-    enamad: "35770718",
-    "google-site-verification":
-      "pPb0zwPr2-gtR_aQkVprFPPXKTw11TVjkfxbIpIhh24",
-  },
-
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "جم‌سیتی",
   },
-
   icons: {
     icon: "/icons/icon-192.png",
     apple: "/icons/icon-192.png",
@@ -47,11 +39,9 @@ export default function RootLayout({
         <AuthProvider>
           <VisitTracker />
           <Header />
-
           <main className="mx-auto min-h-[70vh] max-w-6xl px-4 pb-24 pt-6 md:pb-10">
             {children}
           </main>
-
           <BottomNav />
         </AuthProvider>
       </body>
