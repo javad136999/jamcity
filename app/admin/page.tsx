@@ -77,8 +77,17 @@ export default function AdminPage() {
       .select("*, profiles(display_name, username)")
       .order("submitted_at", { ascending: false });
     if (tab !== "all") builder = builder.eq("subscription_status", tab);
-    builder.then(({ data }) => setBusinesses((data as unknown as Business[]) ?? []));
-  }, [tab, isAdmin, supabase]);
+builder.then(({ data, error }) => {
+  if (error) {
+    console.error("ADMIN BUSINESSES ERROR:", error);
+    setBusinesses([]);
+    return;
+  }
+
+  console.log("ADMIN BUSINESSES:", data);
+  alert("ADMIN QUERY اجرا شد");
+  setBusinesses((data as unknown as Business[]) ?? []);
+});  }, [tab, isAdmin, supabase]);
 
   useEffect(() => {
     if (!isAdmin || view !== "reports") return;
@@ -324,8 +333,10 @@ export default function AdminPage() {
         {TABS.map((t) => (
           <button
             key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-full px-4 py-2 text-xs font-bold transition ${
+onClick={() => {
+  console.log("TAB CLICK:", t.value);
+  setTab(t.value);
+}}            className={`rounded-full px-4 py-2 text-xs font-bold transition ${
               tab === t.value ? "bg-jam-navy text-white" : "bg-black/5 text-slate-500"
             }`}
           >
