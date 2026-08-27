@@ -160,8 +160,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       const map = mapRef.current;
       const layer = layerRef.current;
 
-      if (!map || !layer || map._container === undefined) return;
-
+if (!map || !layer || !map.getContainer()) return;
       try {
         layer.clearLayers();
       } catch {
