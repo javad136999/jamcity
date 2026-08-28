@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -149,26 +150,28 @@ export default function HomePage() {
           HERO
       ====================================================== */}
 
-      <section className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#050606] text-white shadow-[0_20px_70px_rgba(0,0,0,.22)]">
+      <section className="relative overflow-hidden rounded-[24px] border border-white/10 bg-[#050606] text-white shadow-[0_20px_70px_rgba(0,0,0,.22)] sm:rounded-[30px]">
 
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_10%,rgba(34,197,94,.18),transparent_30%),radial-gradient(circle_at_10%_90%,rgba(245,158,11,.12),transparent_28%)]" />
 
-        <div className="relative p-5 sm:p-8">
+        <div className="relative p-3.5 sm:p-8">
+
+          {/* TOP BAR */}
 
           <div className="flex items-center justify-between">
 
             <div className="flex items-center gap-2">
 
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-green-400/20 bg-green-400/10 text-2xl">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-green-400/20 bg-green-400/10 text-base shadow-[0_0_20px_rgba(34,197,94,.10)] sm:h-11 sm:w-11 sm:rounded-2xl sm:text-2xl">
                 🌿
               </span>
 
               <div>
-                <p className="text-sm font-black">
+                <p className="text-[11px] font-black sm:text-sm">
                   جم سیتی
                 </p>
 
-                <p className="text-[8px] text-green-400">
+                <p className="text-[7px] text-green-400 sm:text-[8px]">
                   شهر دیجیتال جم
                 </p>
               </div>
@@ -177,166 +180,178 @@ export default function HomePage() {
 
             <Link
               href="/wall"
-              className="rounded-full border border-green-400/20 bg-green-400/10 px-3 py-2 text-[9px] font-bold text-green-400"
+              className="rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-1.5 text-[8px] font-bold text-green-400 sm:px-3 sm:py-2 sm:text-[9px]"
             >
               ● زنده
             </Link>
 
           </div>
 
-          <div className="mt-8 max-w-2xl">
+          {/* =================================================
+              HERO CONTENT + CHAT
+          ================================================== */}
 
-            <p className="mb-2 text-[10px] font-bold text-green-400">
-              خوش اومدی به جم 👋
-            </p>
+          <div className="mt-5 flex items-center gap-2.5 sm:mt-8 sm:block">
 
-            <h1 className="text-3xl font-black leading-[1.35] sm:text-5xl">
-              همه چیز شهر،
-              <span className="block bg-gradient-to-l from-green-300 to-green-500 bg-clip-text text-transparent">
-                همین‌جا کنارته.
-              </span>
-            </h1>
+            {/* TEXT */}
 
-            <p className="mt-4 text-xs leading-7 text-slate-400 sm:text-sm">
-              با مردم جم حرف بزن، آگهی ببین، کسب‌وکار پیدا کن،
-              تخفیف بگیر و هر چیزی که توی شهر اتفاق می‌افته رو دنبال کن.
-            </p>
+            <div className="min-w-0 flex-1 max-w-2xl">
 
-            <div className="mt-6 flex flex-wrap gap-2">
+              <p className="mb-1 text-[8px] font-bold text-green-400 sm:mb-2 sm:text-[10px]">
+                خوش اومدی به جم 👋
+              </p>
 
-              <Link
-                href="/wall"
-                className="rounded-2xl bg-green-500 px-6 py-3.5 text-xs font-black text-black shadow-[0_8px_30px_rgba(34,197,94,.2)] hover:bg-green-400"
-              >
-                💬 بریم توی چت
-              </Link>
+              <h1 className="text-[20px] font-black leading-[1.45] sm:text-5xl sm:leading-[1.35]">
+                همه چیز شهر،
+                <span className="block bg-gradient-to-l from-green-300 to-green-500 bg-clip-text text-transparent">
+                  همین‌جا کنارته.
+                </span>
+              </h1>
 
-              <Link
-                href="/businesses"
-                className="rounded-2xl border border-white/10 bg-white/[.04] px-6 py-3.5 text-xs font-bold text-white hover:bg-white/[.08]"
-              >
-                🏪 کشف شهر
-              </Link>
+              <p className="mt-2 text-[8px] leading-5 text-slate-400 sm:mt-4 sm:text-sm sm:leading-7">
+                با مردم جم حرف بزن، آگهی ببین، کسب‌وکار پیدا کن،
+                تخفیف بگیر و هر چیزی که توی شهر اتفاق می‌افته رو دنبال کن.
+              </p>
+
+              <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-6 sm:gap-2">
+
+                <Link
+                  href="/wall"
+                  className="rounded-xl bg-green-500 px-3 py-2 text-[8px] font-black text-black shadow-[0_8px_30px_rgba(34,197,94,.2)] hover:bg-green-400 sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
+                >
+                  💬 بریم توی چت
+                </Link>
+
+                <Link
+                  href="/businesses"
+                  className="rounded-xl border border-white/10 bg-white/[.04] px-3 py-2 text-[8px] font-bold text-white hover:bg-white/[.08] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
+                >
+                  🏪 کشف شهر
+                </Link>
+
+              </div>
 
             </div>
 
-          </div>
+            {/* =================================================
+                MOBILE / DESKTOP CHAT CARD
+            ================================================== */}
 
-          {/* =================================================
-              GLASS LIVE CHAT
-          ================================================== */}
+            <Link
+              href="/wall"
+              className="group relative w-[132px] shrink-0 overflow-hidden rounded-[18px] border border-green-400/30 bg-white/[0.07] p-2.5 shadow-[0_0_35px_rgba(34,197,94,.12)] backdrop-blur-xl transition duration-300 hover:border-green-400/70 hover:bg-white/[0.10] sm:absolute sm:bottom-8 sm:left-8 sm:mt-0 sm:w-[350px] sm:rounded-[28px] sm:p-5"
+            >
 
-          <Link
-            href="/wall"
-            className="group relative mt-8 block overflow-hidden rounded-[28px] border border-green-400/30 bg-white/[0.07] p-5 shadow-[0_0_45px_rgba(34,197,94,.12)] backdrop-blur-xl transition duration-300 hover:border-green-400/70 hover:bg-white/[0.10] sm:absolute sm:bottom-8 sm:left-8 sm:mt-0 sm:w-[350px]"
-          >
+              <div className="absolute inset-0 bg-gradient-to-br from-green-400/[0.12] via-white/[0.03] to-transparent" />
 
-            <div className="absolute inset-0 bg-gradient-to-br from-green-400/[0.12] via-white/[0.03] to-transparent" />
+              <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-green-400/10 blur-3xl" />
 
-            <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-green-400/10 blur-3xl" />
+              <div className="relative">
 
-            <div className="relative">
+                <div className="flex items-center gap-2 sm:gap-4">
 
-              <div className="flex items-center gap-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-green-300/20 bg-green-400/10 text-xl shadow-[0_0_20px_rgba(34,197,94,.16)] sm:h-[68px] sm:w-[68px] sm:rounded-[24px] sm:text-5xl">
+                    💬
+                  </div>
 
-                <div className="flex h-[68px] w-[68px] shrink-0 items-center justify-center rounded-[24px] border border-green-300/20 bg-green-400/10 text-5xl shadow-[0_0_30px_rgba(34,197,94,.16)]">
-                  💬
+                  <div className="min-w-0 flex-1">
+
+                    <div className="flex items-center justify-between gap-1">
+
+                      <h2 className="truncate text-[8px] font-black text-white sm:text-sm">
+                        چت عمومی شهر جم
+                      </h2>
+
+                      <span className="flex shrink-0 items-center gap-1 rounded-full border border-green-400/20 bg-green-400/10 px-1.5 py-0.5 text-[5px] font-bold text-green-400 sm:px-2 sm:py-1 sm:text-[8px]">
+                        <span className="h-1 w-1 animate-pulse rounded-full bg-green-400 sm:h-1.5 sm:w-1.5" />
+                        LIVE
+                      </span>
+
+                    </div>
+
+                    <p className="mt-0.5 truncate text-[6px] text-slate-500 sm:mt-1 sm:text-[9px]">
+                      گفتگو با همشهری‌ها
+                    </p>
+
+                  </div>
+
                 </div>
 
-                <div className="min-w-0 flex-1">
+                {/* MOBILE COMPACT PREVIEW */}
 
-                  <div className="flex items-center justify-between gap-2">
+                <div className="relative mt-2 space-y-1.5 sm:mt-5 sm:space-y-2.5">
 
-                    <h2 className="text-sm font-black text-white">
-                      چت عمومی شهر جم
-                    </h2>
+                  <div className="flex items-end gap-1 sm:gap-2">
 
-                    <span className="flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/10 px-2 py-1 text-[8px] font-bold text-green-400">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
-                      LIVE
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-[8px] sm:h-7 sm:w-7 sm:text-xs">
+                      👤
+                    </span>
+
+                    <div className="max-w-[82%] rounded-xl rounded-br-md border border-white/10 bg-white/[0.08] px-2 py-1.5 backdrop-blur-md sm:rounded-2xl sm:px-3 sm:py-2">
+
+                      <p className="text-[6px] font-bold text-green-300 sm:text-[8px]">
+                        همشهری جم
+                      </p>
+
+                      <p className="mt-0.5 truncate text-[6px] text-slate-300 sm:mt-1 sm:text-[9px]">
+                        سلام، کسی امروز بازار بوده؟ 👋
+                      </p>
+
+                    </div>
+
+                  </div>
+
+                  <div className="flex items-end justify-end gap-1 sm:gap-2">
+
+                    <div className="max-w-[82%] rounded-xl rounded-bl-md border border-green-400/10 bg-green-400/10 px-2 py-1.5 backdrop-blur-md sm:rounded-2xl sm:px-3 sm:py-2">
+
+                      <p className="text-[6px] text-green-100 sm:text-[9px]">
+                        آره، امروز خیلی شلوغ بود 😄
+                      </p>
+
+                    </div>
+
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-green-400/10 bg-green-400/10 text-[8px] sm:h-7 sm:w-7 sm:text-xs">
+                      🧑
                     </span>
 
                   </div>
 
-                  <p className="mt-1 text-[9px] text-slate-500">
-                    گفتگو با همشهری‌ها
-                  </p>
+                  <div className="hidden items-end gap-2 opacity-60 sm:flex">
 
-                </div>
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.04] text-xs">
+                      👩
+                    </span>
 
-              </div>
+                    <div className="rounded-2xl rounded-br-md border border-white/5 bg-white/[0.04] px-3 py-2">
 
-              <div className="relative mt-5 space-y-2.5">
+                      <p className="text-[8px] text-slate-500">
+                        چه خبره امروز؟ 😍
+                      </p>
 
-                <div className="flex items-end gap-2">
-
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.06] text-xs">
-                    👤
-                  </span>
-
-                  <div className="max-w-[78%] rounded-2xl rounded-br-md border border-white/10 bg-white/[0.08] px-3 py-2 backdrop-blur-md">
-
-                    <p className="text-[8px] font-bold text-green-300">
-                      همشهری جم
-                    </p>
-
-                    <p className="mt-1 text-[9px] text-slate-300">
-                      سلام، کسی امروز بازار بوده؟ 👋
-                    </p>
+                    </div>
 
                   </div>
 
                 </div>
 
-                <div className="flex items-end justify-end gap-2">
+                <div className="mt-2 flex items-center justify-between rounded-xl border border-white/10 bg-black/20 px-2 py-1.5 backdrop-blur-md sm:mt-5 sm:rounded-2xl sm:px-4 sm:py-3">
 
-                  <div className="max-w-[78%] rounded-2xl rounded-bl-md border border-green-400/10 bg-green-400/10 px-3 py-2 backdrop-blur-md">
-
-                    <p className="text-[9px] text-green-100">
-                      آره، امروز خیلی شلوغ بود 😄
-                    </p>
-
-                  </div>
-
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-green-400/10 bg-green-400/10 text-xs">
-                    🧑
+                  <span className="truncate text-[6px] font-bold text-green-300 sm:text-[9px]">
+                    وارد گفتگوی زنده شو
                   </span>
 
-                </div>
-
-                <div className="flex items-end gap-2 opacity-60">
-
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.04] text-xs">
-                    👩
+                  <span className="text-[9px] text-green-400 transition group-hover:-translate-x-1 sm:text-base">
+                    ←
                   </span>
-
-                  <div className="rounded-2xl rounded-br-md border border-white/5 bg-white/[0.04] px-3 py-2">
-
-                    <p className="text-[8px] text-slate-500">
-                      چه خبره امروز؟ 😍
-                    </p>
-
-                  </div>
 
                 </div>
 
               </div>
 
-              <div className="mt-5 flex items-center justify-between rounded-2xl border border-white/10 bg-black/20 px-4 py-3 backdrop-blur-md">
+            </Link>
 
-                <span className="text-[9px] font-bold text-green-300">
-                  وارد گفتگوی زنده شو
-                </span>
-
-                <span className="text-green-400 transition group-hover:-translate-x-1">
-                  ←
-                </span>
-
-              </div>
-
-            </div>
-
-          </Link>
+          </div>
 
         </div>
 
@@ -924,3 +939,4 @@ function Stat({
     </div>
   );
 }
+
