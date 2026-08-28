@@ -15,87 +15,432 @@ body {
   margin: 0;
   direction: rtl;
   font-family: "Vazirmatn", sans-serif;
-  background: #fdf8ee;
-  color: #1f2937;
+  background:
+    radial-gradient(circle at 85% 5%, rgba(0, 255, 170, 0.08), transparent 25%),
+    radial-gradient(circle at 10% 90%, rgba(0, 180, 255, 0.06), transparent 25%),
+    #030605;
+  color: #e5fff5;
   scroll-behavior: smooth;
+  min-height: 100%;
 }
+
+body {
+  background-color: #030605;
+}
+
+/* ================================
+   SCROLLBAR
+================================ */
 
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
 }
+
 ::-webkit-scrollbar-thumb {
-  background: rgba(18, 185, 129, 0.35);
-  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 255, 170, 0.7),
+    rgba(245, 158, 11, 0.55)
+  );
+  border-radius: 999px;
 }
+
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #050908;
 }
+
+/* ================================
+   GLASS
+================================ */
 
 .glass {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(8, 15, 13, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(0, 255, 170, 0.13);
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.035);
 }
 
-.gradient-bg {
-  background: #fdf8ee;
+/* ================================
+   GLOBAL DARK CARDS
+================================ */
+
+.bg-white {
+  background-color: #080d0b !important;
 }
+
+.bg-slate-50 {
+  background-color: #060a09 !important;
+}
+
+.bg-slate-100 {
+  background-color: #0b1210 !important;
+}
+
+.bg-slate-200 {
+  background-color: #14201c !important;
+}
+
+.border-slate-100 {
+  border-color: rgba(0, 255, 170, 0.08) !important;
+}
+
+.border-slate-200 {
+  border-color: rgba(0, 255, 170, 0.12) !important;
+}
+
+/* ================================
+   TEXT
+================================ */
+
+.text-slate-800,
+.text-slate-700,
+.text-slate-600 {
+  color: #e5fff5 !important;
+}
+
+.text-slate-500 {
+  color: #8ba39a !important;
+}
+
+.text-slate-400 {
+  color: #71877f !important;
+}
+
+.text-slate-300 {
+  color: #a9c4ba !important;
+}
+
+/* ================================
+   GREEN NEON
+================================ */
+
+.text-green-600,
+.text-green-500 {
+  color: #00f5a0 !important;
+}
+
+.bg-green-600 {
+  background-color: #00d98b !important;
+}
+
+.bg-green-500 {
+  background-color: #00e89a !important;
+}
+
+.hover\:bg-green-400:hover {
+  background-color: #32ffb3 !important;
+}
+
+.border-green-300,
+.border-green-400 {
+  border-color: rgba(0, 255, 170, 0.3) !important;
+}
+
+/* ================================
+   GOLD
+================================ */
+
+.text-amber-300 {
+  color: #fde68a !important;
+}
+
+.text-amber-400 {
+  color: #fbbf24 !important;
+}
+
+.text-amber-500 {
+  color: #f59e0b !important;
+}
+
+.bg-amber-400 {
+  background-color: #fbbf24 !important;
+}
+
+.bg-amber-500 {
+  background-color: #f59e0b !important;
+}
+
+/* ================================
+   DARK BUTTON
+================================ */
+
+.bg-slate-900 {
+  background: linear-gradient(
+    135deg,
+    #0b1512,
+    #101d19
+  ) !important;
+  border: 1px solid rgba(0, 255, 170, 0.12);
+}
+
+/* ================================
+   GRADIENT
+================================ */
+
+.gradient-bg {
+  background:
+    radial-gradient(
+      circle at 80% 0%,
+      rgba(0, 255, 170, 0.08),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 0% 100%,
+      rgba(245, 158, 11, 0.05),
+      transparent 28%
+    ),
+    #030605;
+}
+
+/* ================================
+   NEON
+================================ */
+
+.neon-glow {
+  box-shadow:
+    0 0 20px rgba(0, 255, 170, 0.12),
+    0 0 60px rgba(0, 255, 170, 0.06);
+}
+
+.neon-border {
+  border: 1px solid rgba(0, 255, 170, 0.25);
+  box-shadow:
+    inset 0 0 20px rgba(0, 255, 170, 0.025),
+    0 0 25px rgba(0, 255, 170, 0.06);
+}
+
+/* ================================
+   ICON CARDS
+   آیکون‌های بدون تصویر
+================================ */
+
+.icon-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(245, 158, 11, 0.16),
+      transparent 55%
+    ),
+    linear-gradient(
+      135deg,
+      #15120a,
+      #0c0f0d 55%,
+      #050706
+    );
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  box-shadow:
+    inset 0 0 25px rgba(245, 158, 11, 0.04),
+    0 0 30px rgba(245, 158, 11, 0.08);
+}
+
+.icon-fallback > span {
+  color: #fff !important;
+  filter:
+    drop-shadow(0 0 5px rgba(255, 255, 255, 0.35))
+    drop-shadow(0 0 12px rgba(245, 158, 11, 0.25));
+}
+
+/* ================================
+   BUSINESS ICON
+================================ */
+
+.business-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      circle at 50% 40%,
+      rgba(255, 255, 255, 0.08),
+      transparent 55%
+    ),
+    linear-gradient(
+      135deg,
+      rgba(245, 158, 11, 0.14),
+      rgba(0, 255, 170, 0.05)
+    );
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  color: #ffffff;
+  box-shadow:
+    0 0 30px rgba(245, 158, 11, 0.1),
+    inset 0 0 20px rgba(255, 255, 255, 0.025);
+}
+
+/* ================================
+   INPUT
+================================ */
+
+input,
+textarea,
+select {
+  background: #080e0c !important;
+  color: #eafff7 !important;
+  border-color: rgba(0, 255, 170, 0.12) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #62756e !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: rgba(0, 255, 170, 0.45) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 170, 0.06);
+}
+
+/* ================================
+   SKELETON
+================================ */
 
 .skeleton {
   background: linear-gradient(
     90deg,
-    rgba(15, 23, 42, 0.04) 25%,
-    rgba(15, 23, 42, 0.09) 37%,
-    rgba(15, 23, 42, 0.04) 63%
+    rgba(255, 255, 255, 0.025) 25%,
+    rgba(0, 255, 170, 0.08) 37%,
+    rgba(255, 255, 255, 0.025) 63%
   );
   background-size: 400% 100%;
   animation: skeleton-loading 1.4s ease infinite;
-}
-
-/* Smaller, tighter Leaflet popup chrome for the compact business preview */
-.leaflet-popup-content-wrapper {
-  padding: 2px;
-  border-radius: 10px;
-}
-.leaflet-popup-content {
-  margin: 6px 8px;
-  line-height: 1.4;
-}
-.leaflet-popup-close-button {
-  width: 16px !important;
-  height: 16px !important;
-  font-size: 14px !important;
-  padding: 2px 4px 0 0 !important;
-}
-.leaflet-popup-tip-container {
-  width: 16px;
-  height: 8px;
 }
 
 @keyframes skeleton-loading {
   0% {
     background-position: 100% 50%;
   }
+
   100% {
     background-position: 0 50%;
   }
 }
 
+/* ================================
+   LEAFLET
+================================ */
+
+.leaflet-container {
+  background: #07100d !important;
+  font-family: "Vazirmatn", sans-serif;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 2px;
+  border-radius: 12px;
+  background: #09110e !important;
+  color: #e5fff5 !important;
+  border: 1px solid rgba(0, 255, 170, 0.18);
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5);
+}
+
+.leaflet-popup-content {
+  margin: 6px 8px;
+  line-height: 1.4;
+}
+
+.leaflet-popup-close-button {
+  width: 16px !important;
+  height: 16px !important;
+  font-size: 14px !important;
+  padding: 2px 4px 0 0 !important;
+  color: #fbbf24 !important;
+}
+
+.leaflet-popup-tip {
+  background: #09110e !important;
+}
+
+.leaflet-popup-tip-container {
+  width: 16px;
+  height: 8px;
+}
+
+/* ================================
+   CARDS
+================================ */
+
+[class*="rounded-2xl"],
+[class*="rounded-[22px]"],
+[class*="rounded-[24px]"],
+[class*="rounded-[26px]"],
+[class*="rounded-[28px]"],
+[class*="rounded-[30px]"] {
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+[class*="rounded-2xl"]:hover,
+[class*="rounded-[22px]"]:hover {
+  border-color: rgba(0, 255, 170, 0.22);
+}
+
+/* ================================
+   FADE
+================================ */
+
 .fade-in {
   animation: fadeIn 0.35s ease both;
 }
+
 @keyframes fadeIn {
   from {
     opacity: 0;
     transform: translateY(6px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
+/* ================================
+   SELECTION
+================================ */
+
+::selection {
+  background: rgba(0, 255, 170, 0.25);
+  color: white;
+}
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 640px) {
+  body {
+    background:
+      radial-gradient(
+        circle at 80% 0%,
+        rgba(0, 255, 170, 0.07),
+        transparent 30%
+      ),
+      #030605;
+  }
+
+  .business-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+  }
+}
+
+/* ================================
+   FONT
+================================ */
 
 input,
 textarea,
