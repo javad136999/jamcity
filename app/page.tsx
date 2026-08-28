@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -23,7 +22,6 @@ type Business = {
   name: string;
   category: string;
   icon: string;
-  image_url: string | null;
   lat: number | null;
   lng: number | null;
   subscription_tier: "bronze" | "silver" | "gold" | null;
@@ -41,46 +39,6 @@ type Product = {
   discount_percent: number | null;
 };
 
-/* ============================================================
-   REAL BUSINESS CATEGORY IMAGES
-============================================================ */
-
-const BUSINESS_IMAGES: Record<string, string> = {
-  restaurant:
-    "https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=1000&q=85",
-
-  cafe:
-    "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=85",
-
-  shop:
-    "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=85",
-
-  repair:
-    "https://images.unsplash.com/photo-1486006920555-c77dcf18193c?auto=format&fit=crop&w=1000&q=85",
-
-  technical:
-    "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1000&q=85",
-
-  doctor:
-    "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=1000&q=85",
-
-  pharmacy:
-    "https://images.unsplash.com/photo-1585435557343-3b092031a831?auto=format&fit=crop&w=1000&q=85",
-
-  education:
-    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1000&q=85",
-
-  beauty:
-    "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1000&q=85",
-
-  other:
-    "https://images.unsplash.com/photo-1444723121867-7a241cacace9?auto=format&fit=crop&w=1000&q=85",
-};
-
-function businessImage(b: Business) {
-  return b.image_url || BUSINESS_IMAGES[b.category] || BUSINESS_IMAGES.other;
-}
-
 export default function HomePage() {
   const supabase = createClient();
   const { user, profile } = useAuth();
@@ -94,7 +52,7 @@ export default function HomePage() {
       const { data: businessData } = await supabase
         .from("businesses")
         .select(
-          "id,name,category,icon,image_url,lat,lng,subscription_tier,rating_avg,rating_count"
+          "id,name,category,icon,lat,lng,subscription_tier,rating_avg,rating_count"
         )
         .eq("subscription_status", "approved");
 
@@ -185,9 +143,11 @@ export default function HomePage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-6 pb-10">
+    <div dir="rtl" className="space-y-4 pb-10">
 
-      {/* HERO */}
+      {/* =====================================================
+          HERO
+      ====================================================== */}
 
       <section className="relative overflow-hidden rounded-[30px] border border-white/10 bg-[#050606] text-white shadow-[0_20px_70px_rgba(0,0,0,.22)]">
 
@@ -204,7 +164,10 @@ export default function HomePage() {
               </span>
 
               <div>
-                <p className="text-sm font-black">جم سیتی</p>
+                <p className="text-sm font-black">
+                  جم سیتی
+                </p>
+
                 <p className="text-[8px] text-green-400">
                   شهر دیجیتال جم
                 </p>
@@ -259,7 +222,9 @@ export default function HomePage() {
 
           </div>
 
-          {/* GLASS CHAT */}
+          {/* =================================================
+              GLASS LIVE CHAT
+          ================================================== */}
 
           <Link
             href="/wall"
@@ -377,36 +342,10 @@ export default function HomePage() {
 
       </section>
 
-      {/* QUICK ACTIONS */}
 
-      <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-
-        <QuickCard href="/wall" icon="💬" title="دیوار جم" text="چت و آگهی" />
-
-        <QuickCard
-          href="/businesses"
-          icon="🏪"
-          title="کسب‌وکارها"
-          text="ویترین شهر"
-        />
-
-        <QuickCard
-          href="/map"
-          icon="📍"
-          title="نقشه شهر"
-          text="پیدا کردن مکان‌ها"
-        />
-
-        <QuickCard
-          href="/business/register"
-          icon="🚀"
-          title="ثبت کسب‌وکار"
-          text="کسب‌وکارت رو معرفی کن"
-        />
-
-      </section>
-
-      {/* PRODUCTS */}
+      {/* =====================================================
+          HOT PRODUCTS
+      ====================================================== */}
 
       {products.length > 0 && (
         <section>
@@ -416,11 +355,15 @@ export default function HomePage() {
             <div>
 
               <div className="flex items-center gap-2">
-                <span className="text-xl">🔥</span>
+
+                <span className="text-xl">
+                  🔥
+                </span>
 
                 <h2 className="text-xl font-black text-slate-800">
                   الان توی جم چی هست؟
                 </h2>
+
               </div>
 
               <p className="mt-1 text-[9px] text-slate-400">
@@ -455,11 +398,19 @@ export default function HomePage() {
 
                   <div className="relative h-36 overflow-hidden bg-slate-100">
 
-                    <img
-                      src={product.image_url || businessImage(b)}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                    />
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-950 text-5xl text-white">
+                        <span className="drop-shadow-[0_0_12px_rgba(255,255,255,.25)]">
+                          {b.icon}
+                        </span>
+                      </div>
+                    )}
 
                     {(product.discount_percent ?? 0) > 0 && (
                       <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2.5 py-1 text-[8px] font-black text-white">
@@ -496,7 +447,10 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* MAP */}
+
+      {/* =====================================================
+          MAP
+      ====================================================== */}
 
       <section>
 
@@ -572,7 +526,10 @@ export default function HomePage() {
 
       </section>
 
-      {/* GOLD BUSINESSES */}
+
+      {/* =====================================================
+          GOLD BUSINESSES
+      ====================================================== */}
 
       {goldBusinesses.length > 0 && (
         <section className="relative overflow-hidden rounded-[28px] border border-amber-200 bg-[#100d07] p-4 sm:p-5">
@@ -620,11 +577,19 @@ export default function HomePage() {
 
                   <div className="relative h-32 overflow-hidden bg-slate-100">
 
-                    <img
-                      src={product?.image_url || businessImage(b)}
-                      alt={b.name}
-                      className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                    />
+                    {product?.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={b.name}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-950 text-5xl text-white">
+                        <span>
+                          {b.icon}
+                        </span>
+                      </div>
+                    )}
 
                     <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[8px] font-black text-amber-300">
                       👑 GOLD
@@ -659,7 +624,10 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* DISCOUNTS */}
+
+      {/* =====================================================
+          DISCOUNTS
+      ====================================================== */}
 
       {discounts.length > 0 && (
         <section>
@@ -710,14 +678,22 @@ export default function HomePage() {
 
                   <div className="relative h-32 overflow-hidden bg-slate-100">
 
-                    <img
-                      src={product.image_url || businessImage(b)}
-                      alt={product.name}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                    />
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-slate-950 text-5xl text-white">
+                        <span>
+                          {b.icon}
+                        </span>
+                      </div>
+                    )}
 
                     <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-1 text-[8px] font-black text-white">
-                      {product.discount_percent}%- 
+                      {product.discount_percent}%
                     </span>
 
                   </div>
@@ -757,7 +733,10 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* POPULAR */}
+
+      {/* =====================================================
+          POPULAR
+      ====================================================== */}
 
       {popular.length > 0 && (
         <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm">
@@ -783,11 +762,9 @@ export default function HomePage() {
                 className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-green-200 hover:bg-green-50/30"
               >
 
-                <img
-                  src={businessImage(b)}
-                  alt={b.name}
-                  className="h-12 w-12 shrink-0 rounded-xl object-cover"
-                />
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-xl text-white">
+                  {b.icon}
+                </span>
 
                 <span className="min-w-0 flex-1">
 
@@ -813,7 +790,10 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* BIG CHAT CTA */}
+
+      {/* =====================================================
+          BIG CHAT CTA
+      ====================================================== */}
 
       <section className="relative overflow-hidden rounded-[28px] bg-[#060807] p-6 text-white sm:p-8">
 
@@ -851,7 +831,10 @@ export default function HomePage() {
 
       </section>
 
-      {/* STATS */}
+
+      {/* =====================================================
+          STATS
+      ====================================================== */}
 
       <section className="grid grid-cols-3 overflow-hidden rounded-[24px] border border-slate-200 bg-white">
 
@@ -875,7 +858,10 @@ export default function HomePage() {
 
       </section>
 
-      {/* USER */}
+
+      {/* =====================================================
+          USER
+      ====================================================== */}
 
       <section className="text-center">
 
@@ -902,42 +888,10 @@ export default function HomePage() {
   );
 }
 
+
 /* ============================================================
-   COMPONENTS
+   STAT COMPONENT
 ============================================================ */
-
-function QuickCard({
-  href,
-  icon,
-  title,
-  text,
-}: {
-  href: string;
-  icon: string;
-  title: string;
-  text: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm transition hover:-translate-y-1 hover:border-green-300 hover:shadow-md"
-    >
-
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-xl transition group-hover:bg-green-100">
-        {icon}
-      </span>
-
-      <h3 className="mt-3 text-xs font-black text-slate-800">
-        {title}
-      </h3>
-
-      <p className="mt-1 text-[8px] text-slate-400">
-        {text}
-      </p>
-
-    </Link>
-  );
-}
 
 function Stat({
   icon,
@@ -970,4 +924,3 @@ function Stat({
     </div>
   );
 }
-
