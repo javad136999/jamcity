@@ -294,20 +294,9 @@ export default function WallPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
- const initialScrollDone = useRef(false);
-
-useEffect(() => {
-  if (messages === null || initialScrollDone.current) return;
-
-  initialScrollDone.current = true;
-
-  requestAnimationFrame(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "instant",
-      block: "end",
-    });
-  });
-}, [messages]);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   async function handleSend() {
     if (!user || sending || (!text.trim() && !image)) return;
@@ -406,7 +395,7 @@ useEffect(() => {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in fixed inset-x-0 bottom-0 top-[8.5rem] flex min-h-0 flex-col overflow-hidden">
+    <div className="fade-in flex h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden">
       {memberCount !== null && (
         <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -420,41 +409,13 @@ useEffect(() => {
             وارد شده‌اید با نام کاربری «{profile?.display_name}»
           </p>
         </div>
-        <div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={async () => {
-      const shareData = {
-        title: "دیوار شهر جم",
-        text: "دیوار شهر جم؛ آگهی‌ها و گفتگوهای شهر جم را ببینید 👇",
-        url: window.location.origin + "/wall",
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch {
-          // کاربر پنجره اشتراک‌گذاری را بسته است
-        }
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("لینک دیوار شهر جم کپی شد؛ می‌توانید برای دوستانتان ارسال کنید.");
-      }
-    }}
-    className="flex h-8 items-center gap-1.5 rounded-full bg-orange-50 px-3 text-xs font-bold text-orange-600 sm:h-10"
-  >
-    📤
-    <span>معرفی به دوستان</span>
-  </button>
-
-  <Link
-    href="/chat"
-    className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-base sm:h-10 sm:w-10 sm:text-lg"
-    title="لیست چت‌های من"
-  >
-    ✉️
-  </Link>
-</div>
+        <Link
+          href="/chat"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-base sm:h-10 sm:w-10 sm:text-lg"
+          title="لیست چت‌های من"
+        >
+          ✉️
+        </Link>
       </div>
 
       <div className="mb-2 shrink-0 space-y-1.5">
