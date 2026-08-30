@@ -406,7 +406,7 @@ useEffect(() => {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in fixed inset-x-0 bottom-0 top-[8.5rem] flex min-h-0 flex-col overflow-hidden">
+    <div className="fade-in fixed inset-x-0 top-[8.5rem] bottom-0 flex min-h-0 flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
       {memberCount !== null && (
         <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
