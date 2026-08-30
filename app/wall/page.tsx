@@ -578,7 +578,7 @@ useEffect(() => {
           )}
         </div>
       ) : (
-      <div className="h-[55vh] min-h-0 space-y-3 overflow-y-auto rounded-xl2 glass p-3 shadow-soft">
+      <div className="h-[45vh] min-h-0 space-y-3 overflow-y-auto rounded-xl2 glass p-3 shadow-soft">
         {messages === null ? (
           <Spinner label="در حال بارگذاری پیام‌ها..." />
         ) : messages.length === 0 ? (
