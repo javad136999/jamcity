@@ -421,32 +421,7 @@ useEffect(() => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-  <button
-    type="button"
-    onClick={async () => {
-      const shareData = {
-        title: "دیوار شهر جم",
-        text: "دیوار شهر جم؛ آگهی‌ها و گفتگوهای شهر جم را ببینید 👇",
-        url: window.location.origin + "/wall",
-      };
-
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch {
-          // کاربر پنجره اشتراک‌گذاری را بسته است
-        }
-      } else {
-        await navigator.clipboard.writeText(shareData.url);
-        alert("لینک دیوار شهر جم کپی شد؛ می‌توانید برای دوستانتان ارسال کنید.");
-      }
-    }}
-    className="flex h-8 items-center gap-1.5 rounded-full bg-orange-50 px-3 text-xs font-bold text-orange-600 sm:h-10"
-  >
-    📤
-    <span>معرفی به دوستان</span>
-  </button>
-
+  
   <Link
     href="/chat"
     className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-base sm:h-10 sm:w-10 sm:text-lg"
@@ -478,29 +453,70 @@ useEffect(() => {
             🔍
           </button>
         </form>
-        <div className="flex gap-2">
-          <button
-            onClick={() => startBrowse("خودرو", null)}
-            className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"
-          >
-            🚗 آگهی‌های خودرو
-          </button>
-          <button
-            onClick={() => startBrowse("املاک", null)}
-            className="flex items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700"
-          >
-            🏠 آگهی‌های املاک
-          </button>
-        </div>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+  <button
+    onClick={() => startBrowse("خودرو", null)}
+    className="flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"
+  >
+    🚗 آگهی‌های خودرو
+  </button>
 
-      {browse ? (
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-500">
-              {browseResults.length > 0
-                ? `${browseIndex + 1} از ${browseResults.length} آگهی`
-                : "نتیجه‌ای یافت نشد"}
+<button
+onClick={() => startBrowse("املاک", null)}
+className="flex items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700"
+
+>
+
+```
+🏠 آگهی‌های املاک
+```
+
+  </button>
+
+<button
+type="button"
+onClick={async () => {
+const shareData = {
+title: "دیوار شهر جم",
+text: "دیوار شهر جم؛ آگهی‌ها و گفتگوهای شهر جم را ببینید 👇",
+url: window.location.origin + "/wall",
+};
+
+```
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+    } catch {
+      // کاربر پنجره اشتراک‌گذاری را بسته است
+    }
+  } else {
+    await navigator.clipboard.writeText(shareData.url);
+    alert("لینک دیوار شهر جم کپی شد؛ می‌توانید برای دوستانتان ارسال کنید.");
+  }
+}}
+className="flex items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-600"
+```
+
+>
+
+```
+📤 معرفی به دوستان
+```
+
+  </button>
+</div>
+</div>
+
+{browse ? (
+
+  <div className="min-h-0 flex-1 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
+    <div className="mb-3 flex items-center justify-between">
+      <p className="text-xs font-bold text-slate-500">
+        {browseResults.length > 0
+          ? `${browseIndex + 1} از ${browseResults.length} آگهی`
+          : "نتیجه‌ای یافت نشد"}
+      </p>
+
             </p>
             <button
               onClick={() => setBrowse(null)}
