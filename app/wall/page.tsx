@@ -420,16 +420,6 @@ useEffect(() => {
             وارد شده‌اید با نام کاربری «{profile?.display_name}»
           </p>
         </div>
-        <div className="flex items-center gap-2">
- 
-  <Link
-    href="/chat"
-    className="flex h-8 w-8 items-center justify-center rounded-full bg-black/5 text-base sm:h-10 sm:w-10 sm:text-lg"
-    title="لیست چت‌های من"
-  >
-    ✉️
-  </Link>
-</div>
       </div>
 
       <div className="mb-2 shrink-0 space-y-1.5">
