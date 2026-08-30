@@ -406,22 +406,13 @@ useEffect(() => {
   if (!user) return <WallGate />;
 
   return (
-  <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden pt-[7rem] pb-[env(safe-area-inset-bottom)]">
+  <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden pt-[7.5rem] pb-[env(safe-area-inset-bottom)]">
       {memberCount !== null && (
         <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
           {memberCount.toLocaleString("fa-IR")} عضو در دیوار شهر جم
         </div>
       )}
-      <div className="mb-2 flex shrink-0 items-center justify-between">
-        <div>
-          <h1 className="text-base font-extrabold text-slate-800 sm:text-xl">دیوار شهر جم</h1>
-          <p className="text-[10px] text-slate-400 sm:text-xs">
-            وارد شده‌اید با نام کاربری «{profile?.display_name}»
-          </p>
-        </div>
-      </div>
-
       <div className="mb-2 shrink-0 space-y-1.5">
         <form
           onSubmit={(e) => {
