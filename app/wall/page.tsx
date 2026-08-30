@@ -406,7 +406,7 @@ useEffect(() => {
   if (!user) return <WallGate />;
 
   return (
-   <div className="fade-in fixed inset-x-0 top-[8.5rem] flex h-[calc(100dvh-8.5rem)] min-h-0 flex-col overflow-hidden">
+  <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden pt-[8.5rem]">
       {memberCount !== null && (
         <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -702,7 +702,7 @@ useEffect(() => {
       </div>
       )}
 
-      <div className="mt-2 shrink-0 space-y-1">
+      <div className="mt-2 shrink-0 space-y-1 pb-2">
         {sendError && <ErrorState message={sendError} />}
         <div className="flex items-end gap-2 rounded-xl2 glass p-2 shadow-soft">
           <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-lg">
