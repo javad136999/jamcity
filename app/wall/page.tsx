@@ -406,7 +406,7 @@ useEffect(() => {
   if (!user) return <WallGate />;
 
   return (
-  <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden pt-[6.5rem] pb-[env(safe-area-inset-bottom)]">
+  <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden pt-[7rem] pb-[env(safe-area-inset-bottom)]">
       {memberCount !== null && (
         <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
           <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -578,7 +578,7 @@ useEffect(() => {
           )}
         </div>
       ) : (
-      <div className="h-[45vh] min-h-0 space-y-3 overflow-y-auto rounded-xl2 glass p-3 shadow-soft">
+      <div className="h-[47vh] min-h-0 space-y-3 overflow-y-auto rounded-xl2 glass p-3 shadow-soft">
         {messages === null ? (
           <Spinner label="در حال بارگذاری پیام‌ها..." />
         ) : messages.length === 0 ? (
