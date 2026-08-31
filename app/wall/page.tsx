@@ -801,28 +801,6 @@ function handleReply(message: WallMessage) {
       )}
 
       <div className="mt-2 shrink-0 space-y-1 pb-2">
-        {replyTo && (
-  <div className="flex items-center justify-between rounded-xl2 border border-jam-green/20 bg-emerald-50 px-3 py-2">
-    <div className="min-w-0">
-      <p className="text-[10px] font-bold text-jam-green">
-        ↩️ در پاسخ به {replyTo.profiles?.display_name || "کاربر"}
-      </p>
-
-      <p className="mt-0.5 truncate text-[11px] text-slate-500">
-        {replyTo.content || "📷 تصویر"}
-      </p>
-    </div>
-
-    <button
-      type="button"
-      onClick={() => setReplyTo(null)}
-      className="mr-2 shrink-0 rounded-full bg-black/5 px-2 py-1 text-[10px] font-bold text-slate-500"
-      title="لغو پاسخ"
-    >
-      ✕
-    </button>
-  </div>
-)}
         {sendError && <ErrorState message={sendError} />}
         {replyingTo && (
   <div className="flex items-center justify-between rounded-xl2 border-r-4 border-jam-green bg-white px-3 py-2 shadow-sm">
