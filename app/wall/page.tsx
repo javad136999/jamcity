@@ -16,6 +16,7 @@ type WallMessage = {
   id: string;
   user_id: string;
   content: string | null;
+  reply_to: string | null;
   image_url: string | null;
   is_promo: boolean;
   business_id: string | null;
@@ -143,6 +144,7 @@ export default function WallPage() {
   const router = useRouter();
   const { user, profile, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
+  const [replyingTo, setReplyingTo] = useState<WallMessage | null>(null);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
   const [text, setText] = useState("");
@@ -154,6 +156,7 @@ export default function WallPage() {
   const [browse, setBrowse] = useState<{ query: string; category: "car" | "realestate" | null } | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [browseIndex, setBrowseIndex] = useState(0);
+  const [replyTo, setReplyTo] = useState<WallMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -222,7 +225,13 @@ export default function WallPage() {
       }
 
       setMessages(rows);
+      const replies: Record<string, number> = {};
 
+rows.forEach((r) => {
+  if (r.reply_to) {
+    replies[r.reply_to] = (replies[r.reply_to] ?? 0) + 1;
+  }
+});
       if (rows.length > 0) {
         const { data: likes } = await supabase
           .from("wall_message_likes")
@@ -318,14 +327,20 @@ useEffect(() => {
       if (image) {
         image_url = await uploadSingleFile(image, "wall-images", user.id, image.name.split(".").pop());
       }
-      const { error } = await supabase.from("wall_messages").insert({
-        user_id: user.id,
-        content: text.trim() || null,
-        image_url,
-      });
+      const messageData = {
+  user_id: user.id,
+  content: text.trim() || null,
+  image_url,
+  reply_to: replyingTo?.id ?? null,
+};
+
+const { error } = await supabase
+  .from("wall_messages")
+  .insert(messageData as never);
       if (error) throw error;
-      setText("");
-      setImage(null);
+     setText("");
+setImage(null);
+setReplyingTo(null);
     } catch (e) {
       console.error("wall send error", e);
       const msg =
@@ -388,7 +403,17 @@ useEffect(() => {
     setBrowse({ query: query.trim(), category });
     setBrowseIndex(0);
   }
+function handleReply(message: WallMessage) {
+  setReplyTo(message);
 
+  requestAnimationFrame(() => {
+    const input = document.querySelector(
+      'textarea[placeholder="پیام خود را بنویسید..."]'
+    ) as HTMLTextAreaElement | null;
+
+    input?.focus();
+  });
+}
   const browseResults =
     browse && messages
       ? messages
@@ -569,6 +594,9 @@ useEffect(() => {
         ) : (
           messages.map((m) => {
             const mine = m.user_id === user.id;
+            const replyTo = m.reply_to
+  ? messages?.find((msg) => msg.id === m.reply_to)
+  : null;
             const isAdCard = !!m.image_url && !!m.content;
             const liked = likedByMe.has(m.id);
             const count = likeCounts[m.id] ?? 0;
@@ -580,6 +608,24 @@ useEffect(() => {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
                     <div className="space-y-2 p-3">
+                      {replyTo && (
+  <button
+    type="button"
+    onClick={() => {
+      document
+        .getElementById(`message-${replyTo.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }}
+    className="w-full rounded-lg border-r-4 border-jam-green bg-slate-50 px-3 py-2 text-right"
+  >
+    <p className="text-[10px] font-bold text-jam-green">
+      پاسخ به {replyTo.profiles?.display_name || "کاربر"}
+    </p>
+    <p className="mt-0.5 truncate text-[11px] text-slate-500">
+      {replyTo.content || "📷 تصویر"}
+    </p>
+  </button>
+)}
                       <button
                         onClick={() => openChatWith(m.user_id)}
                         className="flex items-center gap-2 text-[11px] font-bold text-orange-500"
@@ -596,6 +642,14 @@ useEffect(() => {
                         {m.content}
                       </p>
                       <div className="flex items-center justify-between">
+                        <button
+  type="button"
+  onClick={() => handleReply(m)}
+  className="text-[10px] font-bold text-slate-400 transition hover:text-jam-green"
+  title="پاسخ به این پیام"
+>
+  ↩️ پاسخ
+</button>
                         <p className="text-[10px] text-slate-400">{timeAgo(m.created_at)}</p>
                         <div className="flex items-center gap-3">
                           {!mine && (
@@ -636,7 +690,32 @@ useEffect(() => {
                       mine ? "bg-jam-green text-white" : "bg-white text-slate-800"
                     }`}
                   >
-                    {!mine && (
+                    {replyTo && (
+  <button
+    type="button"
+    onClick={() => {
+      document
+        .getElementById(`message-${replyTo.id}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }}
+    className={`mb-2 w-full rounded-lg border-r-4 border-jam-green px-2 py-1.5 text-right ${
+      mine ? "bg-white/10" : "bg-slate-50"
+    }`}
+  >
+    <p className={`text-[10px] font-bold ${
+      mine ? "text-white/80" : "text-jam-green"
+    }`}>
+      پاسخ به {replyTo.profiles?.display_name || "کاربر"}
+    </p>
+    <p className={`mt-0.5 truncate text-[10px] ${
+      mine ? "text-white/60" : "text-slate-400"
+    }`}>
+      {replyTo.content || "📷 تصویر"}
+    </p>
+  </button>
+)}
+
+{!mine && (
                       <button
                         onClick={() => openChatWith(m.user_id)}
                         className="mb-0.5 text-[11px] font-bold text-orange-500"
@@ -659,8 +738,27 @@ useEffect(() => {
                         decoding="async"
                       />
                     )}
+                    <button
+  type="button"
+  onClick={() => setReplyingTo(m)}
+  className={`mt-1 text-[10px] font-bold ${
+    mine ? "text-white/80" : "text-slate-400"
+  }`}
+>
+  ↩️ ریپلای
+</button>
                     {m.content && <p className="whitespace-pre-wrap text-sm">{m.content}</p>}
                     <div className="mt-1 flex items-center justify-between gap-3">
+                      <button
+  type="button"
+  onClick={() => handleReply(m)}
+  className={`text-[10px] font-bold ${
+    mine ? "text-white/70" : "text-slate-400"
+  }`}
+  title="پاسخ به این پیام"
+>
+  ↩️ پاسخ
+</button>
                       <p className="text-[10px] opacity-60">{timeAgo(m.created_at)}</p>
                       <div className="flex items-center gap-3">
                         {!mine && (
@@ -672,6 +770,16 @@ useEffect(() => {
                             🚩
                           </button>
                         )}
+                        <button
+  type="button"
+  onClick={() => setReplyingTo(m)}
+  className={`text-[11px] font-bold ${
+    mine ? "text-white/80" : "text-slate-400"
+  }`}
+  title="پاسخ به این پیام"
+>
+  ↩️
+</button>
                         <button
                           onClick={() => toggleLike(m.id)}
                           className={`flex items-center gap-1 text-[11px] font-bold ${
@@ -693,7 +801,50 @@ useEffect(() => {
       )}
 
       <div className="mt-2 shrink-0 space-y-1 pb-2">
+        {replyTo && (
+  <div className="flex items-center justify-between rounded-xl2 border border-jam-green/20 bg-emerald-50 px-3 py-2">
+    <div className="min-w-0">
+      <p className="text-[10px] font-bold text-jam-green">
+        ↩️ در پاسخ به {replyTo.profiles?.display_name || "کاربر"}
+      </p>
+
+      <p className="mt-0.5 truncate text-[11px] text-slate-500">
+        {replyTo.content || "📷 تصویر"}
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => setReplyTo(null)}
+      className="mr-2 shrink-0 rounded-full bg-black/5 px-2 py-1 text-[10px] font-bold text-slate-500"
+      title="لغو پاسخ"
+    >
+      ✕
+    </button>
+  </div>
+)}
         {sendError && <ErrorState message={sendError} />}
+        {replyingTo && (
+  <div className="flex items-center justify-between rounded-xl2 border-r-4 border-jam-green bg-white px-3 py-2 shadow-sm">
+    <div className="min-w-0">
+      <p className="text-[10px] font-bold text-jam-green">
+        در حال پاسخ به {replyingTo.profiles?.display_name || "کاربر"}
+      </p>
+      <p className="truncate text-[11px] text-slate-400">
+        {replyingTo.content || "📷 تصویر"}
+      </p>
+    </div>
+
+    <button
+      type="button"
+      onClick={() => setReplyingTo(null)}
+      className="mr-2 shrink-0 rounded-full bg-black/5 px-2 py-1 text-xs text-slate-500"
+      title="لغو پاسخ"
+    >
+      ✕
+    </button>
+  </div>
+)}
         <div className="flex items-end gap-2 rounded-xl2 glass p-2 shadow-soft">
           <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-lg">
             📷
