@@ -250,7 +250,7 @@ export default function HomePage() {
 
                 <div className="flex items-center gap-2 sm:gap-4">
 
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-green-300/20 bg-green-400/10 text-xl shadow-[0_0_20px_rgba(34,197,94,.16)] sm:h-[68px] sm:w-[68px] sm:rounded-[24px] sm:text-5xl">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-green-300/20 bg-green-400/10 text-xl shadow-[0_0_20px_rgba(34,197,94,.16)] sm:h-[68px] sm:w-[68px] sm:rounded-[24px] sm:text-5xl">
                     💬
                   </div>
 
@@ -258,7 +258,7 @@ export default function HomePage() {
 
                     <div className="flex items-center justify-between gap-1">
 
-                      <h2 className="truncate text-[8px] font-black text-white sm:text-sm">
+                      <h2 className="truncate text-[11px] font-black text-white sm:text-sm">
                         چت عمومی شهر جم
                       </h2>
 
@@ -269,7 +269,7 @@ export default function HomePage() {
 
                     </div>
 
-                    <p className="mt-0.5 truncate text-[6px] text-slate-500 sm:mt-1 sm:text-[9px]">
+                    <p className="mt-1 truncate text-[9px] text-slate-300 sm:mt-1 sm:text-[9px]">
                       گفتگو با همشهری‌ها
                     </p>
 
