@@ -377,7 +377,28 @@ setReplyingTo(null);
       await supabase.from("wall_message_likes").insert({ message_id: messageId, user_id: user.id });
     }
   }
+async function deleteMessage(messageId: string) {
+  if (!user) return;
 
+  const confirmed = window.confirm("آیا مطمئن هستید می‌خواهید این پیام را حذف کنید؟");
+  if (!confirmed) return;
+
+  const { error } = await supabase
+    .from("wall_messages")
+    .delete()
+    .eq("id", messageId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("delete message error:", error);
+    alert("حذف پیام انجام نشد. دوباره تلاش کنید.");
+    return;
+  }
+
+  setMessages((prev) =>
+    prev ? prev.filter((message) => message.id !== messageId) : prev
+  );
+}
   async function openChatWith(otherId: string) {
     if (!user || otherId === user.id || navigating) return;
     setNavigating(true);
@@ -652,6 +673,16 @@ function handleReply(message: WallMessage) {
 </button>
                         <p className="text-[10px] text-slate-400">{timeAgo(m.created_at)}</p>
                         <div className="flex items-center gap-3">
+                          {mine && (
+  <button
+    type="button"
+    onClick={() => deleteMessage(m.id)}
+    className="text-[10px] opacity-60"
+    title="حذف پیام"
+  >
+    🗑️
+  </button>
+)}
                           {!mine && (
                             <button
                               onClick={() => reportUser(m.user_id, m.content)}
