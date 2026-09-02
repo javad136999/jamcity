@@ -382,33 +382,6 @@ export default function AdminPage() {
   }
 }
 
-    if (!data || data.subscription_status !== "approved") {
-      console.error("APPROVE BUSINESS FAILED:", data);
-      alert("❌ وضعیت کسب‌وکار تغییر نکرد.");
-      return;
-    }
-
-    setBusinesses((prev) =>
-      (prev ?? []).map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              subscription_status: "approved",
-              reviewed_at: data.reviewed_at,
-              expires_at: data.expires_at,
-            }
-          : b
-      )
-    );
-
-    alert("✅ کسب‌وکار با موفقیت تایید شد.");
-  } catch (error) {
-    console.error("APPROVE BUSINESS UNEXPECTED ERROR:", error);
-    alert("❌ خطای غیرمنتظره هنگام تایید کسب‌وکار.");
-  } finally {
-    setBusyId(null);
-  }
-}
 
   async function setStatus(
     id: string,
