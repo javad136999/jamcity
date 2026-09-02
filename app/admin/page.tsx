@@ -401,23 +401,36 @@ export default function AdminPage() {
   }
 
   async function remove(id: string) {
-    if (!confirm("آیا از حذف کامل این کسب و کار مطمئن هستید؟")) {
-      return;
-    }
+  if (!confirm("آیا از حذف کامل این کسب و کار مطمئن هستید؟")) {
+    return;
+  }
 
-    setBusyId(id);
+  setBusyId(id);
 
-    await supabase
+  try {
+    const { error } = await supabase
       .from("businesses")
       .delete()
       .eq("id", id);
+
+    if (error) {
+      console.error("DELETE BUSINESS ERROR:", error);
+      alert("❌ حذف انجام نشد:\n" + error.message);
+      return;
+    }
 
     setBusinesses((prev) =>
       (prev ?? []).filter((b) => b.id !== id)
     );
 
+    alert("✅ کسب‌وکار با موفقیت حذف شد.");
+  } catch (error) {
+    console.error("DELETE BUSINESS UNEXPECTED ERROR:", error);
+    alert("❌ خطای غیرمنتظره هنگام حذف کسب‌وکار.");
+  } finally {
     setBusyId(null);
   }
+}
 
   if (authLoading || !isAdmin) {
     return <Spinner label="در حال بررسی دسترسی..." />;
