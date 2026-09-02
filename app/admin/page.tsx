@@ -419,6 +419,25 @@ export default function AdminPage() {
       return;
     }
 
+    // بررسی می‌کنیم واقعاً حذف شده یا نه
+    const { data, error: checkError } = await supabase
+      .from("businesses")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (checkError) {
+      console.error("DELETE CHECK ERROR:", checkError);
+      alert("⚠️ حذف انجام شد ولی بررسی نتیجه با خطا مواجه شد.");
+      return;
+    }
+
+    if (data) {
+      console.error("DELETE FAILED: row still exists", data);
+      alert("❌ رکورد از دیتابیس حذف نشد.");
+      return;
+    }
+
     setBusinesses((prev) =>
       (prev ?? []).filter((b) => b.id !== id)
     );
@@ -426,7 +445,7 @@ export default function AdminPage() {
     alert("✅ کسب‌وکار با موفقیت حذف شد.");
   } catch (error) {
     console.error("DELETE BUSINESS UNEXPECTED ERROR:", error);
-    alert("❌ خطای غیرمنتظره هنگام حذف کسب‌وکار.");
+    alert("❌ خطای غیرمنتظره هنگام حذف.");
   } finally {
     setBusyId(null);
   }
