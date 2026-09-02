@@ -331,32 +331,20 @@ export default function AdminPage() {
       Date.now() + 30 * 24 * 60 * 60 * 1000
     ).toISOString();
 
-    const { data, error } = await supabase
+    const reviewed_at = new Date().toISOString();
+
+    const { error } = await supabase
       .from("businesses")
       .update({
         subscription_status: "approved",
-        reviewed_at: new Date().toISOString(),
+        reviewed_at,
         expires_at,
       })
-      .eq("id", id)
-      .select("id, name, subscription_status, reviewed_at, expires_at");
+      .eq("id", id);
 
     if (error) {
       console.error("APPROVE BUSINESS ERROR:", error);
       alert("❌ تایید انجام نشد:\n" + error.message);
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      console.error("APPROVE BUSINESS FAILED: no row returned");
-      alert("❌ هیچ رکوردی برای تایید پیدا نشد.");
-      return;
-    }
-
-    const approvedBusiness = data[0];
-
-    if (approvedBusiness.subscription_status !== "approved") {
-      alert("❌ وضعیت کسب‌وکار تغییر نکرد.");
       return;
     }
 
@@ -366,8 +354,8 @@ export default function AdminPage() {
           ? {
               ...b,
               subscription_status: "approved",
-              reviewed_at: approvedBusiness.reviewed_at,
-              expires_at: approvedBusiness.expires_at,
+              reviewed_at,
+              expires_at,
             }
           : b
       )
@@ -381,6 +369,7 @@ export default function AdminPage() {
     setBusyId(null);
   }
 }
+
 
 
   async function setStatus(
