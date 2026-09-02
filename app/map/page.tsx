@@ -73,18 +73,18 @@ export default function MapPage() {
         .eq("status", "active")
         .not("lat", "is", null)
         .not("lng", "is", null);
-
-      const businessMarkers: MapMarker[] = (businesses ?? []).map((b) => ({
+             const businessMarkers: MapMarker[] = (businesses ?? []).map((b) => ({
         id: `b-${b.id}`,
         lat: b.lat as number,
         lng: b.lng as number,
         title: b.name,
         subtitle: businessCategoryLabel(b.category),
         href: `/business/${b.id}`,
-emoji:
-  BUSINESS_CATEGORIES.find((c) => c.slug === b.category)?.icon ||
-  b.icon ||
-  "📍",        tier: b.subscription_tier,
+        emoji:
+          BUSINESS_CATEGORIES.find((c) => c.slug === b.category)?.icon ||
+          b.icon ||
+          "📍",
+        tier: b.subscription_tier,
         rating: b.rating_avg,
       }));
 
@@ -96,8 +96,6 @@ emoji:
         subtitle: categoryLabel(a.category),
         href: `/ad/${a.id}`,
       }));
-
-      setMarkers([...businessMarkers, ...adMarkers]);
 
       const approvedGold = (businesses ?? []).filter(
         (b) =>
