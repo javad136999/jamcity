@@ -324,20 +324,35 @@ export default function AdminPage() {
   }
 
   async function approve(id: string) {
-    setBusyId(id);
+  setBusyId(id);
 
+  try {
     const expires_at = new Date(
       Date.now() + 30 * 24 * 60 * 60 * 1000
     ).toISOString();
 
-    await supabase
+    const { data, error } = await supabase
       .from("businesses")
       .update({
         subscription_status: "approved",
         reviewed_at: new Date().toISOString(),
         expires_at,
       })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id, name, subscription_status, reviewed_at, expires_at")
+      .single();
+
+    if (error) {
+      console.error("APPROVE BUSINESS ERROR:", error);
+      alert("❌ تایید انجام نشد:\n" + error.message);
+      return;
+    }
+
+    if (!data || data.subscription_status !== "approved") {
+      console.error("APPROVE BUSINESS FAILED:", data);
+      alert("❌ وضعیت کسب‌وکار تغییر نکرد.");
+      return;
+    }
 
     setBusinesses((prev) =>
       (prev ?? []).map((b) =>
@@ -345,14 +360,21 @@ export default function AdminPage() {
           ? {
               ...b,
               subscription_status: "approved",
-              expires_at,
+              reviewed_at: data.reviewed_at,
+              expires_at: data.expires_at,
             }
           : b
       )
     );
 
+    alert("✅ کسب‌وکار با موفقیت تایید شد.");
+  } catch (error) {
+    console.error("APPROVE BUSINESS UNEXPECTED ERROR:", error);
+    alert("❌ خطای غیرمنتظره هنگام تایید کسب‌وکار.");
+  } finally {
     setBusyId(null);
   }
+}
 
   async function setStatus(
     id: string,
