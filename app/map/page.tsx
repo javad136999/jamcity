@@ -241,22 +241,19 @@ export default function MapPage() {
                   className="group overflow-hidden rounded-2xl border border-amber-100 bg-white shadow-[0_4px_16px_rgba(0,0,0,0.07)] transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-300 hover:shadow-[0_8px_22px_rgba(245,158,11,0.18)]"
                 >
                   {/* تصویر */}
-                  <div className="relative h-28 overflow-hidden bg-gradient-to-br from-amber-50 to-slate-100">
+                 <div className="relative h-28 overflow-hidden bg-gradient-to-br from-amber-50 to-slate-100">
 
-                    {featuredProduct?.image_url ||
-                    business.image_url ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={
-                          featuredProduct?.image_url ||
-                          business.image_url ||
-                          ""
-                        }
-                        alt={business.name}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                    ) : (
+  {business.image_url ? (
+
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={business.image_url}
+      alt={business.name}
+      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+      loading="lazy"
+    />
+
+  ) : (
                       <div className="flex h-full items-center justify-center text-4xl">
                         {business.icon || "🏪"}
                       </div>
