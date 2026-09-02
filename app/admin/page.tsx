@@ -339,14 +339,48 @@ export default function AdminPage() {
         expires_at,
       })
       .eq("id", id)
-      .select("id, name, subscription_status, reviewed_at, expires_at")
-      .single();
+      .select("id, name, subscription_status, reviewed_at, expires_at");
 
     if (error) {
       console.error("APPROVE BUSINESS ERROR:", error);
       alert("❌ تایید انجام نشد:\n" + error.message);
       return;
     }
+
+    if (!data || data.length === 0) {
+      console.error("APPROVE BUSINESS FAILED: no row returned");
+      alert("❌ هیچ رکوردی برای تایید پیدا نشد.");
+      return;
+    }
+
+    const approvedBusiness = data[0];
+
+    if (approvedBusiness.subscription_status !== "approved") {
+      alert("❌ وضعیت کسب‌وکار تغییر نکرد.");
+      return;
+    }
+
+    setBusinesses((prev) =>
+      (prev ?? []).map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              subscription_status: "approved",
+              reviewed_at: approvedBusiness.reviewed_at,
+              expires_at: approvedBusiness.expires_at,
+            }
+          : b
+      )
+    );
+
+    alert("✅ کسب‌وکار با موفقیت تایید شد.");
+  } catch (error) {
+    console.error("APPROVE BUSINESS UNEXPECTED ERROR:", error);
+    alert("❌ خطای غیرمنتظره هنگام تایید کسب‌وکار.");
+  } finally {
+    setBusyId(null);
+  }
+}
 
     if (!data || data.subscription_status !== "approved") {
       console.error("APPROVE BUSINESS FAILED:", data);
