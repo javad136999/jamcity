@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import {
+  BUSINESS_CATEGORIES,
   businessCategoryLabel,
   categoryLabel,
   formatPrice,
@@ -80,8 +81,10 @@ export default function MapPage() {
         title: b.name,
         subtitle: businessCategoryLabel(b.category),
         href: `/business/${b.id}`,
-        emoji: b.icon || "📍",
-        tier: b.subscription_tier,
+emoji:
+  BUSINESS_CATEGORIES.find((c) => c.slug === b.category)?.icon ||
+  b.icon ||
+  "📍",        tier: b.subscription_tier,
         rating: b.rating_avg,
       }));
 
