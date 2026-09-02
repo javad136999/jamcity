@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
-import { businessCategoryLabel, tierMeta, formatPrice } from "@/lib/constants";
+import {
+  BUSINESS_CATEGORIES,
+  businessCategoryLabel,
+  tierMeta,
+  formatPrice,
+} from "@/lib/constants";
 import { Spinner, EmptyState } from "@/components/Feedback";
 import type { Database } from "@/lib/supabase/types";
 
@@ -46,7 +51,7 @@ export default function AdminPage() {
 
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
-
+const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
   const [visitCounts, setVisitCounts] = useState<{
     today: number;
     month: number;
@@ -399,7 +404,49 @@ export default function AdminPage() {
 
     setBusyId(null);
   }
+async function updateBusinessCategory(
+  id: string,
+  category: string,
+  icon: string
+) {
+  setBusyId(id);
 
+  try {
+    const { error } = await supabase
+      .from("businesses")
+      .update({
+        category,
+        icon,
+      })
+      .eq("id", id);
+
+    if (error) {
+      console.error("UPDATE BUSINESS CATEGORY ERROR:", error);
+      alert("❌ ذخیره انجام نشد:\n" + error.message);
+      return;
+    }
+
+    setBusinesses((prev) =>
+      (prev ?? []).map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              category,
+              icon,
+            }
+          : b
+      )
+    );
+
+    setEditingBusinessId(null);
+    alert("✅ دسته‌بندی و آیکون ذخیره شد.");
+  } catch (error) {
+    console.error("UPDATE BUSINESS CATEGORY UNEXPECTED ERROR:", error);
+    alert("❌ خطای غیرمنتظره هنگام ذخیره.");
+  } finally {
+    setBusyId(null);
+  }
+}
   async function remove(id: string) {
   if (!confirm("آیا از حذف کامل این کسب و کار مطمئن هستید؟")) {
     return;
@@ -823,7 +870,67 @@ export default function AdminPage() {
                         />
                       </a>
                     )}
+<div className="rounded-xl2 border border-slate-200 bg-white/70 p-3 space-y-2">
+  <p className="text-xs font-bold text-slate-600">
+    ویرایش دسته‌بندی و آیکون
+  </p>
 
+  <div className="flex gap-2">
+    <select
+      value={b.category}
+      onChange={(e) => {
+        const selected = BUSINESS_CATEGORIES.find(
+          (c) => c.slug === e.target.value
+        );
+
+        if (!selected) return;
+
+        setBusinesses((prev) =>
+          (prev ?? []).map((item) =>
+            item.id === b.id
+              ? {
+                  ...item,
+                  category: selected.slug,
+                  icon: selected.icon,
+                }
+              : item
+          )
+        );
+      }}
+      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+    >
+      {BUSINESS_CATEGORIES.map((category) => (
+        <option key={category.slug} value={category.slug}>
+          {category.icon} {category.name}
+        </option>
+      ))}
+    </select>
+
+    <button
+      disabled={busyId === b.id}
+      onClick={() => {
+        const selected = BUSINESS_CATEGORIES.find(
+          (c) => c.slug === b.category
+        );
+
+        if (!selected) return;
+
+        updateBusinessCategory(
+          b.id,
+          selected.slug,
+          selected.icon
+        );
+      }}
+      className="rounded-xl bg-jam-navy px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+    >
+      💾 ذخیره
+    </button>
+  </div>
+
+  <div className="text-xs text-slate-400">
+    آیکون: <span className="text-lg">{b.icon}</span>
+  </div>
+</div>
                     <div className="flex flex-wrap gap-2">
                       {(b.subscription_status === "pending" ||
                         b.subscription_status === "suspended") && (

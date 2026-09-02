@@ -16,20 +16,64 @@ export const AD_STATUS = [
   { value: "sold", label: "فروخته شده", color: "bg-white/10 text-white/50" },
   { value: "expired", label: "منقضی", color: "bg-red-500/20 text-red-400" },
 ] as const;
-
 export const BUSINESS_CATEGORIES = [
   { slug: "restaurant", name: "رستوران", icon: "🍽️" },
   { slug: "cafe", name: "کافه", icon: "☕" },
+  { slug: "fastfood", name: "فست‌فود", icon: "🍔" },
+  { slug: "bakery", name: "نانوایی و شیرینی", icon: "🥖" },
+
+  { slug: "supermarket", name: "سوپرمارکت و مواد غذایی", icon: "🛒" },
+  { slug: "fruit_store", name: "میوه و تره‌بار", icon: "🍎" },
+  { slug: "butcher", name: "پروتئینی و قصابی", icon: "🥩" },
+
+  { slug: "clothing", name: "پوشاک", icon: "👕" },
+  { slug: "shoes", name: "کفش و کیف", icon: "👟" },
+  { slug: "cosmetics", name: "لوازم آرایشی و بهداشتی", icon: "💄" },
+  { slug: "jewelry", name: "طلا و جواهر", icon: "💎" },
+  { slug: "watch_glasses", name: "ساعت و عینک", icon: "⌚" },
+
+  { slug: "mobile", name: "موبایل و لوازم جانبی", icon: "📱" },
+  { slug: "computer", name: "کامپیوتر و تجهیزات", icon: "💻" },
+  { slug: "electronics", name: "لوازم الکترونیکی", icon: "🔌" },
+  { slug: "home_appliances", name: "لوازم خانگی", icon: "🏠" },
+  { slug: "furniture", name: "مبلمان و دکوراسیون", icon: "🛋️" },
+
+  { slug: "car_dealer", name: "اتوگالری و خرید و فروش خودرو", icon: "🚗" },
+  { slug: "car_service", name: "خدمات خودرو", icon: "🔧" },
+  { slug: "car_parts", name: "قطعات و لوازم خودرو", icon: "⚙️" },
+  { slug: "car_wash", name: "کارواش", icon: "🚿" },
+  { slug: "tire", name: "لاستیک و آپاراتی", icon: "🛞" },
+
+  { slug: "technical", name: "خدمات فنی", icon: "🧰" },
+  { slug: "construction", name: "ساختمان و مصالح", icon: "🏗️" },
+  { slug: "electrician", name: "برق‌کاری", icon: "💡" },
+  { slug: "plumbing", name: "لوله‌کشی و تاسیسات", icon: "🚰" },
+  { slug: "welding", name: "جوشکاری و آهنگری", icon: "🔩" },
+
+  { slug: "doctor", name: "پزشکان و درمان", icon: "🩺" },
+  { slug: "dentist", name: "دندانپزشکی", icon: "🦷" },
+  { slug: "pharmacy", name: "داروخانه", icon: "💊" },
+  { slug: "laboratory", name: "آزمایشگاه و تشخیص پزشکی", icon: "🧪" },
+
+  { slug: "beauty", name: "آرایشگاه و زیبایی", icon: "💇" },
+  { slug: "fitness", name: "ورزشی و باشگاه", icon: "🏋️" },
+  { slug: "education", name: "آموزش و کلاس", icon: "📚" },
+  { slug: "kindergarten", name: "مهدکودک و پیش‌دبستانی", icon: "🧸" },
+
+  { slug: "real_estate", name: "املاک", icon: "🏠" },
+  { slug: "travel", name: "گردشگری و اقامت", icon: "🏨" },
+  { slug: "printing", name: "چاپ و تبلیغات", icon: "🖨️" },
+  { slug: "photography", name: "عکاسی و فیلم‌برداری", icon: "📷" },
+  { slug: "florist", name: "گل‌فروشی", icon: "🌷" },
+  { slug: "pet", name: "پت‌شاپ و خدمات حیوانات", icon: "🐾" },
+  { slug: "laundry", name: "خشکشویی و شست‌وشو", icon: "👔" },
+  { slug: "delivery", name: "پیک و ارسال", icon: "🛵" },
+  { slug: "services", name: "خدمات عمومی", icon: "🛠️" },
+
   { slug: "shop", name: "فروشگاه", icon: "🛍️" },
   { slug: "repair", name: "تعمیرگاه", icon: "🔧" },
-  { slug: "technical", name: "خدمات فنی", icon: "🧰" },
-  { slug: "doctor", name: "پزشکان", icon: "🩺" },
-  { slug: "pharmacy", name: "داروخانه", icon: "💊" },
-  { slug: "education", name: "آموزش", icon: "📚" },
-  { slug: "beauty", name: "زیبایی", icon: "💇" },
   { slug: "other", name: "سایر", icon: "✨" },
 ] as const;
-
 export const ADMIN_EMAIL = "09174057031@wall.jamcity.local";export const ADMIN_CONTACT_EMAIL = "javad.hosseini199167@gmail.com";
 
 export const AVATAR_PRESETS = {
