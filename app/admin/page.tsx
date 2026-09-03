@@ -67,32 +67,31 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
   const [autoAdBusy, setAutoAdBusy] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
-      router.replace("/");
-    }
-  }, [authLoading, user, isAdmin, router]);
-  // آمار بازدید
-  useEffect(() => {
-    if (!isAdmin || view !== "stats") return;
+  if (!isAdmin || view !== "stats") return;
 
-    async function loadVisits() {
-const { data, error } = await (supabase as any).rpc("get_site_visit_stats");
-console.log("VISIT STATS DATA:", data);
-console.log("VISIT STATS ERROR:", error);
-      if (error) {
-        console.error("VISIT STATS ERROR:", error);
-        return;
-      }
+  async function loadVisits() {
+    const { data, error } = await (supabase as any).rpc(
+      "get_site_visit_stats"
+    );
 
-      setVisitCounts({
-        today: data?.today ?? 0,
-        month: data?.month ?? 0,
-        year: data?.year ?? 0,
-      });
+    if (error) {
+      console.error("VISIT STATS ERROR:", error);
+      return;
     }
 
-    loadVisits();
-  }, [isAdmin, view, supabase]);
+    console.log("VISIT STATS:", data);
+
+    const stats = Array.isArray(data) ? data[0] : data;
+
+    setVisitCounts({
+      today: Number(stats?.today ?? 0),
+      month: Number(stats?.month ?? 0),
+      year: Number(stats?.year ?? 0),
+    });
+  }
+
+  loadVisits();
+}, [isAdmin, view, supabase]);
   // کسب‌وکارها
   useEffect(() => {
     if (!isAdmin) return;
