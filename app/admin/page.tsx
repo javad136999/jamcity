@@ -332,7 +332,12 @@ async function approve(id: string) {
 
   try {
     
-
+const { error } = await (supabase as any).rpc(
+  "admin_approve_business",
+  {
+    p_business_id: id,
+  }
+);
     if (error) {
       console.error("APPROVE BUSINESS ERROR:", error);
       alert("❌ تایید انجام نشد:\n" + error.message);
