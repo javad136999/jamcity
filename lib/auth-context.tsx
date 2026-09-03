@@ -9,7 +9,6 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { ADMIN_EMAIL } from "@/lib/constants";
 
 type Profile = {
   id: string;
