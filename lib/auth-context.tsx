@@ -19,6 +19,7 @@ type Profile = {
   onboarded: boolean;
   is_wall_account: boolean;
   banned: boolean;
+  is_admin: boolean;
   created_at: string;
 };
 
@@ -148,8 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, supabase, loadUnread]);
 
-  const isAdmin = !!user?.email && user.email.toLowerCase() === ADMIN_EMAIL;
-
+const isAdmin = profile?.is_admin === true;
   return (
     <AuthContext.Provider
       value={{ user, profile, loading, unreadCount, isAdmin, refreshProfile }}
