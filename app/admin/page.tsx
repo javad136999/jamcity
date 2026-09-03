@@ -327,31 +327,27 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
 
     setBusyId(null);
   }
-
-  async function approve(id: string) {
+async function approve(id: string) {
   setBusyId(id);
 
   try {
-    const expires_at = new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000
-    ).toISOString();
-
-    const reviewed_at = new Date().toISOString();
-
-    const { error } = await supabase
-      .from("businesses")
-      .update({
-        subscription_status: "approved",
-        reviewed_at,
-        expires_at,
-      })
-      .eq("id", id);
+    const { error } = await (supabase as any).rpc(
+      "admin_approve_business",
+      {
+        p_business_id: id,
+      }
+    );
 
     if (error) {
       console.error("APPROVE BUSINESS ERROR:", error);
       alert("❌ تایید انجام نشد:\n" + error.message);
       return;
     }
+
+    const reviewed_at = new Date().toISOString();
+    const expires_at = new Date(
+      Date.now() + 30 * 24 * 60 * 60 * 1000
+    ).toISOString();
 
     setBusinesses((prev) =>
       (prev ?? []).map((b) =>
@@ -374,7 +370,6 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
     setBusyId(null);
   }
 }
-
 
 
   async function setStatus(
