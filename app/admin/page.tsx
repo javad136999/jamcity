@@ -77,6 +77,8 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
 
     async function loadVisits() {
 const { data, error } = await (supabase as any).rpc("get_site_visit_stats");
+console.log("VISIT STATS DATA:", data);
+console.log("VISIT STATS ERROR:", error);
       if (error) {
         console.error("VISIT STATS ERROR:", error);
         return;
