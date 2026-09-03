@@ -331,6 +331,14 @@ async function approve(id: string) {
   setBusyId(id);
 
   try {
+    const { data: sessionData } = await supabase.auth.getSession();
+
+alert(
+  "USER ID: " +
+    (sessionData.session?.user?.id ?? "NULL") +
+    "\nEMAIL: " +
+    (sessionData.session?.user?.email ?? "NULL")
+);
     const { error } = await (supabase as any).rpc(
       "admin_approve_business",
       {
