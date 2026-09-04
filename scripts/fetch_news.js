@@ -16,34 +16,99 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 */
 
 const FEEDS = [
-  // ---------------------------------------------------------
-  // منابع داخلی
-  // ---------------------------------------------------------
-
   {
     name: "مهر",
     url: "https://www.mehrnews.com/rss",
     section: "economic",
     sourceType: "iran",
   },
-
   {
     name: "ایسنا",
     url: "https://www.isna.ir/rss",
     section: "economic",
     sourceType: "iran",
   },
-
   {
     name: "تسنیم",
     url: "https://www.tasnimnews.com/fa/rss",
     section: "economic",
     sourceType: "iran",
   },
+  {
+    name: "فارس",
+    url: "https://www.farsnews.ir/rss",
+    section: "economic",
+    sourceType: "iran",
+  },
+  {
+    name: "ایلنا",
+    url: "https://www.ilna.ir/rss",
+    section: "economic",
+    sourceType: "iran",
+  },
+  {
+    name: "ایرنا",
+    url: "https://www.irna.ir/rss",
+    section: "economic",
+    sourceType: "iran",
+  },
+  {
+    name: "برنا",
+    url: "https://www.borna.news/rss",
+    section: "economic",
+    sourceType: "iran",
+  },
+  {
+    name: "خبرآنلاین",
+    url: "https://www.khabaronline.ir/rss",
+    section: "economic",
+    sourceType: "iran",
+  },
+  {
+    name: "تابناک",
+    url: "https://www.tabnak.ir/fa/rss",
+    section: "economic",
+    sourceType: "iran",
+  },
 
-  // ---------------------------------------------------------
-  // منابع جهانی
-  // ---------------------------------------------------------
+  /*
+  |--------------------------------------------------------------------------
+  | منابع جنوب
+  |--------------------------------------------------------------------------
+  */
+
+  {
+    name: "اتحاد خبر",
+    url: "https://www.ettehadkhabar.ir/fa/rss",
+    section: "jam",
+    sourceType: "south",
+  },
+
+  {
+    name: "بامداد جنوب",
+    url: "https://bamdadjonoub.ir/feed/",
+    section: "jam",
+    sourceType: "south",
+  },
+
+  /*
+  |--------------------------------------------------------------------------
+  | انرژی
+  |--------------------------------------------------------------------------
+  */
+
+  {
+    name: "شانا",
+    url: "https://www.shana.ir/rss",
+    section: "energy",
+    sourceType: "energy",
+  },
+
+  /*
+  |--------------------------------------------------------------------------
+  | جهان
+  |--------------------------------------------------------------------------
+  */
 
   {
     name: "BBC World",
@@ -66,27 +131,34 @@ const FEEDS = [
 |--------------------------------------------------------------------------
 */
 
-function fetchUrl(url) {
-  return new Promise(function (resolve, reject) {
+function fetchUrl(url, timeout = 20000) {
+  return new Promise((resolve, reject) => {
+    let finished = false;
+
     const request = https.get(
       url,
       {
         headers: {
-          "User-Agent": "JamCityNewsBot/1.0",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 JamCityNewsBot/3.0",
           Accept:
-            "application/rss+xml, application/xml, text/xml, text/html",
+            "application/rss+xml, application/xml, text/xml, text/html, */*",
+          "Accept-Language": "fa-IR,fa;q=0.9,en;q=0.8",
         },
       },
-      function (response) {
+      (response) => {
         let data = "";
 
         response.setEncoding("utf8");
 
-        response.on("data", function (chunk) {
+        response.on("data", (chunk) => {
           data += chunk;
         });
 
-        response.on("end", function () {
+        response.on("end", () => {
+          if (finished) return;
+          finished = true;
+
           if (
             response.statusCode >= 200 &&
             response.statusCode < 400
@@ -95,10 +167,7 @@ function fetchUrl(url) {
           } else {
             reject(
               new Error(
-                "HTTP " +
-                  response.statusCode +
-                  " for " +
-                  url
+                `HTTP ${response.statusCode} for ${url}`
               )
             );
           }
@@ -106,13 +175,58 @@ function fetchUrl(url) {
       }
     );
 
-    request.on("error", reject);
+    request.on("error", (error) => {
+      if (finished) return;
 
-    request.setTimeout(30000, function () {
+      finished = true;
+      reject(error);
+    });
+
+    request.setTimeout(timeout, () => {
+      if (finished) return;
+
+      finished = true;
       request.destroy();
-      reject(new Error("Timeout: " + url));
+
+      reject(
+        new Error(`Timeout: ${url}`)
+      );
     });
   });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Retry
+|--------------------------------------------------------------------------
+*/
+
+async function fetchWithRetry(url, retries = 2) {
+  let lastError;
+
+  for (
+    let attempt = 1;
+    attempt <= retries + 1;
+    attempt++
+  ) {
+    try {
+      return await fetchUrl(url);
+    } catch (error) {
+      lastError = error;
+
+      if (attempt <= retries) {
+        console.log(
+          `Retry ${attempt}/${retries} → ${url}`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1500)
+        );
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 /*
@@ -122,11 +236,9 @@ function fetchUrl(url) {
 */
 
 function stripHtml(text) {
-  if (!text) {
-    return "";
-  }
+  if (!text) return "";
 
-  return text
+  return String(text)
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
     .replace(/<[^>]*>/g, "")
@@ -142,7 +254,29 @@ function stripHtml(text) {
 
 /*
 |--------------------------------------------------------------------------
-| استخراج تگ XML
+| نرمال‌سازی فارسی
+|--------------------------------------------------------------------------
+*/
+
+function normalizePersian(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/ي/g, "ی")
+    .replace(/ى/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/ۀ/g, "ه")
+    .replace(/ة/g, "ه")
+    .replace(/أ/g, "ا")
+    .replace(/إ/g, "ا")
+    .replace(/ؤ/g, "و")
+    .replace(/\u200c/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/*
+|--------------------------------------------------------------------------
+| استخراج XML
 |--------------------------------------------------------------------------
 */
 
@@ -158,36 +292,35 @@ function getTag(item, tag) {
 
   const match = item.match(regex);
 
-  if (!match) {
-    return "";
-  }
+  if (!match) return "";
 
   return stripHtml(match[1]);
 }
 
 /*
 |--------------------------------------------------------------------------
-| استخراج RSS
+| Parse RSS
 |--------------------------------------------------------------------------
 */
 
 function parseRSS(xml) {
   const items = [];
 
+  if (!xml) return items;
+
   const matches = xml.match(
     /<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi
   );
 
-  if (!matches) {
-    return items;
-  }
+  if (!matches) return items;
 
   for (const item of matches) {
     const title = getTag(item, "title");
 
     const description =
       getTag(item, "description") ||
-      getTag(item, "summary");
+      getTag(item, "summary") ||
+      getTag(item, "content");
 
     const link =
       getTag(item, "link") ||
@@ -198,28 +331,27 @@ function parseRSS(xml) {
       getTag(item, "published") ||
       getTag(item, "updated");
 
-    if (!title) {
-      continue;
-    }
+    if (!title) continue;
 
-    let publishedAt;
+    let publishedAt = new Date().toISOString();
 
     if (pubDate) {
       const parsedDate = new Date(pubDate);
 
       if (!isNaN(parsedDate.getTime())) {
-        publishedAt = parsedDate.toISOString();
-      } else {
-        publishedAt = new Date().toISOString();
+        publishedAt =
+          parsedDate.toISOString();
       }
-    } else {
-      publishedAt = new Date().toISOString();
     }
 
     items.push({
-      title: title,
-      summary: description || null,
-      source_url: link || null,
+      title: title.trim(),
+      summary: description
+        ? description.trim()
+        : null,
+      source_url: link
+        ? link.trim()
+        : null,
       published_at: publishedAt,
     });
   }
@@ -229,121 +361,112 @@ function parseRSS(xml) {
 
 /*
 |--------------------------------------------------------------------------
-| کلمات مربوط به اخبار جم و جنوب بوشهر
+| اخبار جم و جنوب
+|--------------------------------------------------------------------------
+|
+| مهم:
+| "جم" به تنهایی وجود ندارد.
+|
+| بنابراین:
+| جمعه
+| جمعیت
+| جامع
+| جمع‌آوری
+|
+| باعث تشخیص شهر جم نمی‌شوند.
 |--------------------------------------------------------------------------
 */
 
 const jamKeywords = [
-  "جم",
+  "شهر جم",
   "شهرستان جم",
+  "جم استان بوشهر",
+  "فرمانداری جم",
+  "فرماندار جم",
+  "شهرداری جم",
+  "شهردار جم",
+  "شورای شهر جم",
+  "شورای اسلامی شهر جم",
+  "بخش مرکزی جم",
+  "بخش ریز جم",
+  "ریز جم",
+  "انارستان جم",
+  "روستاهای جم",
+
   "عسلویه",
-  "عسلوی",
+  "شهر عسلویه",
+  "شهرستان عسلویه",
+  "فرمانداری عسلویه",
+  "فرماندار عسلویه",
+  "شهرداری عسلویه",
+
   "کنگان",
+  "شهر کنگان",
   "شهرستان کنگان",
-  "دیر",
+  "فرمانداری کنگان",
+  "فرماندار کنگان",
+
+  "دیر استان بوشهر",
   "شهرستان دیر",
-  "بوشهر",
-  "استان بوشهر",
-  "پارسیان",
+  "شهر دیر",
+
   "نخل تقی",
   "سیراف",
-  "تمبک",
-  "ریز",
-  "روستای جم",
+
+  "استان بوشهر",
+  "شهر بوشهر",
+  "شهرستان بوشهر",
+
   "پارس جنوبی",
   "منطقه ویژه اقتصادی انرژی پارس",
   "منطقه ویژه پارس",
+  "منطقه ویژه اقتصادی پارس",
+
   "پتروشیمی جم",
-  "پالایشگاه جم",
 ];
 
 /*
 |--------------------------------------------------------------------------
-| کلمات اقتصادی
+| انرژی / پتروشیمی
 |--------------------------------------------------------------------------
 */
 
-const economicKeywords = [
-  "اقتصاد",
-  "اقتصادی",
-  "بورس",
-  "بازار سرمایه",
-  "سهام",
-  "شاخص بورس",
-  "شاخص کل",
-  "فرابورس",
-  "تالار بورس",
-  "عرضه اولیه",
-
-  "دلار",
-  "دلار آزاد",
-  "دلار نیمایی",
-  "ارز",
-  "ارز دیجیتال",
-  "رمزارز",
-  "رمز ارز",
-  "کریپتو",
-  "بیت کوین",
-  "بیت‌کوین",
-  "اتریوم",
-  "تتر",
-  "bnb",
-  "solana",
-  "bitcoin",
-  "ethereum",
-  "crypto",
-  "cryptocurrency",
-
-  "طلا",
-  "طلای ۱۸ عیار",
-  "طلای 24 عیار",
-  "سکه",
-  "سکه امامی",
-  "ربع سکه",
-  "نیم سکه",
-  "اونس طلا",
-
-  "بانک",
-  "بانکی",
-  "بانک مرکزی",
-  "نرخ بهره",
-  "سپرده",
-  "وام",
-
-  "نفت",
-  "بنزین",
-  "گاز",
+const energyKeywords = [
   "پتروشیمی",
-  "صادرات",
-  "واردات",
-
-  "تورم",
-  "مالیات",
-  "سرمایه گذاری",
-  "سرمایه‌گذاری",
-  "نقدینگی",
-  "پول",
-  "قیمت",
-  "بازار",
-
-  "economy",
-  "economic",
-  "market",
-  "stock",
-  "stocks",
-  "finance",
-  "financial",
-  "dollar",
-  "gold",
-  "oil",
-  "crypto",
-  "bitcoin",
-  "ethereum",
+  "پالایشگاه",
+  "پارس جنوبی",
+  "نفت",
+  "گاز",
+  "پالایش گاز",
+  "میدان گازی",
+  "سکوی گازی",
+  "فلر",
+  "فلرینگ",
+  "مشعل",
+  "پتروپالایش",
+  "صنایع نفت",
+  "صنایع گاز",
+  "صنعت پتروشیمی",
+  "وزارت نفت",
+  "شرکت ملی نفت",
+  "شرکت ملی گاز",
+  "اوره",
+  "متانول",
+  "اتیلن",
+  "پلی اتیلن",
+  "پتروشیمی جم",
+  "پتروشیمی پارس",
+  "پتروشیمی پردیس",
+  "پتروشیمی زاگرس",
+  "پتروشیمی آریاساسول",
+  "پتروشیمی مروارید",
+  "پتروشیمی دماوند",
+  "منطقه ویژه پارس",
 ];
 
 /*
 |--------------------------------------------------------------------------
-| کلمات استخدام
+| استخدام
 |--------------------------------------------------------------------------
 */
 
@@ -352,12 +475,18 @@ const jobKeywords = [
   "استخدامی",
   "استخدام نیرو",
   "جذب نیرو",
+  "جذب نیروی",
+  "جذب کارکنان",
   "فرصت شغلی",
   "فرصت‌های شغلی",
+  "فرصت های شغلی",
   "کاریابی",
   "شغل",
   "شغلی",
-  "کارآفرینی",
+  "آزمون استخدامی",
+  "آزمون استخدام",
+  "ثبت نام استخدام",
+  "ثبت‌نام استخدام",
   "استخدام پتروشیمی",
   "استخدام عسلویه",
   "استخدام بوشهر",
@@ -371,7 +500,153 @@ const jobKeywords = [
 
 /*
 |--------------------------------------------------------------------------
-| کلمات خبر جهانی
+| اقتصاد
+|--------------------------------------------------------------------------
+*/
+
+const economicKeywords = [
+  "اقتصاد",
+  "اقتصادی",
+  "بورس",
+  "بازار سرمایه",
+  "سهام",
+  "شاخص بورس",
+  "شاخص کل",
+  "فرابورس",
+  "عرضه اولیه",
+  "دلار",
+  "ارز",
+  "ارز دیجیتال",
+  "رمزارز",
+  "رمز ارز",
+  "بیت کوین",
+  "بیت‌کوین",
+  "اتریوم",
+  "تتر",
+  "طلا",
+  "طلای ۱۸ عیار",
+  "سکه",
+  "سکه امامی",
+  "ربع سکه",
+  "نیم سکه",
+  "اونس طلا",
+  "بانک",
+  "بانکی",
+  "بانک مرکزی",
+  "نرخ بهره",
+  "سپرده",
+  "وام",
+  "صادرات",
+  "واردات",
+  "تورم",
+  "مالیات",
+  "سرمایه گذاری",
+  "سرمایه‌گذاری",
+  "نقدینگی",
+  "بازار",
+  "قیمت",
+  "finance",
+  "financial",
+  "market",
+  "stock",
+  "stocks",
+  "dollar",
+  "gold",
+];
+
+/*
+|--------------------------------------------------------------------------
+| حوادث
+|--------------------------------------------------------------------------
+*/
+
+const accidentKeywords = [
+  "تصادف",
+  "سانحه",
+  "حادثه",
+  "آتش سوزی",
+  "آتش‌سوزی",
+  "انفجار",
+  "واژگونی",
+  "غرق شد",
+  "غرق‌شد",
+  "غرق شدن",
+  "فوت",
+  "کشته",
+  "جان باخت",
+  "جان‌باخت",
+  "مصدوم",
+  "مصدومان",
+  "مسمومیت",
+  "آتش نشانی",
+  "آتش‌نشانی",
+  "اورژانس",
+  "نجات",
+];
+
+/*
+|--------------------------------------------------------------------------
+| ورزش
+|--------------------------------------------------------------------------
+*/
+
+const sportKeywords = [
+  "فوتبال",
+  "ورزش",
+  "ورزشی",
+  "والیبال",
+  "بسکتبال",
+  "تنیس",
+  "فوتسال",
+  "کشتی",
+  "قهرمانی",
+  "لیگ برتر",
+  "جام حذفی",
+  "مسابقات",
+  "تیم ملی",
+  "بازیکن",
+  "مربی",
+  "استقلال",
+  "پرسپولیس",
+  "سپاهان",
+  "ورزشکار",
+];
+
+/*
+|--------------------------------------------------------------------------
+| اجتماعی
+|--------------------------------------------------------------------------
+*/
+
+const socialKeywords = [
+  "اجتماعی",
+  "آموزش و پرورش",
+  "مدرسه",
+  "دانشگاه",
+  "دانشجو",
+  "معلم",
+  "دانش آموز",
+  "دانش‌آموز",
+  "شهرداری",
+  "شورای شهر",
+  "آب و فاضلاب",
+  "برق",
+  "آب",
+  "قطعی برق",
+  "قطعی آب",
+  "راه و شهرسازی",
+  "راهسازی",
+  "جاده",
+  "حمل و نقل",
+  "سلامت",
+  "بیمارستان",
+  "بهداشت",
+  "درمان",
+];
+
+/*
+|--------------------------------------------------------------------------
+| جهان
 |--------------------------------------------------------------------------
 */
 
@@ -381,39 +656,30 @@ const worldKeywords = [
   "ترامپ",
   "کاخ سفید",
   "واشنگتن",
-
   "اسرائیل",
   "غزه",
   "فلسطین",
   "حماس",
   "تل آویو",
-
   "اوکراین",
   "روسیه",
   "مسکو",
   "کی‌یف",
-  "کی‌یف",
-
   "چین",
   "پکن",
   "ژاپن",
   "کره جنوبی",
   "کره شمالی",
   "هند",
-
   "انگلیس",
   "بریتانیا",
   "لندن",
-
   "فرانسه",
   "پاریس",
-
   "آلمان",
   "برلین",
-
   "اروپا",
   "اتحادیه اروپا",
-
   "ترکیه",
   "عراق",
   "سوریه",
@@ -422,22 +688,14 @@ const worldKeywords = [
   "عربستان",
   "امارات",
   "قطر",
-
   "سازمان ملل",
   "ناتو",
-  "اتحادیه اروپا",
-
-  "امریکا",
-  "جهان",
-  "بین‌المللی",
   "بین المللی",
-  "رئیس جمهور آمریکا",
-
+  "بین‌المللی",
   "usa",
   "america",
   "united states",
   "trump",
-  "white house",
   "russia",
   "ukraine",
   "china",
@@ -445,32 +703,116 @@ const worldKeywords = [
   "gaza",
   "palestine",
   "europe",
-  "european",
   "nato",
-  "un",
   "world",
   "international",
 ];
 
 /*
 |--------------------------------------------------------------------------
-| تشخیص دسته خبر
+| تطبیق کلمات
 |--------------------------------------------------------------------------
 */
 
 function containsKeyword(text, keywords) {
+  const normalized =
+    normalizePersian(text);
+
+  return keywords.some((keyword) =>
+    normalized.includes(
+      normalizePersian(keyword)
+    )
+  );
+}
+
+function countMatches(text, keywords) {
+  const normalized =
+    normalizePersian(text);
+
+  let count = 0;
+
   for (const keyword of keywords) {
     if (
-      text.includes(
-        String(keyword).toLowerCase()
+      normalized.includes(
+        normalizePersian(keyword)
       )
     ) {
-      return true;
+      count++;
     }
   }
 
-  return false;
+  return count;
 }
+
+/*
+|--------------------------------------------------------------------------
+| امتیاز جم
+|--------------------------------------------------------------------------
+*/
+
+function getJamScore(title, summary) {
+  const titleText =
+    normalizePersian(title);
+
+  const summaryText =
+    normalizePersian(summary);
+
+  let score = 0;
+
+  for (const keyword of jamKeywords) {
+    const k =
+      normalizePersian(keyword);
+
+    if (titleText.includes(k)) {
+      score += 20;
+    }
+
+    if (summaryText.includes(k)) {
+      score += 6;
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------
+  | عبارت‌های کاملاً اختصاصی شهر جم
+  |--------------------------------------------------------------
+  */
+
+  const verySpecificJam = [
+    "شهر جم",
+    "شهرستان جم",
+    "جم استان بوشهر",
+    "فرمانداری جم",
+    "فرماندار جم",
+    "شهرداری جم",
+    "شهردار جم",
+    "شورای شهر جم",
+    "بخش مرکزی جم",
+    "بخش ریز جم",
+    "انارستان جم",
+  ];
+
+  for (const keyword of verySpecificJam) {
+    const k =
+      normalizePersian(keyword);
+
+    if (titleText.includes(k)) {
+      score += 30;
+    }
+
+    if (summaryText.includes(k)) {
+      score += 10;
+    }
+  }
+
+  return score;
+}
+
+/*
+|--------------------------------------------------------------------------
+| تشخیص دسته
+|--------------------------------------------------------------------------
+*/
 
 function detectSection(
   title,
@@ -478,98 +820,336 @@ function detectSection(
   defaultSection,
   sourceType
 ) {
-  const text =
-    String(title || "") +
-    " " +
-    String(summary || "");
+  const titleText =
+    normalizePersian(title);
 
-  const normalizedText = text.toLowerCase();
+  const summaryText =
+    normalizePersian(summary);
+
+  const fullText =
+    titleText +
+    " " +
+    summaryText;
+
+  const scores = {
+    jam: 0,
+    jobs: 0,
+    energy: 0,
+    economic: 0,
+    accidents: 0,
+    sport: 0,
+    social: 0,
+    world: 0,
+  };
 
   /*
   |--------------------------------------------------------------------------
-  | 1. اخبار جم
+  | جم
   |--------------------------------------------------------------------------
-  |
-  | فقط زمانی که خبر واقعاً به محدوده جم،
-  | عسلویه، کنگان، دیر یا استان بوشهر مربوط باشد.
-  |
   */
+
+  scores.jam =
+    getJamScore(title, summary);
+
+  /*
+  |--------------------------------------------------------------------------
+  | استخدام
+  |--------------------------------------------------------------------------
+  */
+
+  scores.jobs +=
+    countMatches(
+      fullText,
+      jobKeywords
+    ) * 8;
 
   if (
     containsKeyword(
-      normalizedText,
-      jamKeywords
+      titleText,
+      jobKeywords
     )
   ) {
+    scores.jobs += 15;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | انرژی
+  |--------------------------------------------------------------------------
+  */
+
+  scores.energy +=
+    countMatches(
+      fullText,
+      energyKeywords
+    ) * 7;
+
+  if (
+    containsKeyword(
+      titleText,
+      energyKeywords
+    )
+  ) {
+    scores.energy += 15;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | اقتصاد
+  |--------------------------------------------------------------------------
+  */
+
+  scores.economic +=
+    countMatches(
+      fullText,
+      economicKeywords
+    ) * 5;
+
+  if (
+    containsKeyword(
+      titleText,
+      economicKeywords
+    )
+  ) {
+    scores.economic += 10;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | حوادث
+  |--------------------------------------------------------------------------
+  */
+
+  scores.accidents +=
+    countMatches(
+      fullText,
+      accidentKeywords
+    ) * 9;
+
+  if (
+    containsKeyword(
+      titleText,
+      accidentKeywords
+    )
+  ) {
+    scores.accidents += 18;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | ورزش
+  |--------------------------------------------------------------------------
+  */
+
+  scores.sport +=
+    countMatches(
+      fullText,
+      sportKeywords
+    ) * 7;
+
+  if (
+    containsKeyword(
+      titleText,
+      sportKeywords
+    )
+  ) {
+    scores.sport += 15;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | اجتماعی
+  |--------------------------------------------------------------------------
+  */
+
+  scores.social +=
+    countMatches(
+      fullText,
+      socialKeywords
+    ) * 4;
+
+  if (
+    containsKeyword(
+      titleText,
+      socialKeywords
+    )
+  ) {
+    scores.social += 8;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | جهان
+  |--------------------------------------------------------------------------
+  */
+
+  scores.world +=
+    countMatches(
+      fullText,
+      worldKeywords
+    ) * 6;
+
+  if (
+    containsKeyword(
+      titleText,
+      worldKeywords
+    )
+  ) {
+    scores.world += 15;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | منابع جهانی
+  |--------------------------------------------------------------------------
+  */
+
+  if (sourceType === "world") {
+    scores.world += 100;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | منابع انرژی
+  |--------------------------------------------------------------------------
+  */
+
+  if (sourceType === "energy") {
+    scores.energy += 20;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | خیلی مهم:
+  |
+  | منبع جنوبی به تنهایی باعث jam نمی‌شود.
+  |--------------------------------------------------------------------------
+  */
+
+  /*
+  |--------------------------------------------------------------------------
+  | اگر خبر واقعاً درباره جم/جنوب است
+  |--------------------------------------------------------------------------
+  */
+
+  if (scores.jam >= 20) {
+    /*
+    | اگر موضوع مشخصی مثل استخدام، حادثه یا پتروشیمی
+    | دارد، همان دسته تخصصی را حفظ می‌کنیم.
+    |
+    | مثال:
+    | "استخدام نیرو در پتروشیمی عسلویه"
+    |
+    | → jobs
+    */
+
+    const specialtyScores = {
+      jobs: scores.jobs,
+      energy: scores.energy,
+      accidents: scores.accidents,
+      sport: scores.sport,
+      economic: scores.economic,
+      social: scores.social,
+    };
+
+    let bestSpecialty = null;
+    let bestSpecialtyScore = 0;
+
+    for (
+      const [section, score]
+      of Object.entries(
+        specialtyScores
+      )
+    ) {
+      if (
+        score > bestSpecialtyScore
+      ) {
+        bestSpecialtyScore = score;
+        bestSpecialty = section;
+      }
+    }
+
+    /*
+    | اگر موضوع تخصصی بسیار قوی بود
+    | همان دسته انتخاب شود.
+    */
+
+    if (
+      bestSpecialty &&
+      bestSpecialtyScore >= 15
+    ) {
+      return bestSpecialty;
+    }
+
     return "jam";
   }
 
   /*
   |--------------------------------------------------------------------------
-  | 2. فرصت های شغلی
+  | خبر جهانی
   |--------------------------------------------------------------------------
   */
 
   if (
-    containsKeyword(
-      normalizedText,
-      jobKeywords
-    )
-  ) {
-    return "jobs";
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | 3. اخبار اقتصادی
-  |--------------------------------------------------------------------------
-  */
-
-  if (
-    containsKeyword(
-      normalizedText,
-      economicKeywords
-    )
-  ) {
-    return "economic";
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | 4. اخبار جهانی
-  |--------------------------------------------------------------------------
-  |
-  | اگر منبع جهانی باشد، خبر در world قرار می‌گیرد.
-  |
-  | اگر منبع داخلی باشد، فقط در صورتی world می‌شود
-  | که خود متن خبر نشانه واضحی از موضوع جهانی داشته باشد.
-  |
-  */
-
-  if (sourceType === "world") {
-    return "world";
-  }
-
-  if (
-    containsKeyword(
-      normalizedText,
-      worldKeywords
-    )
+    scores.world >= 20 &&
+    scores.world >=
+      scores.economic
   ) {
     return "world";
   }
 
   /*
   |--------------------------------------------------------------------------
-  | 5. پیش فرض
+  | بیشترین امتیاز
   |--------------------------------------------------------------------------
   */
 
+  let bestSection =
+    defaultSection;
+
+  let bestScore = 0;
+
+  for (
+    const [section, score]
+    of Object.entries(scores)
+  ) {
+    if (score > bestScore) {
+      bestScore = score;
+      bestSection = section;
+    }
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | حداقل امتیاز
+  |--------------------------------------------------------------------------
+  */
+
+  if (bestScore >= 8) {
+    return bestSection;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | پیش‌فرض
+  |--------------------------------------------------------------------------
+  */
+
+  const validSections = [
+    "jam",
+    "economic",
+    "jobs",
+    "world",
+    "energy",
+    "accidents",
+    "sport",
+    "social",
+  ];
+
   if (
-    defaultSection === "economic" ||
-    defaultSection === "world" ||
-    defaultSection === "jam" ||
-    defaultSection === "jobs"
+    validSections.includes(
+      defaultSection
+    )
   ) {
     return defaultSection;
   }
@@ -579,7 +1159,7 @@ function detectSection(
 
 /*
 |--------------------------------------------------------------------------
-| بررسی خبر تکراری
+| بررسی تکراری
 |--------------------------------------------------------------------------
 */
 
@@ -590,53 +1170,45 @@ async function newsExists(
   let url;
 
   if (sourceUrl) {
-    const encodedUrl =
-      encodeURIComponent(sourceUrl);
-
     url =
       SUPABASE_URL +
       "/rest/v1/jamcity_content" +
       "?select=id" +
       "&source_url=eq." +
-      encodedUrl +
+      encodeURIComponent(
+        sourceUrl
+      ) +
       "&limit=1";
   } else {
-    const encodedTitle =
-      encodeURIComponent(title);
-
     url =
       SUPABASE_URL +
       "/rest/v1/jamcity_content" +
       "?select=id" +
       "&title=eq." +
-      encodedTitle +
+      encodeURIComponent(
+        title
+      ) +
       "&limit=1";
   }
 
-  const response = await fetch(
-    url,
-    {
+  const response =
+    await fetch(url, {
       method: "GET",
       headers: {
         apikey:
           SUPABASE_SERVICE_ROLE_KEY,
-
         Authorization:
           "Bearer " +
           SUPABASE_SERVICE_ROLE_KEY,
       },
-    }
-  );
+    });
 
   if (!response.ok) {
-    const errorText =
-      await response.text();
-
     throw new Error(
       "Supabase duplicate check failed: " +
         response.status +
         " " +
-        errorText
+        (await response.text())
     );
   }
 
@@ -682,35 +1254,25 @@ async function saveNews(
       feed.sourceType
     );
 
+  const jamScore =
+    getJamScore(
+      item.title,
+      item.summary
+    );
+
   const record = {
-    section: section,
-
+    section,
     title: item.title,
-
-    summary:
-      item.summary,
-
-    content:
-      item.summary,
-
-    source_name:
-      feed.name,
-
-    source_url:
-      item.source_url,
-
+    summary: item.summary,
+    content: item.summary,
+    source_name: feed.name,
+    source_url: item.source_url,
     image_url: null,
-
     symbol: null,
-
     sentiment: null,
-
     target_price: null,
-
     is_automatic: true,
-
     is_published: true,
-
     published_at:
       item.published_at,
   };
@@ -721,36 +1283,28 @@ async function saveNews(
         "/rest/v1/jamcity_content",
       {
         method: "POST",
-
         headers: {
           apikey:
             SUPABASE_SERVICE_ROLE_KEY,
-
           Authorization:
             "Bearer " +
             SUPABASE_SERVICE_ROLE_KEY,
-
           "Content-Type":
             "application/json",
-
           Prefer:
             "return=minimal",
         },
-
         body:
           JSON.stringify(record),
       }
     );
 
   if (!response.ok) {
-    const errorText =
-      await response.text();
-
     console.error(
       'Supabase insert error for "' +
         item.title +
         '":',
-      errorText
+      await response.text()
     );
 
     return false;
@@ -761,7 +1315,9 @@ async function saveNews(
       section +
       "] " +
       feed.name +
-      ": " +
+      " | JAM:" +
+      jamScore +
+      " | " +
       item.title
   );
 
@@ -776,22 +1332,42 @@ async function saveNews(
 
 async function main() {
   console.log("");
+
   console.log(
     "========================================"
   );
+
   console.log(
     "       JAM CITY AUTOMATIC NEWS"
   );
+
   console.log(
     "========================================"
   );
+
+  console.log("");
+
+  console.log(
+    "JAM detection: city-specific"
+  );
+
+  console.log(
+    "Standalone 'جم' keyword: DISABLED"
+  );
+
+  console.log(
+    "South source does NOT automatically mean JAM"
+  );
+
   console.log("");
 
   let total = 0;
   let added = 0;
+  let failedSources = 0;
 
   for (const feed of FEEDS) {
     console.log("");
+
     console.log(
       "SOURCE: " +
         feed.name
@@ -804,7 +1380,10 @@ async function main() {
 
     try {
       const xml =
-        await fetchUrl(feed.url);
+        await fetchWithRetry(
+          feed.url,
+          2
+        );
 
       const items =
         parseRSS(xml);
@@ -846,10 +1425,13 @@ async function main() {
         }
       }
     } catch (error) {
+      failedSources++;
+
       console.error(
         "SOURCE FAILED: " +
-          feed.name,
-        error.message
+          feed.name +
+          " → " +
+          error.message
       );
     }
   }
@@ -871,13 +1453,18 @@ async function main() {
   );
 
   console.log(
+    "FAILED SOURCES: " +
+      failedSources
+  );
+
+  console.log(
     "========================================"
   );
 
   console.log("");
 }
 
-main().catch(function (error) {
+main().catch((error) => {
   console.error(
     "FATAL ERROR:",
     error
