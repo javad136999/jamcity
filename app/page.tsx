@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -145,6 +144,65 @@ export default function HomePage() {
 
   return (
     <div dir="rtl" className="space-y-4 pb-10">
+
+      {/* =====================================================
+          JAM CITY NEWS BAR (NEON) — بالای صفحه
+      ====================================================== */}
+
+      <section className="relative mx-auto mt-2 max-w-md overflow-hidden rounded-full border border-[#39ff8f]/50 bg-[#03110a] px-3 py-1.5 shadow-[0_0_20px_rgba(57,255,143,.35),inset_0_0_15px_rgba(57,255,143,.08)]">
+
+        {/* Neon glow */}
+        <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
+        <div className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
+
+        <div className="relative flex items-center gap-2">
+
+          {/* عنوان */}
+          <Link
+            href="/news"
+            className="flex shrink-0 items-center gap-1.5"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[#39ff8f]/50 bg-[#39ff8f]/10 text-[10px] shadow-[0_0_10px_rgba(57,255,143,.5)]">
+              📰
+            </span>
+
+            <p className="hidden text-[9px] font-black text-[#39ff8f] drop-shadow-[0_0_6px_rgba(57,255,143,.7)] sm:block">
+              اخبار روز
+            </p>
+          </Link>
+
+          {/* خط جداکننده */}
+          <div className="h-4 w-px shrink-0 bg-[#39ff8f]/30" />
+
+          {/* خبرها */}
+          <div className="min-w-0 flex-1 overflow-hidden">
+
+            <div className="flex items-center gap-2">
+
+              <span className="flex shrink-0 items-center gap-1 rounded-full border border-[#39ff8f]/40 bg-[#39ff8f]/10 px-1.5 py-0.5 text-[6px] font-black text-[#39ff8f]">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-[#39ff8f] shadow-[0_0_8px_rgba(57,255,143,1)]" />
+                LIVE
+              </span>
+
+              <p className="truncate text-[8px] font-bold text-[#c8ffe0]">
+                آخرین اخبار ایران، اقتصاد، جم و عسلویه
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* مشاهده همه */}
+          <Link
+            href="/news"
+            className="shrink-0 rounded-full border border-[#39ff8f]/40 bg-[#39ff8f]/10 px-2 py-1 text-[6px] font-black text-[#39ff8f] transition hover:bg-[#39ff8f]/20"
+          >
+            همه ←
+          </Link>
+
+        </div>
+
+      </section>
 
       {/* =====================================================
           HERO
@@ -356,70 +414,6 @@ export default function HomePage() {
         </div>
 
       </section>
-{/* =====================================================
-    JAM CITY NEWS BAR
-===================================================== */}
-
-<section className="relative overflow-hidden rounded-[18px] border border-green-400/30 bg-[#050805] px-3 py-2.5 shadow-[0_0_25px_rgba(34,197,94,.10)]">
-
-  {/* Neon glow */}
-  <div className="pointer-events-none absolute -right-16 -top-16 h-32 w-32 rounded-full bg-green-500/10 blur-3xl" />
-  <div className="pointer-events-none absolute -left-16 -bottom-16 h-32 w-32 rounded-full bg-green-400/10 blur-3xl" />
-
-  <div className="relative flex items-center gap-3">
-
-    {/* عنوان */}
-    <Link
-      href="/news"
-      className="flex shrink-0 items-center gap-2"
-    >
-      <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-green-400/30 bg-green-400/10 text-sm shadow-[0_0_15px_rgba(34,197,94,.20)]">
-        📰
-      </span>
-
-      <div className="hidden sm:block">
-        <p className="text-[8px] font-black text-green-400">
-          JAM CITY NEWS
-        </p>
-
-        <p className="text-[10px] font-black text-white">
-          اخبار روز
-        </p>
-      </div>
-    </Link>
-
-    {/* خط جداکننده */}
-    <div className="h-7 w-px shrink-0 bg-green-400/20" />
-
-    {/* خبرها */}
-    <div className="min-w-0 flex-1 overflow-hidden">
-
-      <div className="flex items-center gap-3">
-
-        <span className="flex shrink-0 items-center gap-1 rounded-full border border-green-400/20 bg-green-400/10 px-2 py-1 text-[7px] font-black text-green-400">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_rgba(34,197,94,.9)]" />
-          LIVE
-        </span>
-
-        <p className="truncate text-[9px] font-bold text-slate-200 sm:text-[10px]">
-          آخرین اخبار ایران، اقتصاد، جم و عسلویه
-        </p>
-
-      </div>
-
-    </div>
-
-    {/* مشاهده همه */}
-    <Link
-      href="/news"
-      className="shrink-0 rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-1.5 text-[7px] font-black text-green-400 transition hover:bg-green-400/20 sm:text-[8px]"
-    >
-      همه اخبار ←
-    </Link>
-
-  </div>
-
-</section>
 
       {/* =====================================================
           HOT PRODUCTS
@@ -531,48 +525,49 @@ export default function HomePage() {
       ====================================================== */}
 
       <section>
-{/* =====================================================
-    NEWS CATEGORIES
-===================================================== */}
 
-<section className="mb-4 rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
-  <div className="grid grid-cols-4 gap-2">
+        {/* =====================================================
+            NEWS CATEGORIES
+        ===================================================== */}
 
-    <Link
-      href="/news/economic"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-green-50 px-2 text-center text-[13px] font-black text-green-700 transition hover:bg-green-100"
-    >
-      📰
-      <span className="mr-1">اخبار اقتصادی</span>
-    </Link>
+        <section className="mb-4 rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="grid grid-cols-4 gap-2">
 
-    <Link
-      href="/news/world"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-blue-50 px-2 text-center text-[13px] font-black text-blue-700 transition hover:bg-blue-100"
-    >
-      🌍
-      <span className="mr-1">اخبار جهانی</span>
-    </Link>
+            <Link
+              href="/news/economic"
+              className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-green-50 px-2 text-center text-[13px] font-black text-green-700 transition hover:bg-green-100"
+            >
+              📰
+              <span className="mr-1">اخبار اقتصادی</span>
+            </Link>
 
-    <Link
-      href="/news/jam"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-amber-50 px-2 text-center text-[13px] font-black text-amber-700 transition hover:bg-amber-100"
-    >
-      📍
-      <span className="mr-1">اخبار جم</span>
-    </Link>
+            <Link
+              href="/news/world"
+              className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-blue-50 px-2 text-center text-[13px] font-black text-blue-700 transition hover:bg-blue-100"
+            >
+              🌍
+              <span className="mr-1">اخبار جهانی</span>
+            </Link>
 
-    <Link
-      href="/jobs"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-purple-50 px-2 text-center text-[13px] font-black text-purple-700 transition hover:bg-purple-100"
-    >
-      💼
-      <span className="mr-1">فرصت‌های شغلی</span>
-    </Link>
+            <Link
+              href="/news/jam"
+              className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-amber-50 px-2 text-center text-[13px] font-black text-amber-700 transition hover:bg-amber-100"
+            >
+              📍
+              <span className="mr-1">اخبار جم</span>
+            </Link>
 
-  </div>
+            <Link
+              href="/jobs"
+              className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-purple-50 px-2 text-center text-[13px] font-black text-purple-700 transition hover:bg-purple-100"
+            >
+              💼
+              <span className="mr-1">فرصت‌های شغلی</span>
+            </Link>
 
-</section>
+          </div>
+
+        </section>
 
         {categories.length > 0 && (
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -1017,4 +1012,3 @@ function Stat({
     </div>
   );
 }
-
