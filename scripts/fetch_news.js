@@ -24,73 +24,41 @@ const VALID_SECTIONS = ["jam", "jobs", "economic", "world"];
 
 /*
 |--------------------------------------------------------------------------
-| منابع خبری
-| نکته: فید Reuters (feeds.reuters.com) سال‌هاست RSS عمومی‌اش را جمع کرده،
-| احتمالاً همیشه با خطا مواجه می‌شود. یا حذفش کنید یا با یک آدرس معتبر
-| جایگزین‌اش کنید.
+| منابع خبری - فقط همین ۴ منبع، هرکدوم مخصوص یک دسته
+|--------------------------------------------------------------------------
+| نکته: هر ۴ آدرس همون‌هایی هستن که خودت دادی. برای jonoubostan.ir حدس زدم
+| که چون وردپرسه، /feed/ کار کنه (وردپرس تقریباً همیشه این مسیر رو داره).
+| برای بقیه، اگه صفحه واقعا RSS نباشه، پارسر خودش می‌افته روی حالت
+| HTML-scraping (پایین‌تر توضیح داده شده). بعد از اولین اجرا (workflow_dispatch)
+| لاگ رو چک کن: اگه یه منبع "Found 0 items" داد یا "SOURCE FAILED" داد،
+| بگو تا دقیق‌ترش کنیم.
 |--------------------------------------------------------------------------
 */
 
 const FEEDS = [
   {
-    name: "مهر",
-    url: "https://www.mehrnews.com/rss",
-    section: "economic",
-    sourceType: "iran",
-  },
-  {
-    name: "ایسنا",
-    url: "https://www.isna.ir/rss",
-    section: "economic",
-    sourceType: "iran",
-  },
-  {
-    name: "تسنیم",
-    url: "https://www.tasnimnews.com/fa/rss",
-    section: "economic",
-    sourceType: "iran",
-  },
-  {
-    name: "ایرنا",
-    url: "https://www.irna.ir/rss",
-    section: "economic",
-    sourceType: "iran",
-  },
-  {
-    name: "خبرآنلاین",
-    url: "https://www.khabaronline.ir/rss",
-    section: "economic",
-    sourceType: "iran",
-  },
-  {
-    name: "شانا",
-    url: "https://www.shana.ir/rss",
-    section: "economic",
-    sourceType: "iran",
-  },
-  {
-    name: "اتحاد خبر",
-    url: "https://www.ettehadkhabar.ir/fa/rss",
+    name: "جنوب استان (jonoubostan)",
+    url: "https://jonoubostan.ir/feed/",
     section: "jam",
-    sourceType: "south",
+    fetchLimit: 30, // چون فیلتر جم سخت‌گیرانه‌ست، تعداد بیشتری کاندید لازم داریم
   },
   {
-    name: "بامداد جنوب",
-    url: "https://bamdadjonoub.ir/feed/",
-    section: "jam",
-    sourceType: "south",
+    name: "پارسیک - اقتصادی",
+    url: "https://www.parseek.com/Economic/",
+    section: "economic",
+    fetchLimit: 15,
   },
   {
-    name: "BBC World",
-    url: "https://feeds.bbci.co.uk/news/world/rss.xml",
+    name: "شهرخبر - جهان",
+    url: "https://www.shahrekhabar.com/اخبار-جهان",
     section: "world",
-    sourceType: "world",
+    fetchLimit: 15,
   },
   {
-    name: "Reuters World",
-    url: "https://feeds.reuters.com/reuters/worldNews", // ⚠️ احتمالاً از کار افتاده - جایگزین کنید
-    section: "world",
-    sourceType: "world",
+    name: "بازارکار",
+    url: "https://bazarekar.ir/",
+    section: "jobs",
+    fetchLimit: 15,
   },
 ];
 
@@ -168,10 +136,9 @@ function fetchUrl(url, retries = 2) {
 |--------------------------------------------------------------------------
 | پاکسازی HTML
 |--------------------------------------------------------------------------
-| FIX: قبل از حذف تگ‌ها، بلاک‌های CDATA باز می‌شوند (فقط محتوای داخلشان
-| نگه داشته می‌شود). قبلاً regex عمومی <[^>]*> کل بلاک
-| <![CDATA[متن واقعی خبر]]> را - چون تا اولین ">" را می‌بلعد - با متن خبر
-| یکجا پاک می‌کرد و عنوان/خلاصه خالی می‌شد.
+| بلاک‌های CDATA قبل از حذف تگ‌ها باز می‌شوند، وگرنه regex عمومی حذف تگ
+| کل بلاک <![CDATA[متن خبر]]> را - چون تا اولین ">" را می‌بلعد - با متن
+| خبر یکجا پاک می‌کند و عنوان/خلاصه خالی می‌شود.
 |--------------------------------------------------------------------------
 */
 
@@ -270,6 +237,108 @@ function parseRSS(xml) {
 
 /*
 |--------------------------------------------------------------------------
+| تشخیص XML بودن محتوا
+|--------------------------------------------------------------------------
+*/
+
+function looksLikeXML(raw) {
+  const head = raw.slice(0, 500);
+
+  return /<\?xml|<rss[\s>]|<feed[\s>]/i.test(head);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Fallback: استخراج خبر از صفحه HTML ساده (وقتی RSS نیست)
+|--------------------------------------------------------------------------
+| این تابع لینک‌های داخل صفحه رو پیدا می‌کند و آن‌هایی را که متن‌شان به
+| اندازه‌ی یک تیتر خبر است (نه یک آیتم منو کوتاه) نگه می‌دارد. برای
+| صفحاتی مثل پارسیک/بازارکار/شهرخبر که خودشان RSS ندارند استفاده می‌شود.
+|--------------------------------------------------------------------------
+*/
+
+function parseHTMLLinks(html, feed) {
+  const items = [];
+  const seen = new Set();
+
+  const anchorRegex = /<a\b[^>]*href\s*=\s*["']([^"'#][^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
+  let match;
+  let baseOrigin = null;
+
+  try {
+    baseOrigin = new URL(feed.url).origin;
+  } catch (error) {
+    baseOrigin = null;
+  }
+
+  while ((match = anchorRegex.exec(html)) !== null) {
+    const rawHref = match[1];
+    const text = stripHtml(match[2]);
+
+    if (!text || text.length < 15 || text.length > 220) {
+      continue;
+    }
+
+    if (/^(javascript:|mailto:|tel:)/i.test(rawHref)) {
+      continue;
+    }
+
+    if (/\/(tag|category|author|login|register|about|contact|rss|feed)s?(\/|$|\?)/i.test(rawHref)) {
+      continue;
+    }
+
+    let absoluteUrl = rawHref;
+
+    if (absoluteUrl.startsWith("//")) {
+      absoluteUrl = "https:" + absoluteUrl;
+    } else if (absoluteUrl.startsWith("/")) {
+      if (!baseOrigin) {
+        continue;
+      }
+
+      absoluteUrl = baseOrigin + absoluteUrl;
+    } else if (!/^https?:\/\//i.test(absoluteUrl)) {
+      continue;
+    }
+
+    if (seen.has(absoluteUrl)) {
+      continue;
+    }
+
+    seen.add(absoluteUrl);
+
+    items.push({
+      title: text,
+      summary: null,
+      source_url: absoluteUrl,
+      published_at: new Date().toISOString(),
+    });
+  }
+
+  return items;
+}
+
+/*
+|--------------------------------------------------------------------------
+| انتخاب پارسر مناسب (RSS یا HTML)
+|--------------------------------------------------------------------------
+*/
+
+function parseFeed(raw, feed) {
+  if (looksLikeXML(raw)) {
+    const rssItems = parseRSS(raw);
+
+    if (rssItems.length > 0) {
+      return { items: rssItems, mode: "rss" };
+    }
+  }
+
+  return { items: parseHTMLLinks(raw, feed), mode: "html" };
+}
+
+/*
+|--------------------------------------------------------------------------
 | نرمال‌سازی فارسی
 |--------------------------------------------------------------------------
 */
@@ -315,7 +384,7 @@ function containsKeyword(text, keywords) {
 
 /*
 |--------------------------------------------------------------------------
-| 🚫 اخبار کاملاً ممنوع (امام جمعه)
+| 🚫 اخبار کاملاً ممنوع (امام جمعه) - روی هر ۴ منبع اعمال می‌شود
 |--------------------------------------------------------------------------
 */
 
@@ -351,12 +420,6 @@ const BLOCKED_RELIGIOUS_NEWS = [
   "مصلای نمازجمعه",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| تشخیص خبر ممنوع
-|--------------------------------------------------------------------------
-*/
-
 function isBlockedNews(title, summary) {
   const text = normalizeText(String(title || "") + " " + String(summary || ""));
 
@@ -365,210 +428,7 @@ function isBlockedNews(title, summary) {
 
 /*
 |--------------------------------------------------------------------------
-| JOB Keywords
-|--------------------------------------------------------------------------
-*/
-
-const jobKeywords = [
-  "استخدام",
-  "استخدامی",
-  "استخدام نیرو",
-  "جذب نیرو",
-  "جذب نیروی انسانی",
-  "فرصت شغلی",
-  "فرصت‌های شغلی",
-  "فرصت های شغلی",
-  "کاریابی",
-  "آگهی استخدام",
-  "شغل",
-  "شغلی",
-  "کارآفرینی",
-  "آزمون استخدامی",
-  "آزمون استخدام",
-  "ثبت نام استخدام",
-  "ثبت‌نام استخدام",
-  "استخدام پتروشیمی",
-  "استخدام عسلویه",
-  "استخدام بوشهر",
-  "استخدام جم",
-  "job",
-  "jobs",
-  "career",
-  "vacancy",
-  "recruitment",
-];
-
-/*
-|--------------------------------------------------------------------------
-| ECONOMIC Keywords
-|--------------------------------------------------------------------------
-*/
-
-const economicStrongKeywords = [
-  "بورس",
-  "بازار سرمایه",
-  "شاخص بورس",
-  "شاخص کل بورس",
-  "فرابورس",
-  "عرضه اولیه",
-  "معاملات بورس",
-  "سهام",
-  "سهامداران",
-  "سهام عدالت",
-  "دلار",
-  "دلار آزاد",
-  "دلار نیمایی",
-  "نرخ ارز",
-  "ارز دیجیتال",
-  "رمزارز",
-  "رمز ارز",
-  "بیت کوین",
-  "بیت‌کوین",
-  "بیتکوین",
-  "اتریوم",
-  "تتر",
-  "کریپتو",
-  "کریپتوکارنسی",
-  "دوج کوین",
-  "سولانا",
-  "ریپل",
-  "یورو",
-  "پوند",
-  "لیر",
-  "درهم",
-  "قیمت طلا",
-  "طلای ۱۸ عیار",
-  "طلای 24 عیار",
-  "طلای ۲۴ عیار",
-  "سکه امامی",
-  "قیمت سکه",
-  "نیم سکه",
-  "ربع سکه",
-  "سکه بهار آزادی",
-  "اونس طلا",
-  "انس طلا",
-  "بانک مرکزی",
-  "نرخ بهره",
-  "نرخ سود",
-  "سپرده بانکی",
-  "وام بانکی",
-  "تسهیلات بانکی",
-  "نقدینگی",
-  "تورم",
-  "مالیات",
-  "سرمایه گذاری",
-  "سرمایه‌گذاری",
-  "سرمایه‌گذار",
-  "قیمت مسکن",
-  "بازار مسکن",
-  "اجاره بها",
-  "اجاره‌بها",
-  "قیمت خودرو",
-  "بازار خودرو",
-  "رشد اقتصادی",
-  "اقتصاد ایران",
-  "وزارت اقتصاد",
-  "وزیر اقتصاد",
-  "بودجه",
-  "کسری بودجه",
-  "درآمد نفتی",
-  "قیمت نفت",
-  "قیمت بنزین",
-  "تراز تجاری",
-  "صادرات غیرنفتی",
-  "تعرفه گمرکی",
-  "تحریم",
-];
-
-const economicWeakKeywords = ["قیمت", "نرخ", "بازار", "اقتصاد", "اقتصادی", "کالا", "واردات", "صادرات", "گرانی", "ارزان"];
-
-/*
-|--------------------------------------------------------------------------
-| WORLD Keywords
-|--------------------------------------------------------------------------
-*/
-
-const worldKeywords = [
-  "آمریکا",
-  "امریکا",
-  "ایالات متحده",
-  "ترامپ",
-  "کاخ سفید",
-  "واشنگتن",
-  "پنتاگون",
-  "بایدن",
-  "هریس",
-  "اسرائیل",
-  "غزه",
-  "فلسطین",
-  "حماس",
-  "تل آویو",
-  "لبنان",
-  "بیروت",
-  "حزب الله",
-  "اوکراین",
-  "روسیه",
-  "مسکو",
-  "کی‌یف",
-  "انگلیس",
-  "بریتانیا",
-  "لندن",
-  "فرانسه",
-  "پاریس",
-  "آلمان",
-  "برلین",
-  "اروپا",
-  "اتحادیه اروپا",
-  "ناتو",
-  "چین",
-  "پکن",
-  "ژاپن",
-  "توکیو",
-  "کره جنوبی",
-  "کره شمالی",
-  "هند",
-  "ترکیه",
-  "آنکارا",
-  "اردوغان",
-  "پاکستان",
-  "افغانستان",
-  "طالبان",
-  "عراق",
-  "بغداد",
-  "سوریه",
-  "دمشق",
-  "یمن",
-  "صنعا",
-  "عربستان",
-  "ریاض",
-  "امارات",
-  "ابوظبی",
-  "قطر",
-  "دوحه",
-  "بحرین",
-  "بین المللی",
-  "بین‌المللی",
-  "جهان",
-  "سازمان ملل",
-  "شورای امنیت",
-  "world",
-  "international",
-  "usa",
-  "america",
-  "trump",
-  "russia",
-  "ukraine",
-  "china",
-  "israel",
-  "gaza",
-  "palestine",
-  "europe",
-  "nato",
-];
-
-/*
-|--------------------------------------------------------------------------
-| کلمات سیاسی (برای رد کردن کامل)
+| کلمات سیاسی - فقط برای فیلتر منبع «جم» استفاده می‌شود
 |--------------------------------------------------------------------------
 */
 
@@ -614,15 +474,7 @@ const politicalKeywords = [
 
 /*
 |--------------------------------------------------------------------------
-| JAM Keywords - فقط مواردی که واقعاً به منطقه مرتبط هستند
-|--------------------------------------------------------------------------
-| FIX: کلیدواژه‌های عمومی صنعت نفت/گاز که هیچ اسم مکانی نداشتند
-| («پالایشگاه»، «پتروشیمی»، «صنعت نفت»، «نفت و گاز»، «تولید گاز» و ...)
-| حذف شدند. این کلمات باعث می‌شدند هر خبر نفت‌وگازی از سراسر ایران
-| (آبادان، ماهشهر، خارک و...) به‌غلط زیر تب «جم» بیفتد، چون لیست
-| jamBlockedKeywords همه‌ی شهرهای دیگر را پوشش نمی‌داد.
-| حالا فقط اسم‌های مکانیِ واقعی منطقه (جم، عسلویه، کنگان، پارس جنوبی،
-| انارستان، ریز، نخل تقی، سیراف، دیر) به‌عنوان کلید جم شناخته می‌شوند.
+| JAM Keywords - فقط اسم‌های مکانیِ واقعی منطقه (نه کلمات عمومی صنعتی)
 |--------------------------------------------------------------------------
 */
 
@@ -684,14 +536,8 @@ const jamStrongKeywords = [
   "شهرستان دیر",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| کلمات ممنوع برای JAM (اگر اینها باشن، خبر JAM نمی‌شه)
-|--------------------------------------------------------------------------
-*/
-
 const jamBlockedKeywords = [
-  // شهرهای دیگه استان بوشهر
+  // شهرهای دیگه استان بوشهر (چون jonoubostan کل جنوب رو پوشش می‌ده)
   "بوشهر",
   "بندر بوشهر",
   "برازجان",
@@ -707,7 +553,7 @@ const jamBlockedKeywords = [
   "بندر خارک",
   "پتروشیمی خارک",
 
-  // استان‌های دیگه
+  // استان‌های دیگه / شهرهای صنعتی خارج از منطقه جم
   "اصفهان",
   "شیراز",
   "تهران",
@@ -724,153 +570,31 @@ const jamBlockedKeywords = [
   "ارومیه",
   "خلخال",
   "ساوه",
-  // شهرهای مهم صنعت نفت/گاز خارج از منطقه جم که باید از تب جم حذف شوند
   "آبادان",
   "ماهشهر",
   "بندرماهشهر",
   "اهواز",
   "خوزستان",
-  "عسلویه۲", // placeholder امن - بدون اثر
 ];
-
-/*
-|--------------------------------------------------------------------------
-| تشخیص JAM (با قوانین سخت‌گیرانه)
-|--------------------------------------------------------------------------
-*/
 
 function isJamNews(title, summary) {
   const titleText = normalizeText(String(title || ""));
   const summaryText = normalizeText(String(summary || ""));
   const fullText = titleText + " " + summaryText;
 
-  // شرط اول: خبر نباید کلمات ممنوع JAM داشته باشد
   if (containsKeyword(fullText, jamBlockedKeywords)) {
     return false;
   }
 
-  // شرط دوم: خبر باید حداقل یک کلمه قوی JAM داشته باشد
   if (!containsKeyword(fullText, jamStrongKeywords)) {
     return false;
   }
 
-  // شرط سوم: خبر نباید سیاسی باشد
   if (containsKeyword(fullText, politicalKeywords)) {
     return false;
   }
 
   return true;
-}
-
-/*
-|--------------------------------------------------------------------------
-| تشخیص دسته
-|--------------------------------------------------------------------------
-| FIX: ترتیب اولویت عوض شد.
-| قبلاً: مسدود → شغلی → جهانی (sourceType + کلیدواژه) → جم → اقتصادی → ...
-| مشکل: چک «جهانی با کلیدواژه» قبل از «جم» بود، پس هر خبر محلی جم/عسلویه
-| که اسم یک کشور دیگر را می‌آورد (مثلاً صادرات گاز به قطر) به‌غلط
-| «جهانی» می‌شد، نه «جم».
-| الان: مسدود → شغلی → جهانی-فقط-از-منبع-جهانی (سخت) → جم → اقتصادی قوی
-| → جهانی-با-کلیدواژه (نرم) → رد سیاسی → رد اقتصادی ضعیف → null
-| یعنی دسته‌ی محلی (جم) و دسته‌ی اقتصادی قوی، قبل از تشخیص عمومیِ
-| «جهانی بر اساس کلیدواژه» چک می‌شوند.
-|--------------------------------------------------------------------------
-*/
-
-function detectSection(title, summary, sourceType) {
-  const titleText = normalizeText(String(title || ""));
-  const summaryText = normalizeText(String(summary || ""));
-  const fullText = titleText + " " + summaryText;
-
-  /*
-  ---------------------------------------------------------
-  0. اخبار ممنوع (امام جمعه)
-  ---------------------------------------------------------
-  */
-
-  if (isBlockedNews(title, summary)) {
-    return null;
-  }
-
-  /*
-  ---------------------------------------------------------
-  1. JOBS
-  ---------------------------------------------------------
-  */
-
-  if (containsKeyword(fullText, jobKeywords)) {
-    return "jobs";
-  }
-
-  /*
-  ---------------------------------------------------------
-  2. WORLD - قانون سخت برای منابع خبرگزاری جهانی
-  (هر محتوایی از BBC/Reuters ذاتاً جهانی است، صرف‌نظر از کلیدواژه)
-  ---------------------------------------------------------
-  */
-
-  if (sourceType === "world") {
-    return "world";
-  }
-
-  /*
-  ---------------------------------------------------------
-  3. JAM - با قوانین سخت (قبل از اقتصادی و قبل از جهانیِ نرم)
-  ---------------------------------------------------------
-  */
-
-  if (isJamNews(title, summary)) {
-    return "jam";
-  }
-
-  /*
-  ---------------------------------------------------------
-  4. ECONOMIC (کلیدواژه‌های قوی)
-  ---------------------------------------------------------
-  */
-
-  if (containsKeyword(fullText, economicStrongKeywords)) {
-    return "economic";
-  }
-
-  /*
-  ---------------------------------------------------------
-  5. WORLD - تشخیص نرم بر اساس کلیدواژه (فقط اگر جم/اقتصادی نبود)
-  ---------------------------------------------------------
-  */
-
-  if (containsKeyword(fullText, worldKeywords)) {
-    return "world";
-  }
-
-  /*
-  ---------------------------------------------------------
-  6. رد اخبار سیاسی
-  ---------------------------------------------------------
-  */
-
-  if (containsKeyword(fullText, politicalKeywords)) {
-    return null;
-  }
-
-  /*
-  ---------------------------------------------------------
-  7. رد اخبار با کلمات ضعیف اقتصادی
-  ---------------------------------------------------------
-  */
-
-  if (containsKeyword(fullText, economicWeakKeywords)) {
-    return null;
-  }
-
-  /*
-  ---------------------------------------------------------
-  8. Fallback - نامشخص، رد می‌شود
-  ---------------------------------------------------------
-  */
-
-  return null;
 }
 
 /*
@@ -915,11 +639,26 @@ async function newsExists(sourceUrl, title) {
 |--------------------------------------------------------------------------
 | ذخیره خبر
 |--------------------------------------------------------------------------
+| چون هر فید مخصوص یک دسته‌ی مشخص است، دیگر نیازی به حدس‌زدن دسته از
+| روی کلیدواژه نیست - همان feed.section مستقیم استفاده می‌شود. فقط برای
+| «جم» چون منبعش کل جنوب کشور را پوشش می‌دهد، فیلتر مکانی سخت‌گیرانه
+| (isJamNews) هنوز روی آن اجرا می‌شود.
+|--------------------------------------------------------------------------
 */
 
 async function saveNews(item, feed) {
   if (isBlockedNews(item.title, item.summary)) {
-    console.log("SKIP religious/political: " + item.title);
+    console.log("SKIP religious: " + item.title);
+    return false;
+  }
+
+  if (!VALID_SECTIONS.includes(feed.section)) {
+    console.error("INVALID SECTION on feed → " + feed.section + " | " + feed.name);
+    return false;
+  }
+
+  if (feed.section === "jam" && !isJamNews(item.title, item.summary)) {
+    console.log("SKIP not jam-specific: " + item.title);
     return false;
   }
 
@@ -930,25 +669,8 @@ async function saveNews(item, feed) {
     return false;
   }
 
-  const section = detectSection(item.title, item.summary, feed.sourceType);
-
-  if (!section) {
-    console.log("SKIP irrelevant: " + item.title);
-    return false;
-  }
-
-  if (!VALID_SECTIONS.includes(section)) {
-    console.error("INVALID SECTION → " + section + " | " + item.title);
-    return false;
-  }
-
-  if (section === "jam" && !isJamNews(item.title, item.summary)) {
-    console.log("SKIP fake JAM: " + item.title);
-    return false;
-  }
-
   const record = {
-    section: section,
+    section: feed.section,
     title: item.title,
     summary: item.summary,
     content: item.summary,
@@ -982,7 +704,7 @@ async function saveNews(item, feed) {
     return false;
   }
 
-  console.log("ADDED [" + section + "] " + feed.name + " | " + item.title);
+  console.log("ADDED [" + feed.section + "] " + feed.name + " | " + item.title);
 
   return true;
 }
@@ -996,13 +718,11 @@ async function saveNews(item, feed) {
 async function main() {
   console.log("");
   console.log("========================================");
-  console.log("       JAM CITY AUTOMATIC NEWS");
+  console.log("       JAM CITY DAILY NEWS (v2)");
   console.log("========================================");
   console.log("");
-  console.log("Categories: JAM / JOBS / ECONOMIC / WORLD");
-  console.log("JAM: ONLY Jam, Asaluyeh, Kangan, Petrochemical (named), South Pars");
-  console.log("🚫 Imam Jom'e / Friday Prayer news: BLOCKED");
-  console.log("Priority: blocked -> jobs -> world-source -> JAM -> economic -> world-keyword -> reject");
+  console.log("۴ منبع اختصاصی: jam=jonoubostan | economic=parseek | world=shahrekhabar | jobs=bazarekar");
+  console.log("🚫 اخبار امام جمعه/نماز جمعه: حذف می‌شود");
   console.log("");
 
   let total = 0;
@@ -1012,16 +732,22 @@ async function main() {
 
   for (const feed of FEEDS) {
     console.log("");
-    console.log("SOURCE: " + feed.name);
+    console.log("SOURCE: " + feed.name + " [" + feed.section + "]");
     console.log("URL: " + feed.url);
 
     try {
-      const xml = await fetchUrl(feed.url);
-      const items = parseRSS(xml);
+      const raw = await fetchUrl(feed.url);
+      const parsed = parseFeed(raw, feed);
 
-      console.log("Found " + items.length + " items");
+      console.log("Parse mode: " + parsed.mode + " | Found " + parsed.items.length + " candidate items");
 
-      for (const item of items.slice(0, 10)) {
+      if (parsed.items.length === 0) {
+        console.log("⚠️  هیچ آیتمی پیدا نشد - ممکنه ساختار صفحه با پارسر عمومی سازگار نباشه، این منبع را باید دستی بررسی کرد.");
+      }
+
+      const limit = feed.fetchLimit || 10;
+
+      for (const item of parsed.items.slice(0, limit)) {
         total++;
 
         try {
