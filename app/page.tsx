@@ -4,12 +4,15 @@
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+
 import {
   businessCategoryLabel,
   BUSINESS_CATEGORIES,
 } from "@/lib/constants";
+
 import { Spinner } from "@/components/Feedback";
 import type { MapMarker } from "@/components/LeafletMap";
 
@@ -41,107 +44,183 @@ type Product = {
 };
 
 export default function HomePage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
   const { user, profile } = useAuth();
 
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  /* =========================================================
+     LOAD HOME DATA
+  ========================================================= */
+
   useEffect(() => {
+    let mounted = true;
+
     async function loadHome() {
-      const { data: businessData } = await supabase
-        .from("businesses")
-        .select(
-          "id,name,category,icon,lat,lng,subscription_tier,rating_avg,rating_count"
-        )
-        .eq("subscription_status", "approved");
+      try {
+        const { data: businessData, error: businessError } =
+          await supabase
+            .from("businesses")
+            .select(
+              "id,name,category,icon,lat,lng,subscription_tier,rating_avg,rating_count"
+            )
+            .eq("subscription_status", "approved");
 
-      setBusinesses((businessData ?? []) as Business[]);
+        if (businessError) {
+          console.error("Businesses loading error:", businessError);
+        }
 
-      const { data: productData } = await supabase
-        .from("business_products")
-        .select(
-          "id,business_id,name,price,description,image_url,discount_percent"
-        )
-        .order("created_at", { ascending: false })
-        .limit(30);
+        const { data: productData, error: productError } =
+          await supabase
+            .from("business_products")
+            .select(
+              "id,business_id,name,price,description,image_url,discount_percent"
+            )
+            .order("created_at", { ascending: false })
+            .limit(30);
 
-      setProducts((productData ?? []) as Product[]);
+        if (productError) {
+          console.error("Products loading error:", productError);
+        }
+
+        if (!mounted) return;
+
+        setBusinesses((businessData ?? []) as Business[]);
+        setProducts((productData ?? []) as Product[]);
+      } catch (error) {
+        console.error("Home loading error:", error);
+
+        if (mounted) {
+          setBusinesses([]);
+          setProducts([]);
+        }
+      }
     }
 
     loadHome();
+
+    return () => {
+      mounted = false;
+    };
   }, [supabase]);
 
-  const visibleBusinesses = useMemo(
-    () =>
-      (businesses ?? []).filter(
-        (b) => !activeCategory || b.category === activeCategory
-      ),
-    [businesses, activeCategory]
-  );
+  /* =========================================================
+     VISIBLE BUSINESSES
+  ========================================================= */
 
-  const markers: MapMarker[] = useMemo(
-    () =>
-      visibleBusinesses
-        .filter((b) => b.lat !== null && b.lng !== null)
-        .map((b) => ({
-          id: b.id,
-          lat: b.lat!,
-          lng: b.lng!,
-          title: b.name,
-          subtitle: businessCategoryLabel(b.category),
-          href: `/business/${b.id}`,
-          emoji: b.icon,
-          tier: b.subscription_tier,
-          rating: b.rating_count ? b.rating_avg : null,
-        })),
-    [visibleBusinesses]
-  );
+  const visibleBusinesses = useMemo(() => {
+    return (businesses ?? []).filter(
+      (business) =>
+        !activeCategory || business.category === activeCategory
+    );
+  }, [businesses, activeCategory]);
 
-  const categories = useMemo(
-    () =>
-      Array.from(new Set((businesses ?? []).map((b) => b.category)))
-        .map((slug) =>
-          BUSINESS_CATEGORIES.find((category) => category.slug === slug)
+  /* =========================================================
+     MAP MARKERS
+  ========================================================= */
+
+  const markers: MapMarker[] = useMemo(() => {
+    return visibleBusinesses
+      .filter(
+        (business) =>
+          business.lat !== null && business.lng !== null
+      )
+      .map((business) => ({
+        id: business.id,
+        lat: business.lat as number,
+        lng: business.lng as number,
+        title: business.name,
+        subtitle: businessCategoryLabel(business.category),
+        href: `/business/${business.id}`,
+        emoji: business.icon,
+        tier: business.subscription_tier,
+        rating:
+          business.rating_count > 0
+            ? business.rating_avg
+            : null,
+      }));
+  }, [visibleBusinesses]);
+
+  /* =========================================================
+     CATEGORIES
+  ========================================================= */
+
+  const categories = useMemo(() => {
+    const uniqueSlugs = Array.from(
+      new Set((businesses ?? []).map((business) => business.category))
+    );
+
+    return uniqueSlugs
+      .map((slug) =>
+        BUSINESS_CATEGORIES.find(
+          (category) => category.slug === slug
         )
-        .filter(Boolean),
-    [businesses]
-  );
+      )
+      .filter(
+        (
+          category
+        ): category is (typeof BUSINESS_CATEGORIES)[number] =>
+          Boolean(category)
+      );
+  }, [businesses]);
 
-  const goldBusinesses = useMemo(
-    () =>
-      (businesses ?? [])
-        .filter((b) => b.subscription_tier === "gold")
-        .slice(0, 5),
-    [businesses]
-  );
+  /* =========================================================
+     GOLD BUSINESSES
+  ========================================================= */
 
-  const discounts = useMemo(
-    () =>
-      products
-        .filter((p) => (p.discount_percent ?? 0) > 0)
-        .slice(0, 5),
-    [products]
-  );
+  const goldBusinesses = useMemo(() => {
+    return (businesses ?? [])
+      .filter(
+        (business) => business.subscription_tier === "gold"
+      )
+      .slice(0, 5);
+  }, [businesses]);
 
-  const popular = useMemo(
-    () =>
-      [...(businesses ?? [])]
-        .filter((b) => b.rating_count > 0)
-        .sort((a, b) => b.rating_avg - a.rating_avg)
-        .slice(0, 5),
-    [businesses]
-  );
+  /* =========================================================
+     DISCOUNTS
+  ========================================================= */
+
+  const discounts = useMemo(() => {
+    return products
+      .filter(
+        (product) => (product.discount_percent ?? 0) > 0
+      )
+      .slice(0, 5);
+  }, [products]);
+
+  /* =========================================================
+     POPULAR BUSINESSES
+  ========================================================= */
+
+  const popular = useMemo(() => {
+    return [...(businesses ?? [])]
+      .filter((business) => business.rating_count > 0)
+      .sort((a, b) => b.rating_avg - a.rating_avg)
+      .slice(0, 5);
+  }, [businesses]);
+
+  /* =========================================================
+     HELPERS
+  ========================================================= */
 
   function findBusiness(id: string) {
-    return businesses?.find((b) => b.id === id);
+    return businesses?.find((business) => business.id === id);
   }
 
   function formatPrice(value: number | null) {
     if (value === null) return "";
-    return `${new Intl.NumberFormat("fa-IR").format(value)} تومان`;
+
+    return `${new Intl.NumberFormat("fa-IR").format(
+      value
+    )} تومان`;
   }
+
+  /* =========================================================
+     RENDER
+  ========================================================= */
 
   return (
     <div dir="rtl" className="space-y-4 pb-10">
@@ -187,15 +266,13 @@ export default function HomePage() {
 
           </div>
 
-          {/* =================================================
-              HERO CONTENT + CHAT
-          ================================================== */}
+          {/* HERO CONTENT */}
 
           <div className="mt-5 flex items-center gap-2.5 sm:mt-8 sm:block">
 
             {/* TEXT */}
 
-            <div className="min-w-0 flex-1 max-w-2xl">
+            <div className="min-w-0 max-w-2xl flex-1">
 
               <p className="mb-1 text-[8px] font-bold text-green-400 sm:mb-2 sm:text-[10px]">
                 خوش اومدی به جم 👋
@@ -210,7 +287,8 @@ export default function HomePage() {
 
               <p className="mt-2 text-[8px] leading-5 text-slate-400 sm:mt-4 sm:text-sm sm:leading-7">
                 با مردم جم حرف بزن، آگهی ببین، کسب‌وکار پیدا کن،
-                تخفیف بگیر و هر چیزی که توی شهر اتفاق می‌افته رو دنبال کن.
+                تخفیف بگیر و هر چیزی که توی شهر اتفاق می‌افته رو
+                دنبال کن.
               </p>
 
               <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-6 sm:gap-2">
@@ -233,9 +311,7 @@ export default function HomePage() {
 
             </div>
 
-            {/* =================================================
-                MOBILE / DESKTOP CHAT CARD
-            ================================================== */}
+            {/* CHAT CARD */}
 
             <Link
               href="/wall"
@@ -269,15 +345,13 @@ export default function HomePage() {
 
                     </div>
 
-                    <p className="mt-1 truncate text-[9px] text-slate-300 sm:mt-1 sm:text-[9px]">
+                    <p className="mt-1 truncate text-[9px] text-slate-300">
                       گفتگو با همشهری‌ها
                     </p>
 
                   </div>
 
                 </div>
-
-                {/* MOBILE COMPACT PREVIEW */}
 
                 <div className="relative mt-2 space-y-1.5 sm:mt-5 sm:space-y-2.5">
 
@@ -357,12 +431,80 @@ export default function HomePage() {
 
       </section>
 
+      {/* =====================================================
+          JAM CITY NEWS BAR
+      ====================================================== */}
+
+      <section className="relative overflow-hidden rounded-[18px] border border-green-400/30 bg-[#050805] px-3 py-2.5 shadow-[0_0_25px_rgba(34,197,94,.10)]">
+
+        <div className="pointer-events-none absolute -right-16 -top-16 h-32 w-32 rounded-full bg-green-500/10 blur-3xl" />
+
+        <div className="pointer-events-none absolute -bottom-16 -left-16 h-32 w-32 rounded-full bg-green-400/10 blur-3xl" />
+
+        <div className="relative flex items-center gap-3">
+
+          <Link
+            href="/news"
+            className="flex shrink-0 items-center gap-2"
+          >
+
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-green-400/30 bg-green-400/10 text-sm shadow-[0_0_15px_rgba(34,197,94,.20)]">
+              📰
+            </span>
+
+            <div className="hidden sm:block">
+
+              <p className="text-[8px] font-black text-green-400">
+                JAM CITY NEWS
+              </p>
+
+              <p className="text-[10px] font-black text-white">
+                اخبار روز
+              </p>
+
+            </div>
+
+          </Link>
+
+          <div className="h-7 w-px shrink-0 bg-green-400/20" />
+
+          <div className="min-w-0 flex-1 overflow-hidden">
+
+            <div className="flex items-center gap-3">
+
+              <span className="flex shrink-0 items-center gap-1 rounded-full border border-green-400/20 bg-green-400/10 px-2 py-1 text-[7px] font-black text-green-400">
+
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400 shadow-[0_0_8px_rgba(34,197,94,.9)]" />
+
+                LIVE
+
+              </span>
+
+              <p className="truncate text-[9px] font-bold text-slate-200 sm:text-[10px]">
+                آخرین اخبار ایران، اقتصاد، جم و عسلویه
+              </p>
+
+            </div>
+
+          </div>
+
+          <Link
+            href="/news"
+            className="shrink-0 rounded-full border border-green-400/20 bg-green-400/10 px-2.5 py-1.5 text-[7px] font-black text-green-400 transition hover:bg-green-400/20 sm:text-[8px]"
+          >
+            همه اخبار ←
+          </Link>
+
+        </div>
+
+      </section>
 
       {/* =====================================================
           HOT PRODUCTS
       ====================================================== */}
 
       {products.length > 0 && (
+
         <section>
 
           <div className="mb-4 flex items-end justify-between">
@@ -400,37 +542,46 @@ export default function HomePage() {
 
             {products.slice(0, 7).map((product) => {
 
-              const b = findBusiness(product.business_id);
+              const business = findBusiness(product.business_id);
 
-              if (!b) return null;
+              if (!business) return null;
 
               return (
+
                 <Link
                   key={product.id}
-                  href={`/business/${b.id}`}
+                  href={`/business/${business.id}`}
                   className="group min-w-[180px] max-w-[180px] overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                 >
 
                   <div className="relative h-36 overflow-hidden bg-slate-100">
 
                     {product.image_url ? (
+
                       <img
                         src={product.image_url}
                         alt={product.name}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
                       />
+
                     ) : (
+
                       <div className="flex h-full w-full items-center justify-center bg-slate-950 text-5xl text-white">
+
                         <span className="drop-shadow-[0_0_12px_rgba(255,255,255,.25)]">
-                          {b.icon}
+                          {business.icon}
                         </span>
+
                       </div>
+
                     )}
 
                     {(product.discount_percent ?? 0) > 0 && (
+
                       <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2.5 py-1 text-[8px] font-black text-white">
                         {product.discount_percent}% تخفیف
                       </span>
+
                     )}
 
                   </div>
@@ -442,79 +593,94 @@ export default function HomePage() {
                     </h3>
 
                     <p className="mt-1 truncate text-[8px] text-slate-400">
-                      {b.name}
+                      {business.name}
                     </p>
 
                     {product.price !== null && (
+
                       <p className="mt-3 text-[9px] font-black text-green-600">
                         {formatPrice(product.price)}
                       </p>
+
                     )}
 
                   </div>
 
                 </Link>
+
               );
             })}
 
           </div>
 
         </section>
+
       )}
 
+      {/* =====================================================
+          NEWS CATEGORIES
+      ====================================================== */}
+
+      <section className="rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+
+          <Link
+            href="/news/economic"
+            className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-green-50 px-2 text-center text-[11px] font-black text-green-700 transition hover:bg-green-100 sm:text-[13px]"
+          >
+            📰
+            <span className="mr-1">
+              اخبار اقتصادی
+            </span>
+          </Link>
+
+          <Link
+            href="/news/world"
+            className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-blue-50 px-2 text-center text-[11px] font-black text-blue-700 transition hover:bg-blue-100 sm:text-[13px]"
+          >
+            🌍
+            <span className="mr-1">
+              اخبار جهانی
+            </span>
+          </Link>
+
+          <Link
+            href="/news/jam"
+            className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-amber-50 px-2 text-center text-[11px] font-black text-amber-700 transition hover:bg-amber-100 sm:text-[13px]"
+          >
+            📍
+            <span className="mr-1">
+              اخبار جم
+            </span>
+          </Link>
+
+          <Link
+            href="/jobs"
+            className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-purple-50 px-2 text-center text-[11px] font-black text-purple-700 transition hover:bg-purple-100 sm:text-[13px]"
+          >
+            💼
+            <span className="mr-1">
+              فرصت‌های شغلی
+            </span>
+          </Link>
+
+        </div>
+
+      </section>
 
       {/* =====================================================
           MAP
       ====================================================== */}
 
       <section>
-{/* =====================================================
-    NEWS CATEGORIES
-===================================================== */}
-
-<section className="mb-4 rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
-  <div className="grid grid-cols-4 gap-2">
-
-    <Link
-      href="/news/economic"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-green-50 px-2 text-center text-[13px] font-black text-green-700 transition hover:bg-green-100"
-    >
-      📰
-      <span className="mr-1">اخبار اقتصادی</span>
-    </Link>
-
-    <Link
-      href="/news/world"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-blue-50 px-2 text-center text-[13px] font-black text-blue-700 transition hover:bg-blue-100"
-    >
-      🌍
-      <span className="mr-1">اخبار جهانی</span>
-    </Link>
-
-    <Link
-      href="/news/jam"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-amber-50 px-2 text-center text-[13px] font-black text-amber-700 transition hover:bg-amber-100"
-    >
-      📍
-      <span className="mr-1">اخبار جم</span>
-    </Link>
-
-    <Link
-      href="/jobs"
-      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-purple-50 px-2 text-center text-[13px] font-black text-purple-700 transition hover:bg-purple-100"
-    >
-      💼
-      <span className="mr-1">فرصت‌های شغلی</span>
-    </Link>
-
-  </div>
-
-</section>
 
         {categories.length > 0 && (
+
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
 
             <button
+              type="button"
               onClick={() => setActiveCategory(null)}
               className={`shrink-0 rounded-full px-4 py-2 text-[9px] font-bold ${
                 activeCategory === null
@@ -525,43 +691,53 @@ export default function HomePage() {
               همه
             </button>
 
-            {categories.map((c: any) => (
+            {categories.map((category) => (
+
               <button
-                key={c.slug}
-                onClick={() => setActiveCategory(c.slug)}
+                type="button"
+                key={category.slug}
+                onClick={() =>
+                  setActiveCategory(category.slug)
+                }
                 className={`shrink-0 rounded-full px-4 py-2 text-[9px] font-bold ${
-                  activeCategory === c.slug
+                  activeCategory === category.slug
                     ? "bg-green-600 text-white"
                     : "bg-white text-slate-500 shadow-sm"
                 }`}
               >
-                {c.icon} {c.name}
+                {category.icon} {category.name}
               </button>
+
             ))}
 
           </div>
+
         )}
 
         <div className="overflow-hidden rounded-[28px] border-4 border-white bg-white shadow-[0_15px_50px_rgba(0,0,0,.1)]">
 
           {businesses === null ? (
+
             <div className="flex h-80 items-center justify-center">
               <Spinner label="در حال بارگذاری نقشه..." />
             </div>
+
           ) : (
+
             <LeafletMap markers={markers} />
+
           )}
 
         </div>
 
       </section>
 
-
       {/* =====================================================
           GOLD BUSINESSES
       ====================================================== */}
 
       {goldBusinesses.length > 0 && (
+
         <section className="relative overflow-hidden rounded-[28px] border border-amber-200 bg-[#100d07] p-4 sm:p-5">
 
           <div className="absolute -left-20 -top-20 h-48 w-48 rounded-full bg-amber-500/10 blur-3xl" />
@@ -592,33 +768,36 @@ export default function HomePage() {
 
           <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-4">
 
-            {goldBusinesses.map((b) => {
+            {goldBusinesses.map((business) => {
 
               const product = products.find(
-                (p) => p.business_id === b.id
+                (item) => item.business_id === business.id
               );
 
               return (
+
                 <Link
-                  key={b.id}
-                  href={`/business/${b.id}`}
+                  key={business.id}
+                  href={`/business/${business.id}`}
                   className="group overflow-hidden rounded-[22px] border border-amber-400/20 bg-white"
                 >
 
                   <div className="relative h-32 overflow-hidden bg-slate-100">
 
                     {product?.image_url ? (
+
                       <img
                         src={product.image_url}
-                        alt={b.name}
+                        alt={business.name}
                         className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
                       />
+
                     ) : (
+
                       <div className="flex h-full w-full items-center justify-center bg-slate-950 text-5xl text-white">
-                        <span>
-                          {b.icon}
-                        </span>
+                        <span>{business.icon}</span>
                       </div>
+
                     )}
 
                     <span className="absolute right-2 top-2 rounded-full bg-black/70 px-2 py-1 text-[8px] font-black text-amber-300">
@@ -630,36 +809,42 @@ export default function HomePage() {
                   <div className="p-3">
 
                     <h3 className="truncate text-[10px] font-black text-slate-800">
-                      {b.name}
+                      {business.name}
                     </h3>
 
                     <p className="mt-1 truncate text-[8px] text-slate-400">
-                      {businessCategoryLabel(b.category)}
+                      {businessCategoryLabel(
+                        business.category
+                      )}
                     </p>
 
-                    {b.rating_count > 0 && (
+                    {business.rating_count > 0 && (
+
                       <p className="mt-2 text-[8px] font-black text-amber-500">
-                        ⭐ {b.rating_avg.toFixed(1)}
+                        ⭐ {business.rating_avg.toFixed(1)}
                       </p>
+
                     )}
 
                   </div>
 
                 </Link>
+
               );
             })}
 
           </div>
 
         </section>
-      )}
 
+      )}
 
       {/* =====================================================
           DISCOUNTS
       ====================================================== */}
 
       {discounts.length > 0 && (
+
         <section>
 
           <div className="mb-4 flex items-end justify-between">
@@ -686,40 +871,44 @@ export default function HomePage() {
 
             {discounts.map((product) => {
 
-              const b = findBusiness(product.business_id);
+              const business = findBusiness(product.business_id);
 
-              if (!b) return null;
+              if (!business) return null;
 
               const finalPrice =
                 product.price !== null
                   ? Math.round(
                       product.price *
                         (1 -
-                          (product.discount_percent ?? 0) / 100)
+                          (product.discount_percent ?? 0) /
+                            100)
                     )
                   : null;
 
               return (
+
                 <Link
                   key={product.id}
-                  href={`/business/${b.id}`}
+                  href={`/business/${business.id}`}
                   className="group overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl"
                 >
 
                   <div className="relative h-32 overflow-hidden bg-slate-100">
 
                     {product.image_url ? (
+
                       <img
                         src={product.image_url}
                         alt={product.name}
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
+
                     ) : (
+
                       <div className="flex h-full w-full items-center justify-center bg-slate-950 text-5xl text-white">
-                        <span>
-                          {b.icon}
-                        </span>
+                        <span>{business.icon}</span>
                       </div>
+
                     )}
 
                     <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-1 text-[8px] font-black text-white">
@@ -735,10 +924,11 @@ export default function HomePage() {
                     </h3>
 
                     <p className="mt-1 truncate text-[8px] text-slate-400">
-                      {b.name}
+                      {business.name}
                     </p>
 
                     {finalPrice !== null && (
+
                       <div className="mt-2">
 
                         <span className="text-[10px] font-black text-red-500">
@@ -750,25 +940,28 @@ export default function HomePage() {
                         </span>
 
                       </div>
+
                     )}
 
                   </div>
 
                 </Link>
+
               );
             })}
 
           </div>
 
         </section>
-      )}
 
+      )}
 
       {/* =====================================================
           POPULAR
       ====================================================== */}
 
       {popular.length > 0 && (
+
         <section className="rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm">
 
           <div className="mb-4">
@@ -785,41 +978,45 @@ export default function HomePage() {
 
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
 
-            {popular.map((b) => (
+            {popular.map((business) => (
+
               <Link
-                key={b.id}
-                href={`/business/${b.id}`}
+                key={business.id}
+                href={`/business/${business.id}`}
                 className="flex items-center gap-3 rounded-2xl border border-slate-100 p-3 transition hover:border-green-200 hover:bg-green-50/30"
               >
 
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-xl text-white">
-                  {b.icon}
+                  {business.icon}
                 </span>
 
                 <span className="min-w-0 flex-1">
 
                   <span className="block truncate text-[10px] font-black text-slate-700">
-                    {b.name}
+                    {business.name}
                   </span>
 
                   <span className="mt-1 block text-[8px] text-slate-400">
-                    {businessCategoryLabel(b.category)}
+                    {businessCategoryLabel(
+                      business.category
+                    )}
                   </span>
 
                 </span>
 
                 <span className="text-[9px] font-black text-amber-500">
-                  ⭐ {b.rating_avg.toFixed(1)}
+                  ⭐ {business.rating_avg.toFixed(1)}
                 </span>
 
               </Link>
+
             ))}
 
           </div>
 
         </section>
-      )}
 
+      )}
 
       {/* =====================================================
           BIG CHAT CTA
@@ -838,10 +1035,13 @@ export default function HomePage() {
             </p>
 
             <h2 className="mt-2 text-2xl font-black">
+
               حرفی داری؟
+
               <span className="text-green-400">
                 {" "}بیا توی جم بگو.
               </span>
+
             </h2>
 
             <p className="mt-2 max-w-xl text-[10px] leading-6 text-slate-500">
@@ -860,7 +1060,6 @@ export default function HomePage() {
         </div>
 
       </section>
-
 
       {/* =====================================================
           STATS
@@ -888,7 +1087,6 @@ export default function HomePage() {
 
       </section>
 
-
       {/* =====================================================
           USER
       ====================================================== */}
@@ -898,18 +1096,22 @@ export default function HomePage() {
         <p className="text-[9px] text-slate-400">
 
           {user
-            ? `خوش آمدی ${profile?.display_name || "همشهری"} 🌿`
+            ? `خوش آمدی ${
+                profile?.display_name || "همشهری"
+              } 🌿`
             : "جم سیتی؛ شهر دیجیتال خودت را بساز."}
 
         </p>
 
         {!user && (
+
           <Link
             href="/login"
             className="mt-3 inline-block rounded-full bg-slate-900 px-6 py-2.5 text-[9px] font-bold text-white"
           >
             ورود / ثبت‌نام
           </Link>
+
         )}
 
       </section>
@@ -917,7 +1119,6 @@ export default function HomePage() {
     </div>
   );
 }
-
 
 /* ============================================================
    STAT COMPONENT
@@ -933,6 +1134,7 @@ function Stat({
   text: string;
 }) {
   return (
+
     <div className="flex items-center justify-center gap-2 border-l border-slate-100 p-4 last:border-l-0">
 
       <span className="text-xl">
@@ -952,6 +1154,6 @@ function Stat({
       </span>
 
     </div>
+
   );
 }
-
