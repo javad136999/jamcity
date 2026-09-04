@@ -1,7 +1,9 @@
+```javascript
 const https = require("https");
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_SERVICE_ROLE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error("Missing Supabase environment variables.");
@@ -15,57 +17,25 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
 */
 
 const FEEDS = [
-  // منابع داخلی
   {
     name: "مهر",
     url: "https://www.mehrnews.com/rss",
-    section: "economic",
-    keywords: ["اقتصاد", "بازار", "بورس", "دلار", "ارز", "بانک", "نفت"],
   },
-
   {
     name: "ایسنا",
     url: "https://www.isna.ir/rss",
-    section: "jam",
-    keywords: ["جم", "عسلویه", "پارس جنوبی", "بوشهر", "پتروشیمی"],
   },
-
   {
     name: "تسنیم",
     url: "https://www.tasnimnews.com/fa/rss",
-    section: "economic",
-    keywords: ["اقتصاد", "بورس", "دلار", "نفت", "پتروشیمی"],
   },
-
-  // منابع خارجی
   {
     name: "BBC",
     url: "https://feeds.bbci.co.uk/news/world/rss.xml",
-    section: "world",
-    keywords: [
-      "world",
-      "international",
-      "iran",
-      "usa",
-      "europe",
-      "china",
-      "russia",
-    ],
   },
-
   {
     name: "Reuters",
     url: "https://feeds.reuters.com/reuters/worldNews",
-    section: "world",
-    keywords: [
-      "world",
-      "iran",
-      "usa",
-      "china",
-      "russia",
-      "europe",
-      "market",
-    ],
   },
 ];
 
@@ -81,7 +51,8 @@ function fetchUrl(url) {
       url,
       {
         headers: {
-          "User-Agent": "JamCityNewsBot/1.0",
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 JamCityNewsBot/2.0",
           Accept:
             "application/rss+xml, application/xml, text/xml, text/html",
         },
@@ -96,7 +67,10 @@ function fetchUrl(url) {
         });
 
         response.on("end", () => {
-          if (response.statusCode >= 200 && response.statusCode < 400) {
+          if (
+            response.statusCode >= 200 &&
+            response.statusCode < 400
+          ) {
             resolve(data);
           } else {
             reject(
@@ -111,7 +85,7 @@ function fetchUrl(url) {
 
     request.on("error", reject);
 
-    request.setTimeout(30000, () => {
+    request.setTimeout(20000, () => {
       request.destroy();
       reject(new Error(`Timeout: ${url}`));
     });
@@ -187,13 +161,21 @@ function parseRSS(xml) {
 
     if (!title) continue;
 
+    let publishedAt;
+
+    try {
+      publishedAt = pubDate
+        ? new Date(pubDate).toISOString()
+        : new Date().toISOString();
+    } catch {
+      publishedAt = new Date().toISOString();
+    }
+
     items.push({
       title,
       summary: description || null,
       source_url: link || null,
-      published_at: pubDate
-        ? new Date(pubDate).toISOString()
-        : new Date().toISOString(),
+      published_at: publishedAt,
     });
   }
 
@@ -202,71 +184,141 @@ function parseRSS(xml) {
 
 /*
 |--------------------------------------------------------------------------
-| تعیین دسته خبر
+| تشخیص دسته خبر
+|--------------------------------------------------------------------------
+|
+| اولویت:
+|
+| 1. اخبار جم
+| 2. فرصت شغلی
+| 3. اقتصاد
+| 4. جهان
+|
 |--------------------------------------------------------------------------
 */
 
-function detectSection(title, summary, defaultSection, keywords) {
-  const text = `${title} ${summary || ""}`.toLowerCase();
+function detectSection(title, summary = "") {
+  const text = `${title} ${summary}`.toLowerCase();
 
   /*
-   * اخبار جم و عسلویه
-   */
+  |--------------------------------------------------------------------------
+  | اخبار جم، عسلویه، بوشهر و پارس جنوبی
+  |--------------------------------------------------------------------------
+  */
 
   const jamKeywords = [
+    "شهرستان جم",
+    "شهرستان جم",
     "جم",
     "عسلویه",
     "پارس جنوبی",
-    "پتروشیمی",
+    "پارس‌جنوبی",
     "بوشهر",
+    "پتروشیمی",
+    "منطقه ویژه اقتصادی انرژی پارس",
+    "منطقه ویژه پارس",
+    "کنگان",
+    "دیّر",
+    "دیر",
+    "نخل تقی",
+    "سیراف",
+    "پالایشگاه",
   ];
 
-  if (jamKeywords.some((keyword) => text.includes(keyword))) {
+  if (
+    jamKeywords.some((keyword) =>
+      text.includes(keyword.toLowerCase())
+    )
+  ) {
     return "jam";
   }
 
   /*
-   * فرصت شغلی
-   */
+  |--------------------------------------------------------------------------
+  | فرصت های شغلی
+  |--------------------------------------------------------------------------
+  */
 
   const jobKeywords = [
     "استخدام",
     "استخدامی",
     "فرصت شغلی",
+    "فرصت‌های شغلی",
+    "فرصت های شغلی",
     "کاریابی",
+    "کارآفرینی",
     "شغل",
+    "مشاغل",
+    "نیروی انسانی",
+    "نیروی کار",
+    "جذب نیرو",
+    "جذب نیروی",
+    "دعوت به همکاری",
     "job",
     "jobs",
     "career",
     "vacancy",
+    "recruitment",
+    "hiring",
   ];
 
-  if (jobKeywords.some((keyword) => text.includes(keyword))) {
+  if (
+    jobKeywords.some((keyword) =>
+      text.includes(keyword.toLowerCase())
+    )
+  ) {
     return "jobs";
   }
 
   /*
-   * اقتصادی
-   */
+  |--------------------------------------------------------------------------
+  | اخبار اقتصادی
+  |--------------------------------------------------------------------------
+  */
 
   const economicKeywords = [
     "اقتصاد",
     "اقتصادی",
     "بورس",
+    "شاخص بورس",
+    "سهام",
+    "فرابورس",
     "دلار",
     "ارز",
+    "نرخ ارز",
     "بانک",
+    "بانکی",
+    "بانک مرکزی",
     "نفت",
+    "گاز",
     "طلا",
-    "بازار",
+    "سکه",
     "تورم",
-    "اقتصادی",
+    "بازار",
+    "بازار سرمایه",
+    "سرمایه‌گذاری",
+    "سرمایه گذاری",
+    "صادرات",
+    "واردات",
+    "تولید",
+    "صنعت",
+    "مالیات",
+    "بودجه",
+    "قیمت",
+    "قیمت‌گذاری",
+    "پتروشیمی",
+    "oil",
+    "gas",
     "economy",
     "economic",
     "market",
-    "oil",
+    "markets",
+    "stock",
+    "stocks",
     "gold",
     "dollar",
+    "bank",
+    "inflation",
   ];
 
   if (
@@ -278,45 +330,48 @@ function detectSection(title, summary, defaultSection, keywords) {
   }
 
   /*
-   * اگر منبع از قبل دسته مشخص داشته باشد
-   */
-
-  if (defaultSection) {
-    return defaultSection;
-  }
+  |--------------------------------------------------------------------------
+  | سایر خبرها = جهان
+  |--------------------------------------------------------------------------
+  */
 
   return "world";
 }
 
 /*
 |--------------------------------------------------------------------------
-| بررسی وجود خبر تکراری
+| بررسی خبر تکراری
 |--------------------------------------------------------------------------
 */
 
 async function newsExists(sourceUrl, title) {
-  const encodedTitle = encodeURIComponent(title);
-
-  let url =
-    `${SUPABASE_URL}/rest/v1/jamcity_content` +
-    `?select=id` +
-    `&title=eq.${encodedTitle}` +
-    `&limit=1`;
+  let url;
 
   if (sourceUrl) {
-    const encodedUrl = encodeURIComponent(sourceUrl);
+    const encodedUrl =
+      encodeURIComponent(sourceUrl);
 
     url =
       `${SUPABASE_URL}/rest/v1/jamcity_content` +
       `?select=id` +
       `&source_url=eq.${encodedUrl}` +
       `&limit=1`;
+  } else {
+    const encodedTitle =
+      encodeURIComponent(title);
+
+    url =
+      `${SUPABASE_URL}/rest/v1/jamcity_content` +
+      `?select=id` +
+      `&title=eq.${encodedTitle}` +
+      `&limit=1`;
   }
 
   const response = await fetch(url, {
     headers: {
       apikey: SUPABASE_SERVICE_ROLE_KEY,
-      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+      Authorization:
+        `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
     },
   });
 
@@ -333,7 +388,7 @@ async function newsExists(sourceUrl, title) {
 
 /*
 |--------------------------------------------------------------------------
-| ذخیره خبر در Supabase
+| ذخیره خبر
 |--------------------------------------------------------------------------
 */
 
@@ -344,30 +399,42 @@ async function saveNews(item, feed) {
   );
 
   if (exists) {
-    console.log(`SKIP duplicate: ${item.title}`);
+    console.log(
+      `SKIP duplicate: ${item.title}`
+    );
     return false;
   }
 
   const section = detectSection(
     item.title,
-    item.summary,
-    feed.section,
-    feed.keywords
+    item.summary
   );
 
   const record = {
     section,
+
     title: item.title,
+
     summary: item.summary,
+
     content: item.summary,
+
     source_name: feed.name,
+
     source_url: item.source_url,
+
     image_url: null,
+
     symbol: null,
+
     sentiment: null,
+
     target_price: null,
+
     is_automatic: true,
+
     is_published: true,
+
     published_at: item.published_at,
   };
 
@@ -375,18 +442,26 @@ async function saveNews(item, feed) {
     `${SUPABASE_URL}/rest/v1/jamcity_content`,
     {
       method: "POST",
+
       headers: {
         apikey: SUPABASE_SERVICE_ROLE_KEY,
-        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
-        "Content-Type": "application/json",
+
+        Authorization:
+          `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+
+        "Content-Type":
+          "application/json",
+
         Prefer: "return=minimal",
       },
+
       body: JSON.stringify(record),
     }
   );
 
   if (!response.ok) {
-    const errorText = await response.text();
+    const errorText =
+      await response.text();
 
     console.error(
       `Supabase insert error for "${item.title}":`,
@@ -410,9 +485,18 @@ async function saveNews(item, feed) {
 */
 
 async function main() {
-  console.log("========================================");
-  console.log("       JAM CITY AUTOMATIC NEWS");
-  console.log("========================================");
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    "       JAM CITY AUTOMATIC NEWS"
+  );
+
+  console.log(
+    "========================================"
+  );
+
   console.log("");
 
   let total = 0;
@@ -423,21 +507,33 @@ async function main() {
     console.log(`URL: ${feed.url}`);
 
     try {
-      const xml = await fetchUrl(feed.url);
+      const xml =
+        await fetchUrl(feed.url);
 
-      const items = parseRSS(xml);
+      const items =
+        parseRSS(xml);
 
-      console.log(`Found ${items.length} items`);
+      console.log(
+        `Found ${items.length} items`
+      );
 
       /*
-       * حداکثر 10 خبر از هر منبع
-       */
+      |--------------------------------------------------------------------------
+      | حداکثر 10 خبر از هر منبع
+      |--------------------------------------------------------------------------
+      */
 
-      for (const item of items.slice(0, 10)) {
+      for (
+        const item of items.slice(0, 10)
+      ) {
         total++;
 
         try {
-          const saved = await saveNews(item, feed);
+          const saved =
+            await saveNews(
+              item,
+              feed
+            );
 
           if (saved) {
             added++;
@@ -450,6 +546,12 @@ async function main() {
         }
       }
     } catch (error) {
+      /*
+      |--------------------------------------------------------------------------
+      | اگر یک منبع قطع بود، کل برنامه متوقف نشود
+      |--------------------------------------------------------------------------
+      */
+
       console.error(
         `SOURCE FAILED: ${feed.name}`,
         error.message
@@ -458,13 +560,30 @@ async function main() {
   }
 
   console.log("");
-  console.log("========================================");
-  console.log(`TOTAL: ${total}`);
-  console.log(`ADDED: ${added}`);
-  console.log("========================================");
+
+  console.log(
+    "========================================"
+  );
+
+  console.log(
+    `TOTAL: ${total}`
+  );
+
+  console.log(
+    `ADDED: ${added}`
+  );
+
+  console.log(
+    "========================================"
+  );
 }
 
 main().catch((error) => {
-  console.error("FATAL ERROR:", error);
+  console.error(
+    "FATAL ERROR:",
+    error
+  );
+
   process.exit(1);
 });
+```
