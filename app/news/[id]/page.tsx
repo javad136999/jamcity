@@ -1,8 +1,9 @@
+
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type NewsItem = {
@@ -20,217 +21,340 @@ type NewsItem = {
   published_at: string;
 };
 
-export default function NewsDetailPage() {
-  const params = useParams();
-  const supabase = createClient();
+const sections = [
+  {
+    key: "economic",
+    title: "اخبار اقتصادی",
+    icon: "📰",
+    active: "bg-green-500 text-white shadow-md",
+  },
+  {
+    key: "world",
+    title: "اخبار جهانی",
+    icon: "🌍",
+    active: "bg-blue-500 text-white shadow-md",
+  },
+  {
+    key: "jam",
+    title: "اخبار جم",
+    icon: "📍",
+    active: "bg-amber-500 text-white shadow-md",
+  },
+  {
+    key: "jobs",
+    title: "فرصت‌های شغلی",
+    icon: "💼",
+    active: "bg-purple-500 text-white shadow-md",
+  },
+];
 
-  const [news, setNews] = useState<NewsItem | null>(null);
+export default function NewsPage() {
+  const searchParams = useSearchParams();
+
+  const sectionFromUrl = searchParams.get("section");
+
+  const initialSection = sections.some(
+    (section) => section.key === sectionFromUrl
+  )
+    ? sectionFromUrl!
+    : "economic";
+
+  const [news, setNews] = useState<NewsItem[]>([]);
+  const [activeSection, setActiveSection] = useState(initialSection);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function loadNews() {
-      if (!params?.id) {
-        setLoading(false);
-        return;
-      }
+  const loadNews = useCallback(async (section: string) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
 
       const { data, error } = await supabase
         .from("jamcity_content")
         .select(
           "id,section,title,summary,content,source_name,source_url,image_url,symbol,sentiment,target_price,published_at"
         )
-        .eq("id", String(params.id))
         .eq("is_published", true)
-        .maybeSingle();
+        .eq("section", section)
+        .order("published_at", { ascending: false })
+        .limit(30);
 
-      if (!error) {
-        setNews(data as NewsItem | null);
-      } else {
-        console.error("News detail error:", error);
+      if (error) {
+        console.error("NEWS ERROR:", error);
+        setNews([]);
+        setError("خطا در دریافت اخبار");
+        return;
       }
 
+      setNews((data ?? []) as NewsItem[]);
+    } catch (err) {
+      console.error("NEWS LOAD ERROR:", err);
+      setNews([]);
+      setError("خطا در ارتباط با سرور");
+    } finally {
       setLoading(false);
     }
+  }, []);
 
-    loadNews();
-  }, [params, supabase]);
+  useEffect(() => {
+    if (
+      sectionFromUrl &&
+      sections.some((section) => section.key === sectionFromUrl)
+    ) {
+      setActiveSection(sectionFromUrl);
+    }
+  }, [sectionFromUrl]);
 
-  if (loading) {
-    return (
-      <main dir="rtl" className="pb-10">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
-          <div className="animate-pulse text-3xl">
-            📰
-          </div>
+  useEffect(() => {
+    loadNews(activeSection);
+  }, [activeSection, loadNews]);
 
-          <p className="mt-3 text-sm text-slate-400">
-            در حال دریافت خبر...
-          </p>
-        </section>
-      </main>
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+
+    window.history.replaceState(
+      null,
+      "",
+      `/news?section=${section}`
     );
-  }
-
-  if (!news) {
-    return (
-      <main dir="rtl" className="pb-10">
-        <section className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
-
-          <div className="text-4xl">
-            😕
-          </div>
-
-          <h1 className="mt-3 text-lg font-black text-slate-700">
-            خبر پیدا نشد
-          </h1>
-
-          <p className="mt-2 text-[10px] text-slate-400">
-            این خبر وجود ندارد یا دیگر منتشر نشده است.
-          </p>
-
-          <Link
-            href="/news"
-            className="mt-5 inline-block rounded-xl bg-green-500 px-5 py-2.5 text-[9px] font-black text-black"
-          >
-            بازگشت به اخبار
-          </Link>
-
-        </section>
-      </main>
-    );
-  }
+  };
 
   return (
-    <main dir="rtl" className="pb-10">
+    <main dir="rtl" className="space-y-5 pb-10">
 
-      <article className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+      {/* HEADER */}
+      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-[9px] font-black text-green-600">
+          JAM CITY NEWS
+        </p>
 
-        {news.image_url && (
-          <div className="h-56 overflow-hidden bg-slate-100 sm:h-80">
+        <h1 className="mt-1 text-2xl font-black text-slate-800">
+          📰 اخبار جم‌سیتی
+        </h1>
 
-            <img
-              src={news.image_url}
-              alt={news.title}
-              className="h-full w-full object-cover"
-            />
+        <p className="mt-2 text-[10px] leading-6 text-slate-400">
+          آخرین اخبار ایران، اقتصاد، جهان، جم و فرصت‌های شغلی
+        </p>
+      </section>
 
+      {/* CATEGORIES */}
+      <section className="sticky top-2 z-20 rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {sections.map((section) => {
+            const isActive = activeSection === section.key;
+
+            return (
+              <button
+                key={section.key}
+                type="button"
+                onClick={() => handleSectionChange(section.key)}
+                className={`min-h-[68px] rounded-[18px] px-2 text-center transition ${
+                  isActive
+                    ? section.active
+                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
+                <div className="text-xl">
+                  {section.icon}
+                </div>
+
+                <div className="mt-1 text-[10px] font-black">
+                  {section.title}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* CURRENT CATEGORY */}
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-sm font-black text-slate-700">
+          {sections.find(
+            (section) => section.key === activeSection
+          )?.title}
+        </h2>
+
+        {!loading && (
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-[9px] font-bold text-slate-500">
+            {news.length} خبر
+          </span>
+        )}
+      </div>
+
+      {/* NEWS */}
+      <section>
+
+        {/* LOADING */}
+        {loading && (
+          <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <div className="animate-pulse text-3xl">
+              📰
+            </div>
+
+            <p className="mt-3 text-sm text-slate-400">
+              در حال دریافت اخبار...
+            </p>
           </div>
         )}
 
-        <div className="p-5 sm:p-8">
-
-          <Link
-            href="/news"
-            className="text-[9px] font-bold text-green-600"
-          >
-            ← بازگشت به اخبار
-          </Link>
-
-          <div className="mt-5 flex flex-wrap items-center gap-3 text-[8px] text-slate-400">
-
-            <span>
-              {news.source_name || "جم‌سیتی"}
-            </span>
-
-            <span>
-              •
-            </span>
-
-            <span>
-              {new Date(news.published_at).toLocaleDateString("fa-IR")}
-            </span>
-
-            {news.symbol && (
-              <>
-                <span>
-                  •
-                </span>
-
-                <span className="font-black text-green-600">
-                  {news.symbol}
-                </span>
-              </>
-            )}
-
-          </div>
-
-          <h1 className="mt-4 text-2xl font-black leading-9 text-slate-800 sm:text-3xl">
-            {news.title}
-          </h1>
-
-          {news.summary && (
-            <p className="mt-5 rounded-2xl bg-slate-50 p-4 text-sm font-bold leading-7 text-slate-600">
-              {news.summary}
-            </p>
-          )}
-
-          {news.symbol && (
-            <div className="mt-5 rounded-2xl border border-green-100 bg-green-50 p-4">
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-
-                <div>
-                  <p className="text-[8px] text-slate-400">
-                    دارایی / نماد
-                  </p>
-
-                  <p className="mt-1 text-lg font-black text-slate-800">
-                    {news.symbol}
-                  </p>
-                </div>
-
-                {news.sentiment && (
-                  <div>
-                    <p className="text-[8px] text-slate-400">
-                      دیدگاه تحلیل
-                    </p>
-
-                    <p className="mt-1 text-sm font-black text-green-600">
-                      {news.sentiment}
-                    </p>
-                  </div>
-                )}
-
-                {news.target_price !== null && (
-                  <div>
-                    <p className="text-[8px] text-slate-400">
-                      هدف تحلیل
-                    </p>
-
-                    <p className="mt-1 text-sm font-black text-slate-800">
-                      {new Intl.NumberFormat("fa-IR").format(
-                        news.target_price
-                      )}
-                    </p>
-                  </div>
-                )}
-
-              </div>
-
+        {/* ERROR */}
+        {!loading && error && (
+          <div className="rounded-[28px] border border-red-200 bg-red-50 p-8 text-center">
+            <div className="text-3xl">
+              ⚠️
             </div>
-          )}
 
-          {news.content && (
-            <div className="mt-7 whitespace-pre-line text-sm leading-8 text-slate-700">
-              {news.content}
-            </div>
-          )}
+            <h2 className="mt-3 text-sm font-black text-red-700">
+              {error}
+            </h2>
 
-          {news.source_url && (
-            <a
-              href={news.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-8 block rounded-2xl bg-slate-900 px-5 py-3 text-center text-[10px] font-black text-white transition hover:bg-slate-800"
+            <button
+              type="button"
+              onClick={() => loadNews(activeSection)}
+              className="mt-4 rounded-xl bg-red-500 px-5 py-2 text-[10px] font-bold text-white"
             >
-              مشاهده منبع اصلی خبر ←
-            </a>
-          )}
+              تلاش مجدد
+            </button>
+          </div>
+        )}
 
-        </div>
+        {/* EMPTY */}
+        {!loading && !error && news.length === 0 && (
+          <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
+            <div className="text-4xl">
+              📰
+            </div>
 
-      </article>
+            <h2 className="mt-3 text-lg font-black text-slate-700">
+              خبری در این دسته وجود ندارد
+            </h2>
 
+            <p className="mt-2 text-[10px] leading-6 text-slate-400">
+              به‌محض دریافت خبر جدید، اینجا نمایش داده خواهد شد.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => loadNews(activeSection)}
+              className="mt-4 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-bold text-white"
+            >
+              بروزرسانی اخبار
+            </button>
+          </div>
+        )}
+
+        {/* NEWS LIST */}
+        {!loading && !error && news.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {news.map((item) => (
+              <article
+                key={item.id}
+                className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+              >
+
+                {/* IMAGE */}
+                {item.image_url ? (
+                  <div className="h-44 overflow-hidden bg-slate-100">
+                    <img
+                      src={item.image_url}
+                      alt={item.title}
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 hover:scale-105"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-28 items-center justify-center bg-slate-50">
+                    <span className="text-4xl opacity-30">
+                      📰
+                    </span>
+                  </div>
+                )}
+
+                {/* CONTENT */}
+                <div className="p-4">
+
+                  {/* SOURCE + DATE */}
+                  <div className="mb-3 flex items-center justify-between gap-2">
+                    <span className="truncate text-[8px] font-bold text-green-600">
+                      {item.source_name || "جم‌سیتی"}
+                    </span>
+
+                    <span className="shrink-0 text-[8px] text-slate-400">
+                      {item.published_at
+                        ? new Date(
+                            item.published_at
+                          ).toLocaleDateString("fa-IR")
+                        : ""}
+                    </span>
+                  </div>
+
+                  {/* TITLE */}
+                  <h2 className="line-clamp-3 text-sm font-black leading-6 text-slate-800">
+                    {item.title}
+                  </h2>
+
+                  {/* SUMMARY */}
+                  {item.summary && (
+                    <p className="mt-2 line-clamp-3 text-[10px] leading-6 text-slate-400">
+                      {item.summary}
+                    </p>
+                  )}
+
+                  {/* CRYPTO / ANALYSIS */}
+                  {item.symbol && (
+                    <div className="mt-3 rounded-xl bg-slate-50 p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] font-black text-slate-700">
+                          {item.symbol}
+                        </span>
+
+                        {item.sentiment && (
+                          <span className="text-[8px] font-bold text-green-600">
+                            {item.sentiment}
+                          </span>
+                        )}
+                      </div>
+
+                      {item.target_price !== null && (
+                        <p className="mt-1 text-[8px] text-slate-400">
+                          هدف تحلیل:{" "}
+                          {new Intl.NumberFormat("fa-IR").format(
+                            item.target_price
+                          )}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* BUTTON */}
+                  {item.source_url ? (
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 block rounded-xl bg-slate-900 px-4 py-2.5 text-center text-[9px] font-bold text-white transition hover:bg-slate-800"
+                    >
+                      مشاهده منبع خبر ←
+                    </a>
+                  ) : (
+                    <Link
+                      href={`/news/${item.id}?section=${activeSection}`}
+                      className="mt-4 block rounded-xl bg-green-500 px-4 py-2.5 text-center text-[9px] font-bold text-black transition hover:bg-green-400"
+                    >
+                      ادامه خبر ←
+                    </Link>
+                  )}
+
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   );
 }
+
