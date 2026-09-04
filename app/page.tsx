@@ -2,7 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import JamCityNews from "@/components/JamCityNews";
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -557,8 +556,6 @@ export default function HomePage() {
 
       </section>
 
-{/* بخش اخبار جم‌سیتی */}
-<JamCityNews />
 
       {/* =====================================================
           GOLD BUSINESSES
