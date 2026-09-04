@@ -469,33 +469,48 @@ export default function HomePage() {
       ====================================================== */}
 
       <section>
+{/* =====================================================
+    NEWS CATEGORIES
+===================================================== */}
 
-        <div className="mb-4 flex items-end justify-between">
+<section className="mb-4 rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
+  <div className="grid grid-cols-4 gap-2">
 
-          <div>
+    <Link
+      href="/news/economic"
+      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-green-50 px-2 text-center text-[13px] font-black text-green-700 transition hover:bg-green-100"
+    >
+      📰
+      <span className="mr-1">اخبار اقتصادی</span>
+    </Link>
 
-            <p className="text-[9px] font-bold text-green-600">
-              EXPLORE JAM
-            </p>
+    <Link
+      href="/news/world"
+      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-blue-50 px-2 text-center text-[13px] font-black text-blue-700 transition hover:bg-blue-100"
+    >
+      🌍
+      <span className="mr-1">اخبار جهانی</span>
+    </Link>
 
-            <h2 className="mt-1 text-xl font-black text-slate-800">
-              📍 شهر رو روی نقشه ببین
-            </h2>
+    <Link
+      href="/news/jam"
+      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-amber-50 px-2 text-center text-[13px] font-black text-amber-700 transition hover:bg-amber-100"
+    >
+      📍
+      <span className="mr-1">اخبار جم</span>
+    </Link>
 
-            <p className="mt-1 text-[9px] text-slate-400">
-              کسب‌وکارهای اطراف جم را پیدا کن
-            </p>
+    <Link
+      href="/jobs"
+      className="flex min-h-[58px] items-center justify-center rounded-[18px] bg-purple-50 px-2 text-center text-[13px] font-black text-purple-700 transition hover:bg-purple-100"
+    >
+      💼
+      <span className="mr-1">فرصت‌های شغلی</span>
+    </Link>
 
-          </div>
+  </div>
 
-          <Link
-            href="/map"
-            className="rounded-full bg-slate-900 px-4 py-2 text-[9px] font-bold text-white"
-          >
-            نقشه کامل
-          </Link>
-
-        </div>
+</section>
 
         {categories.length > 0 && (
           <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
@@ -542,7 +557,8 @@ export default function HomePage() {
 
       </section>
 
-
+{/* بخش اخبار جم‌سیتی */}
+<JamCityNews />
 
       {/* =====================================================
           GOLD BUSINESSES
