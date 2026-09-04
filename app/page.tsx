@@ -146,6 +146,65 @@ export default function HomePage() {
     <div dir="rtl" className="space-y-4 pb-10">
 
       {/* =====================================================
+          JAM CITY NEWS BAR (NEON) — بالای صفحه
+      ====================================================== */}
+
+      <section className="relative mx-auto mt-2 max-w-md overflow-hidden rounded-full border border-[#39ff8f]/50 bg-[#03110a] px-3 py-1.5 shadow-[0_0_20px_rgba(57,255,143,.35),inset_0_0_15px_rgba(57,255,143,.08)]">
+
+        {/* Neon glow */}
+        <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
+        <div className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
+
+        <div className="relative flex items-center gap-2">
+
+          {/* عنوان */}
+          <Link
+            href="/news"
+            className="flex shrink-0 items-center gap-1.5"
+          >
+            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-[#39ff8f]/50 bg-[#39ff8f]/10 text-[10px] shadow-[0_0_10px_rgba(57,255,143,.5)]">
+              📰
+            </span>
+
+            <p className="hidden text-[9px] font-black text-[#39ff8f] drop-shadow-[0_0_6px_rgba(57,255,143,.7)] sm:block">
+              اخبار روز
+            </p>
+          </Link>
+
+          {/* خط جداکننده */}
+          <div className="h-4 w-px shrink-0 bg-[#39ff8f]/30" />
+
+          {/* خبرها */}
+          <div className="min-w-0 flex-1 overflow-hidden">
+
+            <div className="flex items-center gap-2">
+
+              <span className="flex shrink-0 items-center gap-1 rounded-full border border-[#39ff8f]/40 bg-[#39ff8f]/10 px-1.5 py-0.5 text-[6px] font-black text-[#39ff8f]">
+                <span className="h-1 w-1 animate-pulse rounded-full bg-[#39ff8f] shadow-[0_0_8px_rgba(57,255,143,1)]" />
+                LIVE
+              </span>
+
+              <p className="truncate text-[8px] font-bold text-[#c8ffe0]">
+                آخرین اخبار ایران، اقتصاد، جم و عسلویه
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* مشاهده همه */}
+          <Link
+            href="/news"
+            className="shrink-0 rounded-full border border-[#39ff8f]/40 bg-[#39ff8f]/10 px-2 py-1 text-[6px] font-black text-[#39ff8f] transition hover:bg-[#39ff8f]/20"
+          >
+            همه ←
+          </Link>
+
+        </div>
+
+      </section>
+
+      {/* =====================================================
           HERO
       ====================================================== */}
 
