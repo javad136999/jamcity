@@ -19,66 +19,89 @@ type NewsItem = {
   published_at: string;
 };
 
+const supabase = createClient();
+
 const sections = [
   {
     key: "economic",
     title: "اخبار اقتصادی",
     icon: "📰",
-    color: "green",
+    active: "bg-green-500 text-white shadow-md",
   },
   {
     key: "world",
     title: "اخبار جهانی",
     icon: "🌍",
-    color: "blue",
+    active: "bg-blue-500 text-white shadow-md",
   },
   {
     key: "jam",
     title: "اخبار جم",
     icon: "📍",
-    color: "amber",
+    active: "bg-amber-500 text-white shadow-md",
   },
   {
     key: "jobs",
     title: "فرصت‌های شغلی",
     icon: "💼",
-    color: "purple",
+    active: "bg-purple-500 text-white shadow-md",
   },
 ];
 
 export default function NewsPage() {
-  const supabase = createClient();
-
   const [news, setNews] = useState<NewsItem[]>([]);
   const [activeSection, setActiveSection] = useState("economic");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadNews() {
       setLoading(true);
+      setError(null);
 
-      const { data, error } = await supabase
-        .from("jamcity_content")
-        .select(
-          "id,section,title,summary,content,source_name,source_url,image_url,symbol,sentiment,target_price,published_at"
-        )
-        .eq("is_published", true)
-        .eq("section", activeSection)
-        .order("published_at", { ascending: false })
-        .limit(20);
+      try {
+        const { data, error } = await supabase
+          .from("jamcity_content")
+          .select(
+            "id,section,title,summary,content,source_name,source_url,image_url,symbol,sentiment,target_price,published_at"
+          )
+          .eq("is_published", true)
+          .eq("section", activeSection)
+          .order("published_at", { ascending: false })
+          .limit(30);
 
-      if (!error) {
+        if (cancelled) return;
+
+        if (error) {
+          console.error("NEWS ERROR:", error);
+          setNews([]);
+          setError("خطا در دریافت اخبار");
+          return;
+        }
+
         setNews((data ?? []) as NewsItem[]);
-      } else {
-        console.error("News loading error:", error);
-        setNews([]);
-      }
+      } catch (err) {
+        console.error("NEWS LOAD ERROR:", err);
 
-      setLoading(false);
+        if (!cancelled) {
+          setNews([]);
+          setError("خطا در ارتباط با سرور");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     }
 
     loadNews();
-  }, [activeSection, supabase]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeSection]);
 
   return (
     <main dir="rtl" className="space-y-5 pb-10">
@@ -95,7 +118,7 @@ export default function NewsPage() {
           📰 اخبار جم‌سیتی
         </h1>
 
-        <p className="mt-2 text-[10px] text-slate-400">
+        <p className="mt-2 text-[10px] leading-6 text-slate-400">
           آخرین اخبار ایران، اقتصاد، جهان، جم و فرصت‌های شغلی
         </p>
 
@@ -108,46 +131,63 @@ export default function NewsPage() {
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
 
-          {sections.map((section) => (
+          {sections.map((section) => {
 
-            <button
-              key={section.key}
-              onClick={() => setActiveSection(section.key)}
-              className={`min-h-[65px] rounded-[18px] px-2 text-center text-[11px] font-black transition ${
-                activeSection === section.key
-                  ? section.color === "green"
-                    ? "bg-green-500 text-white shadow-md"
-                    : section.color === "blue"
-                    ? "bg-blue-500 text-white shadow-md"
-                    : section.color === "amber"
-                    ? "bg-amber-500 text-white shadow-md"
-                    : "bg-purple-500 text-white shadow-md"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100"
-              }`}
-            >
+            const isActive = activeSection === section.key;
 
-              <span className="text-xl">
-                {section.icon}
-              </span>
+            return (
+              <button
+                key={section.key}
+                type="button"
+                onClick={() => setActiveSection(section.key)}
+                className={`min-h-[68px] rounded-[18px] px-2 text-center transition ${
+                  isActive
+                    ? section.active
+                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                }`}
+              >
 
-              <span className="mr-1">
-                {section.title}
-              </span>
+                <div className="text-xl">
+                  {section.icon}
+                </div>
 
-            </button>
+                <div className="mt-1 text-[10px] font-black">
+                  {section.title}
+                </div>
 
-          ))}
+              </button>
+            );
+          })}
 
         </div>
 
       </section>
 
 
-      {/* NEWS LIST */}
+      {/* CURRENT CATEGORY */}
+
+      <div className="flex items-center justify-between px-1">
+
+        <h2 className="text-sm font-black text-slate-700">
+          {sections.find((x) => x.key === activeSection)?.title}
+        </h2>
+
+        {!loading && (
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-[9px] font-bold text-slate-500">
+            {news.length} خبر
+          </span>
+        )}
+
+      </div>
+
+
+      {/* NEWS */}
 
       <section>
 
-        {loading ? (
+        {/* LOADING */}
+
+        {loading && (
 
           <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
 
@@ -161,7 +201,41 @@ export default function NewsPage() {
 
           </div>
 
-        ) : news.length === 0 ? (
+        )}
+
+
+        {/* ERROR */}
+
+        {!loading && error && (
+
+          <div className="rounded-[28px] border border-red-200 bg-red-50 p-8 text-center">
+
+            <div className="text-3xl">
+              ⚠️
+            </div>
+
+            <h2 className="mt-3 text-sm font-black text-red-700">
+              {error}
+            </h2>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveSection((current) => current);
+              }}
+              className="mt-4 rounded-xl bg-red-500 px-5 py-2 text-[10px] font-bold text-white"
+            >
+              تلاش مجدد
+            </button>
+
+          </div>
+
+        )}
+
+
+        {/* EMPTY */}
+
+        {!loading && !error && news.length === 0 && (
 
           <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
 
@@ -170,39 +244,56 @@ export default function NewsPage() {
             </div>
 
             <h2 className="mt-3 text-lg font-black text-slate-700">
-              هنوز خبری منتشر نشده است
+              خبری در این دسته وجود ندارد
             </h2>
 
             <p className="mt-2 text-[10px] leading-6 text-slate-400">
-              به‌محض انتشار خبر، اینجا نمایش داده خواهد شد.
+              به‌محض دریافت خبر جدید، اینجا نمایش داده خواهد شد.
             </p>
 
           </div>
 
-        ) : (
+        )}
+
+
+        {/* NEWS LIST */}
+
+        {!loading && !error && news.length > 0 && (
 
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 
             {news.map((item) => (
 
-              <Link
+              <article
                 key={item.id}
-                href={`/news/${item.id}`}
-                className="group block overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
               >
 
                 {/* IMAGE */}
 
-                {item.image_url && (
+                {item.image_url ? (
+
                   <div className="h-44 overflow-hidden bg-slate-100">
 
                     <img
                       src={item.image_url}
                       alt={item.title}
-                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                      loading="lazy"
+                      className="h-full w-full object-cover transition duration-500 hover:scale-105"
                     />
 
                   </div>
+
+                ) : (
+
+                  <div className="flex h-28 items-center justify-center bg-slate-50">
+
+                    <span className="text-4xl opacity-30">
+                      📰
+                    </span>
+
+                  </div>
+
                 )}
 
 
@@ -210,37 +301,48 @@ export default function NewsPage() {
 
                 <div className="p-4">
 
-                  <div className="mb-3 flex items-center justify-between">
+                  {/* SOURCE + DATE */}
 
-                    <span className="text-[8px] font-bold text-green-600">
+                  <div className="mb-3 flex items-center justify-between gap-2">
+
+                    <span className="truncate text-[8px] font-bold text-green-600">
                       {item.source_name || "جم‌سیتی"}
                     </span>
 
-                    <span className="text-[8px] text-slate-400">
-                      {new Date(item.published_at).toLocaleDateString(
-                        "fa-IR"
-                      )}
+                    <span className="shrink-0 text-[8px] text-slate-400">
+                      {item.published_at
+                        ? new Date(item.published_at).toLocaleDateString(
+                            "fa-IR"
+                          )
+                        : ""}
                     </span>
 
                   </div>
 
 
-                  <h2 className="line-clamp-2 text-sm font-black leading-6 text-slate-800 transition group-hover:text-green-600">
+                  {/* TITLE */}
+
+                  <h2 className="line-clamp-3 text-sm font-black leading-6 text-slate-800">
                     {item.title}
                   </h2>
 
 
+                  {/* SUMMARY */}
+
                   {item.summary && (
+
                     <p className="mt-2 line-clamp-3 text-[10px] leading-6 text-slate-400">
                       {item.summary}
                     </p>
+
                   )}
 
 
-                  {/* CRYPTO DATA */}
+                  {/* CRYPTO / ANALYSIS */}
 
                   {item.symbol && (
-                    <div className="mt-3 rounded-xl bg-slate-50 p-2">
+
+                    <div className="mt-3 rounded-xl bg-slate-50 p-3">
 
                       <div className="flex items-center justify-between">
 
@@ -249,36 +351,59 @@ export default function NewsPage() {
                         </span>
 
                         {item.sentiment && (
+
                           <span className="text-[8px] font-bold text-green-600">
                             {item.sentiment}
                           </span>
+
                         )}
 
                       </div>
 
+
                       {item.target_price !== null && (
+
                         <p className="mt-1 text-[8px] text-slate-400">
-                          هدف تحلیل:
-                          {" "}
+                          هدف تحلیل:{" "}
                           {new Intl.NumberFormat("fa-IR").format(
                             item.target_price
                           )}
                         </p>
+
                       )}
 
                     </div>
+
                   )}
 
 
-                  {/* CONTINUE */}
+                  {/* BUTTON */}
 
-                  <div className="mt-4 rounded-xl bg-green-500 px-4 py-2.5 text-center text-[9px] font-bold text-black transition group-hover:bg-green-400">
-                    ادامه خبر ←
-                  </div>
+                  {item.source_url ? (
+
+                    <a
+                      href={item.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 block rounded-xl bg-slate-900 px-4 py-2.5 text-center text-[9px] font-bold text-white transition hover:bg-slate-800"
+                    >
+                      مشاهده منبع خبر ←
+                    </a>
+
+                  ) : (
+
+                    <Link
+                      href={`/news/${item.id}`}
+                      className="mt-4 block rounded-xl bg-green-500 px-4 py-2.5 text-center text-[9px] font-bold text-black transition hover:bg-green-400"
+                    >
+                      ادامه خبر ←
+                    </Link>
+
+                  )}
 
                 </div>
 
-              </Link>
+              </article>
 
             ))}
 
