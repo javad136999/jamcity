@@ -39,12 +39,6 @@ type Product = {
   discount_percent: number | null;
 };
 
-type CategoryOption = {
-  slug: string;
-  name: string;
-  icon: string;
-};
-
 const TOROB_RECENT_SEARCHES_KEY = "jamcity:torob-recent-searches";
 const TOROB_SUGGESTIONS = [
   "گوشی سامسونگ",
@@ -180,13 +174,15 @@ export default function HomePage() {
     [visibleBusinesses]
   );
 
-  const categories = useMemo<CategoryOption[]>(
+  const categories = useMemo(
     () =>
       Array.from(new Set((businesses ?? []).map((b) => b.category)))
         .map((slug) =>
           BUSINESS_CATEGORIES.find((category) => category.slug === slug)
         )
-        .filter((category): category is CategoryOption => Boolean(category)),
+        .filter((category): category is NonNullable<typeof category> =>
+          Boolean(category)
+        ),
     [businesses]
   );
 
