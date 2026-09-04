@@ -232,8 +232,7 @@ export default function HomePage() {
           <Link href="/news" className="flex shrink-0 items-center gap-1.5">
 <span className="flex h-8 w-8 items-center justify-center rounded-full border border-[#39ff8f]/50 bg-[#39ff8f]/10 text-sm shadow-[0_0_10px_rgba(57,255,143,.5)]">
   📰
-</span>              📰
-            </span>
+</span>       
 <p className="hidden text-[11px] font-black text-[#39ff8f] drop-shadow-[0_0_6px_rgba(57,255,143,.7)] sm:block">
   اخبار روز
 </p>         
