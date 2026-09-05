@@ -58,7 +58,6 @@ export default function NewsPage() {
     setError(null);
 
     try {
-      // ساخت Client در زمان اجرای درخواست
       const supabase = createClient();
 
       const { data, error } = await supabase
@@ -93,26 +92,11 @@ export default function NewsPage() {
   }, [activeSection, loadNews]);
 
   return (
-    <main dir="rtl" className="space-y-5 pb-10">
-
-      {/* HEADER */}
-      <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-        <p className="text-[9px] font-black text-green-600">
-          JAM CITY NEWS
-        </p>
-
-        <h1 className="mt-1 text-2xl font-black text-slate-800">
-          📰 اخبار جم‌سیتی
-        </h1>
-
-        <p className="mt-2 text-[10px] leading-6 text-slate-400">
-          آخرین اخبار ایران، اقتصاد، جهان، جم و فرصت‌های شغلی
-        </p>
-      </section>
+    <main dir="rtl" className="pb-10">
 
       {/* CATEGORIES */}
-      <section className="rounded-[24px] border border-slate-200 bg-white p-2 shadow-sm">
-<div className="flex gap-2 overflow-x-auto sm:grid sm:grid-cols-4">
+      <section className="mb-5">
+        <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-4">
           {sections.map((section) => {
             const isActive = activeSection === section.key;
 
@@ -121,12 +105,14 @@ export default function NewsPage() {
                 key={section.key}
                 type="button"
                 onClick={() => setActiveSection(section.key)}
-className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transition sm:min-w-0 ${                  isActive
+                className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transition sm:min-w-0 ${
+                  isActive
                     ? section.active
                     : "bg-slate-50 text-slate-600 hover:bg-slate-100"
                 }`}
               >
-<div className="text-base">                  {section.icon}
+                <div className="text-base">
+                  {section.icon}
                 </div>
 
                 <div className="mt-1 text-[10px] font-black">
@@ -139,13 +125,13 @@ className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transitio
       </section>
 
       {/* CURRENT CATEGORY */}
-      <div className="flex items-center justify-between px-1">
+      <div className="mb-3 flex items-center justify-between px-1">
         <h2 className="text-sm font-black text-slate-700">
           {sections.find((x) => x.key === activeSection)?.title}
         </h2>
 
         {!loading && (
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-[9px] font-bold text-slate-500">
+          <span className="text-[9px] font-bold text-slate-400">
             {news.length} خبر
           </span>
         )}
@@ -156,12 +142,12 @@ className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transitio
 
         {/* LOADING */}
         {loading && (
-          <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
+          <div className="py-10 text-center">
             <div className="animate-pulse text-3xl">
               📰
             </div>
 
-            <p className="mt-3 text-sm text-slate-400">
+            <p className="mt-3 text-[10px] text-slate-400">
               در حال دریافت اخبار...
             </p>
           </div>
@@ -169,7 +155,7 @@ className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transitio
 
         {/* ERROR */}
         {!loading && error && (
-          <div className="rounded-[28px] border border-red-200 bg-red-50 p-8 text-center">
+          <div className="py-8 text-center">
             <div className="text-3xl">
               ⚠️
             </div>
@@ -190,12 +176,12 @@ className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transitio
 
         {/* EMPTY */}
         {!loading && !error && news.length === 0 && (
-          <div className="rounded-[28px] border border-slate-200 bg-white p-10 text-center shadow-sm">
+          <div className="py-10 text-center">
             <div className="text-4xl">
               📰
             </div>
 
-            <h2 className="mt-3 text-lg font-black text-slate-700">
+            <h2 className="mt-3 text-sm font-black text-slate-700">
               خبری در این دسته وجود ندارد
             </h2>
 
@@ -213,139 +199,59 @@ className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transitio
           </div>
         )}
 
-        {/* NEWS LIST */}
-       {/* NEWS LIST */}
-{!loading && !error && news.length > 0 && (
-  <div className="divide-y divide-slate-200">
-    {news.map((item) => (
-      <article
-        key={item.id}
-        className="py-4"
-      >
-        {/* SOURCE + DATE */}
-        <div className="mb-1 flex items-center justify-between gap-2">
-          <span className="truncate text-[8px] font-bold text-green-600">
-            {item.source_name || "جم‌سیتی"}
-          </span>
+        {/* TEXT NEWS LIST */}
+        {!loading && !error && news.length > 0 && (
+          <div className="divide-y divide-slate-200">
+            {news.map((item) => (
+              <article
+                key={item.id}
+                className="py-4"
+              >
+                {/* TITLE */}
+                <h2 className="text-[13px] font-black leading-6 text-slate-800">
+                  {item.title}
+                </h2>
 
-          <span className="shrink-0 text-[8px] text-slate-400">
-            {item.published_at
-              ? new Date(item.published_at).toLocaleDateString("fa-IR")
-              : ""}
-          </span>
-        </div>
+                {/* SUMMARY */}
+                {item.summary && (
+                  <p className="mt-1 text-[10px] leading-6 text-slate-500">
+                    {item.summary}
+                  </p>
+                )}
 
-        {/* TITLE */}
-        <h2 className="text-[13px] font-black leading-6 text-slate-800">
-          {item.title}
-        </h2>
+                {/* SOURCE + DATE */}
+                <div className="mt-2 flex items-center gap-3 text-[8px]">
+                  <span className="font-bold text-green-600">
+                    {item.source_name || "جم‌سیتی"}
+                  </span>
 
-        {/* SUMMARY */}
-        {item.summary && (
-          <p className="mt-1 text-[10px] leading-6 text-slate-500">
-            {item.summary}
-          </p>
-        )}
-
-        {/* BUTTON */}
-        {item.source_url ? (
-          <a
-            href={item.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-[9px] font-bold text-green-600"
-          >
-            مشاهده منبع ←
-          </a>
-        ) : (
-          <Link
-            href={`/news/${item.id}`}
-            className="mt-2 inline-block text-[9px] font-bold text-green-600"
-          >
-            ادامه خبر ←
-          </Link>
-        )}
-      </article>
-    ))}
-  </div>
-)}
-
-                {/* CONTENT */}
-                <div className="p-4">
-
-                  {/* SOURCE + DATE */}
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className="truncate text-[8px] font-bold text-green-600">
-                      {item.source_name || "جم‌سیتی"}
-                    </span>
-
-                    <span className="shrink-0 text-[8px] text-slate-400">
-                      {item.published_at
-                        ? new Date(item.published_at).toLocaleDateString(
-                            "fa-IR"
-                          )
-                        : ""}
-                    </span>
-                  </div>
-
-                  {/* TITLE */}
-                  <h2 className="line-clamp-3 text-sm font-black leading-6 text-slate-800">
-                    {item.title}
-                  </h2>
-
-                  {/* SUMMARY */}
-                  {item.summary && (
-                    <p className="mt-2 line-clamp-3 text-[10px] leading-6 text-slate-400">
-                      {item.summary}
-                    </p>
-                  )}
-
-                  {/* CRYPTO / ANALYSIS */}
-                  {item.symbol && (
-                    <div className="mt-3 rounded-xl bg-slate-50 p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[9px] font-black text-slate-700">
-                          {item.symbol}
-                        </span>
-
-                        {item.sentiment && (
-                          <span className="text-[8px] font-bold text-green-600">
-                            {item.sentiment}
-                          </span>
-                        )}
-                      </div>
-
-                      {item.target_price !== null && (
-                        <p className="mt-1 text-[8px] text-slate-400">
-                          هدف تحلیل:{" "}
-                          {new Intl.NumberFormat("fa-IR").format(
-                            item.target_price
-                          )}
-                        </p>
-                      )}
-                    </div>
-                  )}
-
-                  {/* BUTTON */}
-                  {item.source_url ? (
-                    <a
-                      href={item.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-4 block rounded-xl bg-slate-900 px-4 py-2.5 text-center text-[9px] font-bold text-white transition hover:bg-slate-800"
-                    >
-                      مشاهده منبع خبر ←
-                    </a>
-                  ) : (
-                    <Link
-                      href={`/news/${item.id}`}
-                      className="mt-4 block rounded-xl bg-green-500 px-4 py-2.5 text-center text-[9px] font-bold text-black transition hover:bg-green-400"
-                    >
-                      ادامه خبر ←
-                    </Link>
-                  )}
-
+                  <span className="text-slate-400">
+                    {item.published_at
+                      ? new Date(item.published_at).toLocaleDateString(
+                          "fa-IR"
+                        )
+                      : ""}
+                  </span>
                 </div>
+
+                {/* LINK */}
+                {item.source_url ? (
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-block text-[9px] font-bold text-green-600"
+                  >
+                    مشاهده منبع ←
+                  </a>
+                ) : (
+                  <Link
+                    href={`/news/${item.id}`}
+                    className="mt-2 inline-block text-[9px] font-bold text-green-600"
+                  >
+                    ادامه خبر ←
+                  </Link>
+                )}
               </article>
             ))}
           </div>
