@@ -221,17 +221,60 @@ export default function HomePage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-5 bg-[#F7F9F4] pb-10">
+    <div dir="rtl" className="space-y-4 bg-[#F7F9F4] pb-10">
+
+      {/* =====================================================
+          TOP UTILITY BAR — لوگو + تماس با مدیر + ورود/ثبت‌نام
+          همه جمع‌وجور و بالای صفحه، بدون نیاز به اسکرول
+      ====================================================== */}
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-1 pt-2">
+        <Link href="/" className="flex items-center gap-1.5">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E3F3E9] text-sm">
+            🌴
+          </span>
+          <span className="text-[10px] font-black text-[#1D2B1F] sm:text-xs">
+            جم سیتی
+          </span>
+        </Link>
+
+        <div className="flex items-center gap-1.5">
+          <Link
+            href="/contact"
+            aria-label="تماس با مدیر"
+            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E3EBDE] bg-white text-[13px] shadow-sm transition hover:border-[#CFE6D6] hover:bg-[#F3FAF5] active:scale-95"
+          >
+            🎧
+          </Link>
+
+          {user ? (
+            <Link
+              href="/profile"
+              aria-label="حساب کاربری"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#147A4B] text-[10px] font-black text-white shadow-sm active:scale-95"
+            >
+              {(profile?.display_name || "ک").charAt(0)}
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              aria-label="ورود / ثبت‌نام"
+              className="flex items-center gap-1 rounded-full border border-[#E3EBDE] bg-white px-2.5 py-1.5 text-[9px] font-black text-[#1D2B1F] shadow-sm transition hover:border-[#CFE6D6] hover:bg-[#F3FAF5] active:scale-95"
+            >
+              👤 <span>ورود</span>
+            </Link>
+          )}
+        </div>
+      </div>
 
       {/* JAM CITY NEWS BAR — نئون: کل ردیف یه لینک واحده به /news */}
       <Link
         href="/news"
-        className="group relative mx-auto mt-2 flex max-w-md items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-4 py-2 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.35),0_6px_24px_rgba(20,122,75,.15)]"
+        className="group relative mx-auto flex max-w-md items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.35),0_6px_24px_rgba(20,122,75,.15)]"
       >
         <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
         <div className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-[#39ff8f]/10 blur-2xl" />
 
-        <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#eafff3] text-sm shadow-[0_0_12px_rgba(57,255,143,.45)]">
+        <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eafff3] text-sm shadow-[0_0_12px_rgba(57,255,143,.45)]">
           📰
         </span>
 
@@ -257,77 +300,103 @@ export default function HomePage() {
           همه ←
         </span>
       </Link>
-{/* HERO */}
-<section className="relative overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white shadow-[0_12px_35px_rgba(20,60,40,.06)] sm:rounded-[26px]">
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.12),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.10),transparent_32%)]" />
 
-  <div className="relative p-3 sm:p-5">
+      {/* =====================================================
+          HERO — جمع‌وجور، بدون فضای الکی، آیکون چت عمومی نئونی
+      ====================================================== */}
+      <section className="relative overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.12),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.10),transparent_32%)]" />
 
-    {/* عنوان + چت عمومی */}
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative p-3 sm:p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-lg shadow-[0_0_14px_rgba(57,255,143,.30)] sm:h-12 sm:w-12 sm:text-2xl">
+                🌴
+              </span>
 
-      {/* عنوان */}
-      <div className="flex items-center gap-2.5 sm:gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-xl shadow-[0_0_14px_rgba(57,255,143,.30)] sm:h-14 sm:w-14 sm:rounded-2xl sm:text-3xl">
-          🌴
-        </span>
+              <div className="min-w-0">
+                <h1 className="truncate text-[14px] font-black leading-tight text-[#1D2B1F] sm:text-2xl">
+                  به شهر جم
+                  <span className="bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">
+                    {" "}خوش آمدید
+                  </span>
+                </h1>
+                <p className="mt-0.5 truncate text-[8px] text-[#8A968C] sm:text-[10px]">
+                  شهر دیجیتال خودت را بساز
+                </p>
+              </div>
+            </div>
 
-        <h1 className="text-[17px] font-black leading-snug text-[#1D2B1F] sm:text-3xl">
-          به شهر جم
-          <span className="bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">
-            {" "}خوش آمدید
-          </span>
-        </h1>
-      </div>
+            {/* چت عمومی شهر جم — آیکون فشرده با هاله‌ی نئون قرمز */}
+            <Link
+              href="/wall"
+              aria-label="چت عمومی شهر جم"
+              className="jam-chat-glow relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl ring-2 ring-[#ff2d55]/70 sm:h-14 sm:w-14 sm:text-3xl"
+            >
+              <span className="jam-chat-ping pointer-events-none absolute inset-0 rounded-2xl" />
+              <span className="relative">💬</span>
+            </Link>
+          </div>
 
-      {/* چت عمومی - کوچک و جمع‌وجور */}
-      <Link
-        href="/wall"
-        className="group flex w-full items-center gap-2.5 rounded-2xl border border-[#CFE6D6] bg-[#F3FAF5] px-2.5 py-2 transition hover:bg-[#EAF7EE] sm:w-[350px] sm:px-3 sm:py-2.5"
-      >
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-[0_0_12px_4px_rgba(226,87,76,.30)] ring-1 ring-[#E2574C]/50 sm:h-11 sm:w-11 sm:text-2xl">
-          💬
-        </span>
+          <div className="mt-3 flex gap-2">
+            <Link
+              href="/businesses"
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#E3EBDE] bg-white px-2.5 py-2.5 text-[9px] font-black text-[#1D2B1F] transition hover:border-[#39ff8f]/50 hover:bg-[#F3FAF5] sm:flex-none sm:px-5"
+            >
+              🏪
+              <span>کشف شهر</span>
+            </Link>
 
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[11px] font-black text-[#1D2B1F] sm:text-xs">
-            چت عمومی شهر جم
-          </span>
-          <span className="mt-0.5 block truncate text-[8px] text-[#66766A]">
-            گفتگو با همشهری‌ها
-          </span>
-        </span>
+            <button
+              type="button"
+              onClick={() => setTorobModalOpen(true)}
+              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#D98F2B] px-2.5 py-2.5 text-[9px] font-black text-white shadow-[0_0_16px_rgba(255,183,77,.35)] transition hover:bg-[#c47f26] sm:flex-none sm:px-5"
+            >
+              🛒
+              <span>خرید با کف قیمت بازار</span>
+            </button>
 
-        <span className="text-sm font-bold text-[#147A4B] transition group-hover:-translate-x-1">
-          ←
-        </span>
-      </Link>
-    </div>
+            <Link
+              href="/wall"
+              className="hidden flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#ffe0e8] bg-[#fff5f7] px-2.5 py-2.5 text-[9px] font-black text-[#c9184a] transition hover:bg-[#ffe9ee] sm:flex sm:flex-none sm:px-5"
+            >
+              💬
+              <span>دیوار جم</span>
+            </Link>
+          </div>
+        </div>
+      </section>
 
-    {/* دکمه‌ها */}
-    <div className="mt-3 flex gap-2">
+      <style jsx>{`
+        @keyframes jamChatGlow {
+          0%, 100% {
+            box-shadow: 0 0 10px 2px rgba(255, 45, 85, 0.55),
+              0 0 0 1px rgba(255, 45, 85, 0.35);
+          }
+          50% {
+            box-shadow: 0 0 24px 8px rgba(255, 45, 85, 0.85),
+              0 0 0 1px rgba(255, 45, 85, 0.6);
+          }
+        }
+        .jam-chat-glow {
+          animation: jamChatGlow 2.1s ease-in-out infinite;
+        }
+        @keyframes jamChatPing {
+          0% {
+            box-shadow: 0 0 0 0 rgba(255, 45, 85, 0.5);
+          }
+          70% {
+            box-shadow: 0 0 0 14px rgba(255, 45, 85, 0);
+          }
+          100% {
+            box-shadow: 0 0 0 0 rgba(255, 45, 85, 0);
+          }
+        }
+        .jam-chat-ping {
+          animation: jamChatPing 2.1s ease-out infinite;
+        }
+      `}</style>
 
-      <Link
-        href="/businesses"
-        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#E3EBDE] bg-white px-2.5 py-2.5 text-[9px] font-black text-[#1D2B1F] transition hover:border-[#39ff8f]/50 hover:bg-[#F3FAF5] sm:flex-none sm:px-5"
-      >
-        🏪
-        <span>کشف شهر</span>
-      </Link>
-
-      <button
-        type="button"
-        onClick={() => setTorobModalOpen(true)}
-        className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#D98F2B] px-2.5 py-2.5 text-[9px] font-black text-white shadow-[0_0_16px_rgba(255,183,77,.35)] transition hover:bg-[#c47f26] sm:flex-none sm:px-5"
-      >
-        🛒
-        <span>خرید با کف قیمت بازار</span>
-      </button>
-
-    </div>
-
-  </div>
-</section>
       {/* HOT PRODUCTS */}
       {products.length > 0 && (
         <section>
@@ -672,22 +741,13 @@ export default function HomePage() {
       </section>
 
       {/* USER */}
-      <section className="text-center">
-        <p className="text-[9px] text-[#8A968C]">
-          {user
-            ? `خوش آمدی ${profile?.display_name || "همشهری"} 🌿`
-            : "جم سیتی؛ شهر دیجیتال خودت را بساز."}
-        </p>
-
-        {!user && (
-          <Link
-            href="/login"
-            className="mt-3 inline-block rounded-full bg-[#1D2B1F] px-6 py-2.5 text-[9px] font-bold text-white"
-          >
-            ورود / ثبت‌نام
-          </Link>
-        )}
-      </section>
+      {user && (
+        <section className="text-center">
+          <p className="text-[9px] text-[#8A968C]">
+            خوش آمدی {profile?.display_name || "همشهری"} 🌿
+          </p>
+        </section>
+      )}
 
       {/* =====================================================
           TOROB SEARCH MODAL
