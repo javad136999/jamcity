@@ -354,7 +354,7 @@ export default function WallPage() {
     setSendError(null);
     try {
       const file = new File([recordedBlob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
-      const audio_url = await uploadSingleFile(file, "wall-audio", user.id, "webm");
+      const audio_url = await uploadSingleFile(file, "voice-messages", user.id, "webm");
 
       const messageData = {
         user_id: user.id,
