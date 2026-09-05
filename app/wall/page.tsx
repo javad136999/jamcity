@@ -18,6 +18,7 @@ type WallMessage = {
   content: string | null;
   reply_to: string | null;
   image_url: string | null;
+  audio_url?: string | null;
   is_promo: boolean;
   business_id: string | null;
   category: "car" | "realestate" | null;
@@ -52,6 +53,12 @@ function dateDividerLabel(iso: string) {
   if (isSameDay(d, today)) return "امروز";
   if (isSameDay(d, yesterday)) return "دیروز";
   return d.toLocaleDateString("fa-IR", { year: "numeric", month: "long", day: "numeric" });
+}
+
+function formatSeconds(total: number) {
+  const m = Math.floor(total / 60);
+  const s = Math.floor(total % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
 function WallGate() {
@@ -184,6 +191,51 @@ export default function WallPage() {
   const [browseIndex, setBrowseIndex] = useState(0);
   const [replyTo, setReplyTo] = useState<WallMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // =====================================================
+  // چیدمان پویا — به‌جای فاصله‌های ثابت حدسی، ارتفاع واقعی
+  // هدر بالا و نوار پایین سایت رو اندازه می‌گیریم تا صفحه‌ی
+  // چت همیشه دقیقاً بین اون دو جا بگیره، حتی اگه بعداً
+  // ارتفاع هدر/نوار پایین عوض بشه.
+  // =====================================================
+  const wallRootRef = useRef<HTMLDivElement>(null);
+  const [chrome, setChrome] = useState({ top: 0, bottom: 0 });
+
+  useEffect(() => {
+    function measure() {
+      const headerEl = document.querySelector("header");
+      const topH = headerEl ? headerEl.getBoundingClientRect().height : 0;
+
+      let bottomH = 0;
+      document.querySelectorAll("body > *").forEach((el) => {
+        if (!(el instanceof HTMLElement)) return;
+        if (wallRootRef.current && el.contains(wallRootRef.current)) return;
+        const style = window.getComputedStyle(el);
+        if (style.position !== "fixed") return;
+        const rect = el.getBoundingClientRect();
+        const nearBottom = rect.bottom >= window.innerHeight - 4;
+        const isShortBar = rect.height > 0 && rect.height < window.innerHeight * 0.3;
+        if (nearBottom && isShortBar) {
+          bottomH = Math.max(bottomH, rect.height);
+        }
+      });
+
+      setChrome({ top: topH, bottom: bottomH });
+    }
+
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+      ro.disconnect();
+    };
+  }, []);
 
   // فقط ظاهری: نمایش دکمهٔ «برو به آخرین پیام» وقتی کاربر اسکرول کرده بالا
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -199,6 +251,178 @@ export default function WallPage() {
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
     bottomRef.current?.scrollIntoView({ behavior, block: "end" });
   }
+
+  // =====================================================
+  // آنلاین‌های لحظه‌ای + نشانگر «در حال تایپ» — با Presence/Broadcast
+  // سوپابیس، بدون نیاز به ستون یا جدول جدید (فقط برای مدت اتصال زنده‌ست)
+  // =====================================================
+  const [onlineCount, setOnlineCount] = useState<number | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Record<string, string>>({});
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const typingTimeoutRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const myTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel("wall-presence", {
+      config: { presence: { key: user.id } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        setOnlineCount(Object.keys(state).length);
+      })
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const { userId, name, typing } = payload.payload as {
+          userId: string;
+          name: string;
+          typing: boolean;
+        };
+        if (userId === user.id) return;
+
+        setTypingUsers((prev) => {
+          const next = { ...prev };
+          if (typing) next[userId] = name;
+          else delete next[userId];
+          return next;
+        });
+
+        if (typingTimeoutRef.current[userId]) {
+          clearTimeout(typingTimeoutRef.current[userId]);
+        }
+        if (typing) {
+          typingTimeoutRef.current[userId] = setTimeout(() => {
+            setTypingUsers((prev) => {
+              const next = { ...prev };
+              delete next[userId];
+              return next;
+            });
+          }, 4000);
+        }
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    presenceChannelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      presenceChannelRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  function broadcastTyping(typing: boolean) {
+    if (!user || !presenceChannelRef.current) return;
+    presenceChannelRef.current.send({
+      type: "broadcast",
+      event: "typing",
+      payload: { userId: user.id, name: profile?.display_name || "کاربر", typing },
+    });
+  }
+
+  function handleTextChange(value: string) {
+    setText(value);
+    broadcastTyping(true);
+    if (myTypingTimeoutRef.current) clearTimeout(myTypingTimeoutRef.current);
+    myTypingTimeoutRef.current = setTimeout(() => broadcastTyping(false), 2000);
+
+    // بزرگ‌شدن خودکار ارتفاع باکس پیام تا حداکثر ۵ خط
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.style.height = "auto";
+      ta.style.height = `${Math.min(ta.scrollHeight, 120)}px`;
+    }
+  }
+
+  const typingNames = Object.values(typingUsers);
+
+  // =====================================================
+  // پیام صوتی — ضبط با MediaRecorder و آپلود مثل تصویر
+  // نکته: نیازمند یک ستون audio_url (text, nullable) روی
+  // جدول wall_messages و یک باکت Storage (مثلاً "wall-audio")
+  // =====================================================
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
+  const [recordSeconds, setRecordSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  async function startRecording() {
+    setVoiceError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      recordedChunksRef.current = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(recordedChunksRef.current, { type: "audio/webm" });
+        setRecordedBlob(blob);
+        stream.getTracks().forEach((t) => t.stop());
+      };
+
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordSeconds(0);
+      recordTimerRef.current = setInterval(() => setRecordSeconds((s) => s + 1), 1000);
+    } catch {
+      setVoiceError("دسترسی به میکروفون امکان‌پذیر نشد.");
+    }
+  }
+
+  function stopRecording() {
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+    if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+  }
+
+  function cancelRecordedVoice() {
+    setRecordedBlob(null);
+    setRecordSeconds(0);
+  }
+
+  async function sendVoiceMessage() {
+    if (!user || !recordedBlob || sending) return;
+    setSending(true);
+    setSendError(null);
+    try {
+      const file = new File([recordedBlob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+      const audio_url = await uploadSingleFile(file, "wall-audio", user.id, "webm");
+
+      const messageData = {
+        user_id: user.id,
+        content: null,
+        audio_url,
+        reply_to: replyingTo?.id ?? null,
+      };
+
+      const { error } = await supabase.from("wall_messages").insert(messageData as never);
+      if (error) throw error;
+
+      setRecordedBlob(null);
+      setRecordSeconds(0);
+      setReplyingTo(null);
+    } catch (e) {
+      console.error("voice send error", e);
+      setSendError("ارسال پیام صوتی با خطا مواجه شد. دوباره تلاش کنید.");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // لایت‌باکس تصویر — نمایش تمام‌صفحه با کلیک روی عکس پیام
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -382,6 +606,8 @@ const { error } = await supabase
      setText("");
 setImage(null);
 setReplyingTo(null);
+broadcastTyping(false);
+if (textareaRef.current) textareaRef.current.style.height = "auto";
     } catch (e) {
       console.error("wall send error", e);
       const msg =
@@ -470,11 +696,7 @@ function handleReply(message: WallMessage) {
   setReplyingTo(message);
 
   requestAnimationFrame(() => {
-    const input = document.querySelector(
-      'textarea[placeholder="پیام خود را بنویسید..."]'
-    ) as HTMLTextAreaElement | null;
-
-    input?.focus();
+    textareaRef.current?.focus();
   });
 }
   const browseResults =
@@ -494,7 +716,11 @@ function handleReply(message: WallMessage) {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden bg-[#EAF1E7] pt-[7.5rem] pb-[env(safe-area-inset-bottom)]">
+    <div
+      ref={wallRootRef}
+      className="fixed inset-x-0 z-30 flex flex-col overflow-hidden bg-[#EAF1E7]"
+      style={{ top: chrome.top, bottom: chrome.bottom }}
+    >
 
       {/* =====================================================
           هدر دیوار — جمع‌وجور، سفید، تم روشن
@@ -507,12 +733,17 @@ function handleReply(message: WallMessage) {
             </span>
             <div className="min-w-0">
               <h1 className="truncate text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
-              {memberCount !== null && (
-                <p className="flex items-center gap-1 text-[10px] font-bold text-[#147A4B]">
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#147A4B]" />
-                  {memberCount.toLocaleString("fa-IR")} عضو
-                </p>
-              )}
+              <p className="flex items-center gap-2 text-[10px] font-bold">
+                {onlineCount !== null && (
+                  <span className="flex items-center gap-1 text-[#147A4B]">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#147A4B]" />
+                    {onlineCount.toLocaleString("fa-IR")} آنلاین
+                  </span>
+                )}
+                {memberCount !== null && (
+                  <span className="text-[#8A968C]">· {memberCount.toLocaleString("fa-IR")} عضو</span>
+                )}
+              </p>
             </div>
           </div>
 
@@ -722,8 +953,10 @@ function handleReply(message: WallMessage) {
                         <div
                           className={`max-w-[80%] overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white shadow-[0_4px_16px_rgba(20,60,40,.06)] ${bubbleTail}`}
                         >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
+                          <button type="button" onClick={() => setLightboxUrl(m.image_url)} className="block w-full">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
+                          </button>
                           <div className="space-y-2 p-3">
                             {quoted && (
                               <button
@@ -860,13 +1093,24 @@ function handleReply(message: WallMessage) {
                             )}
 
                             {m.image_url && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img
-                                src={m.image_url}
-                                alt=""
-                                className="mb-1 max-h-64 w-full rounded-xl object-cover"
-                                loading="lazy"
-                                decoding="async"
+                              <button type="button" onClick={() => setLightboxUrl(m.image_url)} className="block w-full">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={m.image_url}
+                                  alt=""
+                                  className="mb-1 max-h-64 w-full rounded-xl object-cover"
+                                  loading="lazy"
+                                  decoding="async"
+                                />
+                              </button>
+                            )}
+
+                            {m.audio_url && (
+                              <audio
+                                controls
+                                src={m.audio_url}
+                                className="mb-1 h-9 w-56 max-w-full"
+                                style={{ filter: mine ? "invert(1) hue-rotate(180deg)" : "none" }}
                               />
                             )}
 
@@ -924,6 +1168,22 @@ function handleReply(message: WallMessage) {
                 );
               })
             )}
+
+            {typingNames.length > 0 && (
+              <div className="flex justify-end pt-1">
+                <div className="flex items-center gap-1.5 rounded-full border border-[#E3EBDE] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8A968C] shadow-sm">
+                  <span className="flex gap-0.5">
+                    <span className="jam-typing-dot h-1.5 w-1.5 rounded-full bg-[#147A4B]" />
+                    <span className="jam-typing-dot h-1.5 w-1.5 rounded-full bg-[#147A4B]" style={{ animationDelay: "0.15s" }} />
+                    <span className="jam-typing-dot h-1.5 w-1.5 rounded-full bg-[#147A4B]" style={{ animationDelay: "0.3s" }} />
+                  </span>
+                  {typingNames.length === 1
+                    ? `${typingNames[0]} در حال نوشتن...`
+                    : `${typingNames.length} نفر در حال نوشتن...`}
+                </div>
+              </div>
+            )}
+
             <div ref={bottomRef} />
           </div>
 
@@ -946,6 +1206,7 @@ function handleReply(message: WallMessage) {
       ====================================================== */}
       <div className="shrink-0 space-y-1.5 border-t border-[#E3EBDE] bg-white px-2.5 pb-2 pt-2">
         {sendError && <ErrorState message={sendError} />}
+        {voiceError && <ErrorState message={voiceError} />}
         {replyingTo && (
           <div className="flex items-center justify-between rounded-xl border-r-4 border-[#147A4B] bg-[#F7F9F4] px-3 py-2">
             <div className="min-w-0">
@@ -968,47 +1229,133 @@ function handleReply(message: WallMessage) {
           </div>
         )}
 
-        <div className="flex items-end gap-1.5 rounded-[22px] border border-[#E3EBDE] bg-[#F7F9F4] p-1.5">
-          <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
-            📷
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => setImage(e.target.files?.[0] ?? null)}
-            />
-          </label>
-          <div className="shrink-0">
-            <EmojiPicker onPick={(emoji) => setText((prev) => prev + emoji)} />
+        {recordedBlob ? (
+          // پیش‌نمایش پیام صوتی ضبط‌شده، قبل از ارسال
+          <div className="flex items-center gap-2 rounded-[22px] border border-[#E3EBDE] bg-[#F7F9F4] p-2">
+            <button
+              type="button"
+              onClick={cancelRecordedVoice}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#E2574C] shadow-sm"
+              title="لغو"
+            >
+              ✕
+            </button>
+            <audio controls src={URL.createObjectURL(recordedBlob)} className="h-9 flex-1" />
+            <button
+              type="button"
+              onClick={sendVoiceMessage}
+              disabled={sending}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.35)] disabled:opacity-50"
+              title="ارسال پیام صوتی"
+            >
+              ➤
+            </button>
           </div>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="پیام خود را بنویسید..."
-            rows={1}
-            className="max-h-28 flex-1 resize-none rounded-xl bg-white px-3 py-2 text-sm text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={sending}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.35)] transition hover:brightness-110 disabled:opacity-50"
-          >
-            ➤
-          </button>
-        </div>
+        ) : isRecording ? (
+          // در حال ضبط
+          <div className="flex items-center gap-2 rounded-[22px] border border-[#F7D4D0] bg-[#FFF5F4] p-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E2574C] text-white">
+              <span className="jam-rec-dot h-2.5 w-2.5 rounded-full bg-white" />
+            </span>
+            <p className="flex-1 text-[12px] font-bold text-[#E2574C]">
+              در حال ضبط صدا... {formatSeconds(recordSeconds)}
+            </p>
+            <button
+              type="button"
+              onClick={stopRecording}
+              className="rounded-full bg-[#E2574C] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm"
+            >
+              ⏹ پایان ضبط
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-1.5 rounded-[22px] border border-[#E3EBDE] bg-[#F7F9F4] p-1.5">
+            <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
+              📷
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <div className="shrink-0">
+              <EmojiPicker onPick={(emoji) => handleTextChange(text + emoji)} />
+            </div>
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => handleTextChange(e.target.value)}
+              placeholder="پیام خود را بنویسید..."
+              rows={1}
+              className="max-h-28 flex-1 resize-none rounded-xl bg-white px-3 py-2 text-sm text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            {text.trim() || image ? (
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={sending}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.35)] transition hover:brightness-110 disabled:opacity-50"
+              >
+                ➤
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={startRecording}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-base text-[#147A4B] shadow-sm ring-1 ring-[#E3EBDE] transition hover:bg-[#F3FAF5]"
+                title="ضبط پیام صوتی"
+              >
+                🎙️
+              </button>
+            )}
+          </div>
+        )}
         {image && (
           <p className="flex items-center gap-1 text-[10px] text-[#8A968C]">
             📎 تصویر انتخاب شد: {image.name}
           </p>
         )}
       </div>
+
+      {/* لایت‌باکس تمام‌صفحهٔ تصویر */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setLightboxUrl(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightboxUrl} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
+          <button
+            type="button"
+            onClick={() => setLightboxUrl(null)}
+            className="absolute left-4 top-4 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#1D2B1F]"
+            aria-label="بستن"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes jamRecPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        .jam-rec-dot { animation: jamRecPulse 1s ease-in-out infinite; }
+
+        @keyframes jamTypingBounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+          30% { transform: translateY(-3px); opacity: 1; }
+        }
+        .jam-typing-dot { animation: jamTypingBounce 1.1s ease-in-out infinite; }
+      `}</style>
     </div>
   );
 }
