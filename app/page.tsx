@@ -277,16 +277,10 @@ export default function HomePage() {
           <div className="mt-5 flex items-center gap-2.5 sm:mt-8 sm:block">
             <div className="min-w-0 flex-1 max-w-2xl">
               <div className="mt-3 flex flex-nowrap gap-1.5 overflow-x-auto sm:mt-6 sm:flex-wrap sm:gap-2">
-                <Link
-                  href="/wall"
-                  className="rounded-xl bg-[#0f9a56] px-5 py-3.5 text-[11px] font-black text-white shadow-[0_0_22px_rgba(57,255,143,.5)] transition hover:bg-[#0c8248] hover:shadow-[0_0_30px_rgba(57,255,143,.7)] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
-                >
-                  💬 بریم توی چت
-                </Link>
-
+                
                 <Link
                   href="/businesses"
-                  className="rounded-xl border border-[#E3EBDE] bg-white px-5 py-3.5 text-[11px] font-bold text-[#1D2B1F] transition hover:border-[#39ff8f]/50 hover:shadow-[0_0_16px_rgba(57,255,143,.25)] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
+                  className="rounded-xl border border-[#E3EBDE] bg-white px-4 py-3 text-[11px] font-bold text-[#1D2B1F] transition hover:border-[#39ff8f]/50 hover:shadow-[0_0_16px_rgba(57,255,143,.25)] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
                 >
                   🏪 کشف شهر
                 </Link>
@@ -294,7 +288,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => setTorobModalOpen(true)}
-                  className="rounded-xl bg-[#D98F2B] px-5 py-3.5 text-[11px] font-black text-white shadow-[0_0_20px_rgba(255,183,77,.55)] transition hover:bg-[#c47f26] hover:shadow-[0_0_28px_rgba(255,183,77,.75)] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
+                  className="rounded-xl bg-[#D98F2B] px-4 py-3 text-[11px] font-black text-white shadow-[0_0_20px_rgba(255,183,77,.55)] transition hover:bg-[#c47f26] hover:shadow-[0_0_28px_rgba(255,183,77,.75)] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
                 >
                   🛒 خرید با کف قیمت بازار
                 </button>
