@@ -258,7 +258,7 @@ export default function HomePage() {
         </span>
       </Link>
 
-     ```tsx
+     
 {/* HERO */}
 <section className="relative overflow-hidden rounded-[24px] border border-[#E3EBDE] bg-white shadow-[0_20px_60px_rgba(20,60,40,.06)] sm:rounded-[30px]">
   <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.16),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.14),transparent_32%),radial-gradient(circle_at_50%_120%,rgba(226,87,76,.08),transparent_30%)]" />
@@ -356,7 +356,7 @@ export default function HomePage() {
 
   </div>
 </section>
-```
+
 
       {/* HOT PRODUCTS */}
       {products.length > 0 && (
