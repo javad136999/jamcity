@@ -22,6 +22,7 @@ type Business = {
   name: string;
   category: string;
   icon: string;
+  image_url: string | null; // عکس واقعی کسب‌وکار — اگر اسم ستون در دیتابیس شما فرق دارد همینجا و در select پایین‌تر عوض کنید
   lat: number | null;
   lng: number | null;
   subscription_tier: "bronze" | "silver" | "gold" | null;
@@ -65,7 +66,7 @@ export default function HomePage() {
       const { data: businessData, error: businessError } = await supabase
         .from("businesses")
         .select(
-          "id,name,category,icon,lat,lng,subscription_tier,rating_avg,rating_count"
+          "id,name,category,icon,image_url,lat,lng,subscription_tier,rating_avg,rating_count"
         )
         .eq("subscription_status", "approved");
 
@@ -477,65 +478,61 @@ export default function HomePage() {
 
       {/* GOLD BUSINESSES */}
       {goldBusinesses.length > 0 && (
-        <section className="relative overflow-hidden rounded-[28px] border border-[#F0DCB4] bg-gradient-to-b from-[#FBEEDA] to-white p-4 shadow-[0_0_30px_rgba(255,183,77,.18)] sm:p-5">
-          <div className="relative mb-5 flex items-center gap-2.5">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-lg shadow-[0_0_14px_rgba(255,183,77,.4)]">
+        <section className="relative overflow-hidden rounded-[24px] border border-[#F0DCB4] bg-gradient-to-l from-[#FBEEDA] to-white px-4 py-3.5 shadow-[0_0_24px_rgba(255,183,77,.15)]">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-base shadow-[0_0_10px_rgba(255,183,77,.35)]">
               👑
             </span>
-            <div>
-              <h2 className="text-lg font-black text-[#1D2B1F] sm:text-xl">
+            <div className="min-w-0 flex-1">
+              <h2 className="truncate text-[13px] font-black text-[#1D2B1F]">
                 ویترین طلایی جم
               </h2>
-              <p className="text-[9px] text-[#8A7150]">
+              <p className="truncate text-[8px] text-[#8A7150]">
                 بهترین کسب‌وکارهای شهر
               </p>
             </div>
+            <Link href="/businesses" className="shrink-0 text-[9px] font-bold text-[#D98F2B]">
+              همه ←
+            </Link>
           </div>
 
-          <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {goldBusinesses.map((b) => {
-              const product = products.find((p) => p.business_id === b.id);
-
-              return (
-                <Link
-                  key={b.id}
-                  href={`/business/${b.id}`}
-                  className="group overflow-hidden rounded-[22px] border border-[#F0DCB4] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="relative h-32 overflow-hidden bg-[#FBEEDA]">
-                    {product?.image_url ? (
+          <div className="flex gap-4 overflow-x-auto pb-1">
+            {goldBusinesses.map((b) => (
+              <Link
+                key={b.id}
+                href={`/business/${b.id}`}
+                className="group flex w-[72px] shrink-0 flex-col items-center gap-1.5"
+              >
+                <div className="relative h-[66px] w-[66px] rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2.5px] shadow-[0_4px_14px_rgba(217,143,43,.35)] transition group-hover:scale-105">
+                  <div className="h-full w-full overflow-hidden rounded-full border-[2.5px] border-white bg-[#FBEEDA]">
+                    {b.image_url ? (
                       <img
-                        src={product.image_url}
+                        src={b.image_url}
                         alt={b.name}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                        className="h-full w-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-5xl">
+                      <div className="flex h-full w-full items-center justify-center text-2xl">
                         <span>{b.icon}</span>
                       </div>
                     )}
-
-                    <span className="absolute right-2 top-2 rounded-full bg-white px-2 py-1 text-[8px] font-black text-[#D98F2B] shadow-sm">
-                      👑 طلایی
-                    </span>
                   </div>
+                  <span className="absolute -bottom-0.5 -left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D98F2B] text-[7px] shadow ring-2 ring-white">
+                    👑
+                  </span>
+                </div>
 
-                  <div className="p-3">
-                    <h3 className="truncate text-[10px] font-black text-[#1D2B1F]">
-                      {b.name}
-                    </h3>
-                    <p className="mt-1 truncate text-[8px] text-[#8A968C]">
-                      {businessCategoryLabel(b.category)}
-                    </p>
-                    {b.rating_count > 0 && (
-                      <p className="mt-2 text-[8px] font-black text-[#D98F2B]">
-                        ⭐ {b.rating_avg.toFixed(1)}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
+                <p className="max-w-full truncate text-center text-[9px] font-black leading-tight text-[#1D2B1F]">
+                  {b.name}
+                </p>
+
+                {b.rating_count > 0 && (
+                  <p className="text-[8px] font-bold text-[#D98F2B]">
+                    ⭐ {b.rating_avg.toFixed(1)}
+                  </p>
+                )}
+              </Link>
+            ))}
           </div>
         </section>
       )}
