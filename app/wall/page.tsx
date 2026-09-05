@@ -392,16 +392,18 @@ export default function WallPage() {
     async function loadDailyPicks() {
       const today = new Date().toISOString().slice(0, 10);
       const { data: picks, error: picksError } = await supabase
-        .from("wall_daily_picks")
-        .select("message_id")
-        .eq("picked_date", today);
+  .from("wall_daily_picks")
+  .select("message_id")
+  .eq("picked_date", today);
 
-      if (picksError || !picks || picks.length === 0) {
-        setDailyPicks([]);
-        return;
-      }
+if (picksError || !picks || picks.length === 0) {
+  setDailyPicks([]);
+  return;
+}
 
-      const ids = picks.map((p) => p.message_id);
+const pickRows = (picks ?? []) as { message_id: string }[];
+
+const ids = pickRows.map((p) => p.message_id);
       const { data: rows, error: msgError } = await supabase
         .from("wall_messages")
         .select("*")
@@ -422,11 +424,12 @@ export default function WallPage() {
         (profilesData ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
       );
 
-      rows.forEach((r) => {
-        r.profiles = profileMap.get(r.user_id) ?? null;
-      });
+      const dailyPickRows = rows.map((r) => ({
+  ...r,
+  profiles: profileMap.get(r.user_id) ?? null,
+}));
 
-      setDailyPicks(rows as WallMessage[]);
+setDailyPicks(dailyPickRows as WallMessage[]);
     }
 
     loadDailyPicks();
