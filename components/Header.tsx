@@ -50,9 +50,10 @@ export default function Header() {
         <div className="flex justify-center">
           <Link
             href="/business/manage"
-            className="jam-panel-glow flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-red-600 ring-2 ring-red-400/70 sm:px-5 sm:py-2 sm:text-sm"
+            className="jam-panel-glow flex items-center gap-2 whitespace-nowrap rounded-full bg-[#0f9a56] px-4 py-2 text-[12px] font-black text-white ring-2 ring-red-500/80 sm:px-7 sm:py-3 sm:text-base"
           >
-            🏬 <span>پنل کسب و کار</span>
+            <span className="text-base sm:text-2xl">🏬</span>
+            <span>پنل کسب و کار</span>
           </Link>
         </div>
 
@@ -160,12 +161,12 @@ export default function Header() {
         @keyframes jamPanelGlow {
           0%,
           100% {
-            box-shadow: 0 0 8px 1px rgba(255, 45, 85, 0.45),
-              0 0 0 1px rgba(255, 45, 85, 0.3);
+            box-shadow: 0 0 10px 2px rgba(255, 45, 85, 0.5),
+              0 0 0 1px rgba(255, 45, 85, 0.35);
           }
           50% {
-            box-shadow: 0 0 18px 5px rgba(255, 45, 85, 0.75),
-              0 0 0 1px rgba(255, 45, 85, 0.55);
+            box-shadow: 0 0 24px 8px rgba(255, 45, 85, 0.85),
+              0 0 0 1px rgba(255, 45, 85, 0.6);
           }
         }
         .jam-panel-glow {
