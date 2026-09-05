@@ -34,6 +34,26 @@ function sanitizeUsername(raw: string) {
   return raw.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
 }
 
+// --- کمکی‌های نمایشی (فقط ظاهر؛ روی هیچ منطق/دیتایی اثر نمی‌گذارند) ---
+function isSameDay(a: Date, b: Date) {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function dateDividerLabel(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  if (isSameDay(d, today)) return "امروز";
+  if (isSameDay(d, yesterday)) return "دیروز";
+  return d.toLocaleDateString("fa-IR", { year: "numeric", month: "long", day: "numeric" });
+}
+
 function WallGate() {
   const supabase = createClient();
   const [username, setUsername] = useState("");
@@ -86,55 +106,61 @@ function WallGate() {
   }
 
   return (
-    <div className="fade-in mx-auto flex max-w-md flex-col gap-6 py-16">
-      <div className="text-center">
-        <span className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-3xl text-white shadow-soft">
-          💬
-        </span>
-        <h1 className="text-2xl font-extrabold text-slate-800">ورود به دیوار شهر جم</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          فقط یک نام کاربری و رمز عبور انتخاب کنید تا وارد چت شوید
-        </p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl2 glass p-6 shadow-soft">
-        {error && <ErrorState message={error} />}
-
-        <div className="space-y-1">
-          <label className="text-xs text-slate-500">نام کاربری</label>
-          <input
-            required
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            dir="ltr"
-            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-            placeholder="ali_reza"
-          />
+    <div className="fade-in flex min-h-[80vh] items-center justify-center bg-[#F4F7F2] px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="mb-7 text-center">
+          <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-[0_10px_30px_rgba(20,122,75,.15)] ring-1 ring-[#E3EBDE]">
+            💬
+          </span>
+          <h1 className="text-xl font-black text-[#1D2B1F]">دیوار شهر جم</h1>
+          <p className="mt-1.5 text-[12px] leading-6 text-[#8A968C]">
+            یک نام کاربری و رمز عبور انتخاب کنید تا وارد گفتگو شوید
+          </p>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-xs text-slate-500">رمز عبور</label>
-          <input
-            required
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50"
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-4 rounded-[22px] border border-[#E3EBDE] bg-white p-5 shadow-[0_10px_30px_rgba(20,60,40,.06)]"
         >
-          {loading ? "در حال ورود..." : "ورود به دیوار"}
-        </button>
-        <p className="text-center text-[11px] text-slate-400">
-          دفعه بعد با همین نام کاربری و رمز عبور وارد شوید. این حساب برای ثبت کسب و کار استفاده نمی‌شود.
-        </p>
-      </form>
+          {error && <ErrorState message={error} />}
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-[#66766A]">نام کاربری</label>
+            <input
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              dir="ltr"
+              className="w-full rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-4 py-3 text-sm text-[#1D2B1F] outline-none transition focus:border-[#147A4B] focus:bg-white"
+              placeholder="ali_reza"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold text-[#66766A]">رمز عبور</label>
+            <input
+              required
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-4 py-3 text-sm text-[#1D2B1F] outline-none transition focus:border-[#147A4B] focus:bg-white"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-xl bg-[#147A4B] py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(20,122,75,.3)] transition hover:brightness-110 disabled:opacity-50"
+          >
+            {loading ? "در حال ورود..." : "ورود به دیوار"}
+          </button>
+
+          <p className="text-center text-[10px] leading-5 text-[#B0BAB1]">
+            دفعه بعد با همین نام کاربری و رمز عبور وارد شوید. این حساب برای ثبت کسب و کار استفاده نمی‌شود.
+          </p>
+        </form>
+      </div>
     </div>
   );
 }
@@ -158,6 +184,21 @@ export default function WallPage() {
   const [browseIndex, setBrowseIndex] = useState(0);
   const [replyTo, setReplyTo] = useState<WallMessage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // فقط ظاهری: نمایش دکمهٔ «برو به آخرین پیام» وقتی کاربر اسکرول کرده بالا
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [showScrollDown, setShowScrollDown] = useState(false);
+
+  function handleScrollArea() {
+    const el = scrollAreaRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollDown(distanceFromBottom > 240);
+  }
+
+  function scrollToBottom(behavior: ScrollBehavior = "smooth") {
+    bottomRef.current?.scrollIntoView({ behavior, block: "end" });
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -426,6 +467,7 @@ async function deleteMessage(messageId: string) {
   }
 function handleReply(message: WallMessage) {
   setReplyTo(message);
+  setReplyingTo(message);
 
   requestAnimationFrame(() => {
     const input = document.querySelector(
@@ -452,14 +494,61 @@ function handleReply(message: WallMessage) {
   if (!user) return <WallGate />;
 
   return (
-  <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden pt-[7.5rem] pb-[env(safe-area-inset-bottom)]">
-      {memberCount !== null && (
-        <div className="mb-1.5 flex shrink-0 items-center justify-center gap-1.5 rounded-full bg-emerald-50 py-1 text-[10px] font-bold text-emerald-700">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-          {memberCount.toLocaleString("fa-IR")} عضو در دیوار شهر جم
+    <div className="fade-in fixed inset-0 h-[100dvh] min-h-0 box-border flex flex-col overflow-hidden bg-[#EAF1E7] pt-[7.5rem] pb-[env(safe-area-inset-bottom)]">
+
+      {/* =====================================================
+          هدر دیوار — جمع‌وجور، سفید، تم روشن
+      ====================================================== */}
+      <div className="shrink-0 space-y-2 border-b border-[#E3EBDE] bg-white/95 px-3 pb-2 pt-2 backdrop-blur">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E3F3E9] text-lg">
+              💬
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
+              {memberCount !== null && (
+                <p className="flex items-center gap-1 text-[10px] font-bold text-[#147A4B]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#147A4B]" />
+                  {memberCount.toLocaleString("fa-IR")} عضو
+                </p>
+              )}
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const shareData = {
+                title: "دیوار شهر جم",
+                text: "دیوار شهر جم؛ آگهی‌ها و گفتگوهای شهر جم را ببینید 👇",
+                url: window.location.origin + "/wall",
+              };
+
+              if (navigator.share) {
+                try {
+                  await navigator.share(shareData);
+                } catch {
+                  // کاربر پنجره اشتراک‌گذاری را بسته است
+                }
+              } else {
+                try {
+                  await navigator.clipboard.writeText(shareData.url);
+                  alert(
+                    "لینک دیوار شهر جم کپی شد؛ می‌توانید برای دوستانتان ارسال کنید."
+                  );
+                } catch {
+                  alert("کپی لینک انجام نشد.");
+                }
+              }
+            }}
+            aria-label="معرفی به دوستان"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E3EBDE] bg-white text-[13px] shadow-sm transition hover:bg-[#F3FAF5]"
+          >
+            📤
+          </button>
         </div>
-      )}
-      <div className="mb-2 shrink-0 space-y-1.5">
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -467,118 +556,94 @@ function handleReply(message: WallMessage) {
           }}
           className="flex items-center gap-2"
         >
-          <input
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="جستجو در آگهی‌های دیوار (مثلاً خودرو، اجاره، ...)"
-            className="flex-1 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs text-slate-800 outline-none focus:border-jam-green"
-          />
+          <div className="flex flex-1 items-center gap-2 rounded-full border border-[#E3EBDE] bg-[#F7F9F4] px-3.5 py-2 transition focus-within:border-[#147A4B] focus-within:bg-white">
+            <span className="text-[13px] text-[#B0BAB1]">🔍</span>
+            <input
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              placeholder="جستجو در آگهی‌های دیوار..."
+              className="w-full bg-transparent text-[12px] text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
+            />
+          </div>
           <button
             type="submit"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-jam-green text-white shadow-glow"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] transition hover:brightness-110"
           >
             🔍
           </button>
         </form>
-        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
-  <button
-    type="button"
-    onClick={() => startBrowse("خودرو", null)}
-    className="flex shrink-0 items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700"
-  >
-    🚗 آگهی‌های خودرو
-  </button>
 
-  <button
-    type="button"
-    onClick={async () => {
-      const shareData = {
-        title: "دیوار شهر جم",
-        text: "دیوار شهر جم؛ آگهی‌ها و گفتگوهای شهر جم را ببینید 👇",
-        url: window.location.origin + "/wall",
-      };
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => startBrowse("خودرو", null)}
+            className="flex shrink-0 items-center gap-1 rounded-full bg-[#EAF2FF] px-2.5 py-1 text-[10px] font-bold text-[#2563EB] transition hover:bg-[#DCE9FF]"
+          >
+            🚗 آگهی‌های خودرو
+          </button>
+          <button
+            type="button"
+            onClick={() => startBrowse("املاک", null)}
+            className="flex shrink-0 items-center gap-1 rounded-full bg-[#F4EAFF] px-2.5 py-1 text-[10px] font-bold text-[#7E22CE] transition hover:bg-[#EBDCFF]"
+          >
+            🏠 آگهی‌های املاک
+          </button>
+        </div>
+      </div>
 
-      if (navigator.share) {
-        try {
-          await navigator.share(shareData);
-        } catch {
-          // کاربر پنجره اشتراک‌گذاری را بسته است
-        }
-      } else {
-        try {
-          await navigator.clipboard.writeText(shareData.url);
-          alert(
-            "لینک دیوار شهر جم کپی شد؛ می‌توانید برای دوستانتان ارسال کنید."
-          );
-        } catch {
-          alert("کپی لینک انجام نشد.");
-        }
-      }
-    }}
-    className="flex shrink-0 items-center gap-1.5 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-600"
-  >
-    📤 معرفی به دوستان
-  </button>
-
-  <button
-    type="button"
-    onClick={() => startBrowse("املاک", null)}
-    className="flex shrink-0 items-center gap-1.5 rounded-full bg-purple-50 px-2.5 py-1 text-[11px] font-bold text-purple-700"
-  >
-    🏠 آگهی‌های املاک
-  </button>
-</div>    
-  </div>
-
+      {/* =====================================================
+          بدنه — لیست پیام‌ها یا نتایج جستجو
+      ====================================================== */}
       {browse ? (
-        <div className="min-h-0 flex-1 overflow-y-auto rounded-xl2 glass p-4 shadow-soft">
+        <div className="min-h-0 flex-1 overflow-y-auto bg-[#F4F7F2] p-3">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-bold text-slate-500">
+            <p className="text-[11px] font-bold text-[#66766A]">
               {browseResults.length > 0
                 ? `${browseIndex + 1} از ${browseResults.length} آگهی`
                 : "نتیجه‌ای یافت نشد"}
             </p>
             <button
               onClick={() => setBrowse(null)}
-              className="rounded-full bg-black/5 px-3 py-1 text-xs font-bold text-slate-600"
+              className="rounded-full border border-[#E3EBDE] bg-white px-3 py-1 text-[11px] font-bold text-[#66766A] shadow-sm"
             >
               ✕ بستن جستجو
             </button>
           </div>
 
           {browseResults.length === 0 ? (
-            <p className="py-16 text-center text-sm text-slate-400">
-              آگهی‌ای با این مشخصات پیدا نشد.
-            </p>
+            <div className="flex flex-col items-center gap-2 py-20 text-center">
+              <span className="text-3xl">🔎</span>
+              <p className="text-[12px] text-[#8A968C]">آگهی‌ای با این مشخصات پیدا نشد.</p>
+            </div>
           ) : (
             (() => {
               const m = browseResults[browseIndex];
               const cat = m.category ? CATEGORY_META[m.category] : null;
               return (
-                <div className="space-y-3 rounded-xl2 border border-slate-200 bg-white p-4">
+                <div className="space-y-3 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
                   <button
                     onClick={() => openChatWith(m.user_id)}
-                    className="flex items-center gap-2 text-xs font-bold text-orange-500"
+                    className="flex items-center gap-2 text-[12px] font-bold text-[#147A4B]"
                   >
-                    <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={24} />
+                    <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={26} />
                     {m.profiles?.display_name || "کاربر"}
                   </button>
                   {cat && (
-                    <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-600">
+                    <span className="inline-block rounded-full bg-[#F3F6F1] px-2 py-0.5 text-[10px] font-bold text-[#66766A]">
                       {cat.icon} {cat.label}
                     </span>
                   )}
                   {m.image_url && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.image_url} alt="" className="max-h-72 w-full rounded-xl object-cover" loading="lazy" />
+                    <img src={m.image_url} alt="" className="max-h-72 w-full rounded-2xl object-cover" loading="lazy" />
                   )}
-                  {m.content && <p className="whitespace-pre-wrap text-sm text-slate-800">{m.content}</p>}
-                  <p className="text-[10px] text-slate-400">{timeAgo(m.created_at)}</p>
+                  {m.content && <p className="whitespace-pre-wrap text-sm leading-7 text-[#1D2B1F]">{m.content}</p>}
+                  <p className="text-[10px] text-[#B0BAB1]">{timeAgo(m.created_at)}</p>
 
-                  <div className="flex items-center justify-between border-t border-black/5 pt-3">
+                  <div className="flex items-center justify-between border-t border-[#F0F3EE] pt-3">
                     <button
                       onClick={() => reportUser(m.user_id, m.content)}
-                      className="text-[11px] font-bold text-slate-400"
+                      className="text-[11px] font-bold text-[#B0BAB1]"
                     >
                       🚩 گزارش
                     </button>
@@ -586,14 +651,14 @@ function handleReply(message: WallMessage) {
                       <button
                         onClick={() => setBrowseIndex((i) => Math.min(browseResults.length - 1, i + 1))}
                         disabled={browseIndex >= browseResults.length - 1}
-                        className="rounded-full bg-jam-green px-4 py-2 text-xs font-bold text-white shadow-glow disabled:opacity-40"
+                        className="rounded-full bg-[#147A4B] px-4 py-2 text-[11px] font-bold text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] disabled:opacity-40"
                       >
                         ▲ بعدی
                       </button>
                       <button
                         onClick={() => setBrowseIndex((i) => Math.max(0, i - 1))}
                         disabled={browseIndex <= 0}
-                        className="rounded-full bg-black/5 px-4 py-2 text-xs font-bold text-slate-600 disabled:opacity-40"
+                        className="rounded-full border border-[#E3EBDE] bg-white px-4 py-2 text-[11px] font-bold text-[#66766A] disabled:opacity-40"
                       >
                         ▼ قبلی
                       </button>
@@ -605,257 +670,306 @@ function handleReply(message: WallMessage) {
           )}
         </div>
       ) : (
-      <div className="h-[54vh] min-h-0 space-y-3 overflow-y-auto rounded-xl2 glass p-3 shadow-soft">
-        {messages === null ? (
-          <Spinner label="در حال بارگذاری پیام‌ها..." />
-        ) : messages.length === 0 ? (
-          <p className="py-10 text-center text-sm text-slate-400">
-            هنوز پیامی ارسال نشده. اولین نفری باشید که پیام می‌گذارد!
-          </p>
-        ) : (
-          messages.map((m) => {
-            const mine = m.user_id === user.id;
-            const replyTo = m.reply_to
-  ? messages?.find((msg) => msg.id === m.reply_to)
-  : null;
-            const isAdCard = !!m.image_url && !!m.content;
-            const liked = likedByMe.has(m.id);
-            const count = likeCounts[m.id] ?? 0;
+        <div className="relative min-h-0 flex-1">
+          <div
+            ref={scrollAreaRef}
+            onScroll={handleScrollArea}
+            className="h-full min-h-0 space-y-1 overflow-y-auto bg-[#EAF1E7] px-3 py-3"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
+              backgroundSize: "16px 16px",
+            }}
+          >
+            {messages === null ? (
+              <Spinner label="در حال بارگذاری پیام‌ها..." />
+            ) : messages.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-16 text-center">
+                <span className="text-3xl">💬</span>
+                <p className="text-[12px] text-[#8A968C]">
+                  هنوز پیامی ارسال نشده. اولین نفری باشید که پیام می‌گذارد!
+                </p>
+              </div>
+            ) : (
+              messages.map((m, index) => {
+                const mine = m.user_id === user.id;
+                const quoted = m.reply_to
+                  ? messages?.find((msg) => msg.id === m.reply_to)
+                  : null;
+                const isAdCard = !!m.image_url && !!m.content;
+                const liked = likedByMe.has(m.id);
+                const count = likeCounts[m.id] ?? 0;
 
-            if (isAdCard) {
-              return (
-                <div key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
-                  <div className="max-w-[85%] overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-soft">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
-                    <div className="space-y-2 p-3">
-                      {replyTo && (
-  <button
-    type="button"
-    onClick={() => {
-      document
-        .getElementById(`message-${replyTo.id}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }}
-    className="w-full rounded-lg border-r-4 border-jam-green bg-slate-50 px-3 py-2 text-right"
-  >
-    <p className="text-[10px] font-bold text-jam-green">
-      پاسخ به {replyTo.profiles?.display_name || "کاربر"}
-    </p>
-    <p className="mt-0.5 truncate text-[11px] text-slate-500">
-      {replyTo.content || "📷 تصویر"}
-    </p>
-  </button>
-)}
-                      <button
-                        onClick={() => openChatWith(m.user_id)}
-                        className="flex items-center gap-2 text-[11px] font-bold text-orange-500"
-                      >
-                        <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={20} />
-                        {m.profiles?.display_name || "کاربر"}
-                      </button>
-                      {m.category && (
-                        <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-600">
-                          {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
+                const prev = index > 0 ? messages[index - 1] : null;
+                const showDateDivider =
+                  !prev || !isSameDay(new Date(prev.created_at), new Date(m.created_at));
+                const showMeta = !mine && (!prev || prev.user_id !== m.user_id || showDateDivider);
+
+                const bubbleTail = mine ? "rounded-br-md" : "rounded-bl-md";
+
+                return (
+                  <div key={m.id} id={`message-${m.id}`}>
+                    {showDateDivider && (
+                      <div className="my-3 flex items-center justify-center">
+                        <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold text-[#8A968C] shadow-sm">
+                          {dateDividerLabel(m.created_at)}
                         </span>
-                      )}
-                      <p className="whitespace-pre-wrap text-sm font-bold text-slate-800">
-                        {m.content}
-                      </p>
-                      <div className="flex items-center justify-between">
-                        <button
-  type="button"
-  onClick={() => handleReply(m)}
-  className="text-[10px] font-bold text-slate-400 transition hover:text-jam-green"
-  title="پاسخ به این پیام"
->
-  ↩️ پاسخ
-</button>
-                        <p className="text-[10px] text-slate-400">{timeAgo(m.created_at)}</p>
-                        <div className="flex items-center gap-3">
-                          {mine && (
-  <button
-    type="button"
-    onClick={() => deleteMessage(m.id)}
-    className="text-[10px] opacity-60"
-    title="حذف پیام"
-  >
-    🗑️
-  </button>
-)}
-                          {!mine && (
+                      </div>
+                    )}
+
+                    {isAdCard ? (
+                      <div className={`flex ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2" : "mt-0.5"}`}>
+                        <div
+                          className={`max-w-[80%] overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white shadow-[0_4px_16px_rgba(20,60,40,.06)] ${bubbleTail}`}
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
+                          <div className="space-y-2 p-3">
+                            {quoted && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  document
+                                    .getElementById(`message-${quoted.id}`)
+                                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                                className="w-full rounded-lg border-r-4 border-[#147A4B] bg-[#F7F9F4] px-3 py-2 text-right"
+                              >
+                                <p className="text-[10px] font-bold text-[#147A4B]">
+                                  پاسخ به {quoted.profiles?.display_name || "کاربر"}
+                                </p>
+                                <p className="mt-0.5 truncate text-[11px] text-[#8A968C]">
+                                  {quoted.content || "📷 تصویر"}
+                                </p>
+                              </button>
+                            )}
                             <button
-                              onClick={() => reportUser(m.user_id, m.content)}
-                              className="text-[10px] text-slate-300"
-                              title="گزارش"
+                              onClick={() => openChatWith(m.user_id)}
+                              className="flex items-center gap-2 text-[11px] font-bold text-[#D98F2B]"
                             >
-                              🚩
+                              <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={20} />
+                              {m.profiles?.display_name || "کاربر"}
                             </button>
-                          )}
-                          <button
-                            onClick={() => toggleLike(m.id)}
-                            className={`flex items-center gap-1 text-xs font-bold ${
-                              liked ? "text-red-500" : "text-slate-400"
-                            }`}
-                          >
-                            {liked ? "❤️" : "🤍"} {count > 0 && count}
-                          </button>
+                            {m.category && (
+                              <span className="inline-block rounded-full bg-[#F3F6F1] px-2 py-0.5 text-[10px] font-bold text-[#66766A]">
+                                {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
+                              </span>
+                            )}
+                            <p className="whitespace-pre-wrap text-sm font-bold leading-6 text-[#1D2B1F]">
+                              {m.content}
+                            </p>
+                            <div className="flex items-center justify-between pt-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleReply(m)}
+                                className="text-[10px] font-bold text-[#B0BAB1] transition hover:text-[#147A4B]"
+                                title="پاسخ به این پیام"
+                              >
+                                ↩️ پاسخ
+                              </button>
+                              <p className="text-[10px] text-[#B0BAB1]">{timeAgo(m.created_at)}</p>
+                              <div className="flex items-center gap-3">
+                                {mine && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteMessage(m.id)}
+                                    className="text-[10px] text-[#B0BAB1]"
+                                    title="حذف پیام"
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
+                                {!mine && (
+                                  <button
+                                    onClick={() => reportUser(m.user_id, m.content)}
+                                    className="text-[10px] text-[#D8DFD5]"
+                                    title="گزارش"
+                                  >
+                                    🚩
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => toggleLike(m.id)}
+                                  className={`flex items-center gap-1 text-xs font-bold transition ${
+                                    liked ? "text-[#E2574C]" : "text-[#B0BAB1]"
+                                  }`}
+                                >
+                                  {liked ? "❤️" : "🤍"} {count > 0 && count}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            }
-
-            return (
-              <div key={m.id} className={`flex ${mine ? "justify-start" : "justify-end"}`}>
-                <div className="flex max-w-[75%] items-end gap-2">
-                  {!mine && (
-                    <button onClick={() => openChatWith(m.user_id)} className="mb-1">
-                      <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={28} />
-                    </button>
-                  )}
-                  <div
-                    className={`rounded-2xl px-4 py-2 shadow-sm ${
-                      mine ? "bg-jam-green text-white" : "bg-white text-slate-800"
-                    }`}
-                  >
-                    {replyTo && (
-  <button
-    type="button"
-    onClick={() => {
-      document
-        .getElementById(`message-${replyTo.id}`)
-        ?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }}
-    className={`mb-2 w-full rounded-lg border-r-4 border-jam-green px-2 py-1.5 text-right ${
-      mine ? "bg-white/10" : "bg-slate-50"
-    }`}
-  >
-    <p className={`text-[10px] font-bold ${
-      mine ? "text-white/80" : "text-jam-green"
-    }`}>
-      پاسخ به {replyTo.profiles?.display_name || "کاربر"}
-    </p>
-    <p className={`mt-0.5 truncate text-[10px] ${
-      mine ? "text-white/60" : "text-slate-400"
-    }`}>
-      {replyTo.content || "📷 تصویر"}
-    </p>
-  </button>
-)}
-
-{!mine && (
-                      <button
-                        onClick={() => openChatWith(m.user_id)}
-                        className="mb-0.5 text-[11px] font-bold text-orange-500"
-                      >
-                        {m.profiles?.display_name || "کاربر"}
-                      </button>
-                    )}
-                    {m.category && (
-                      <span className="mb-0.5 mr-1 inline-block rounded-full bg-black/5 px-2 py-0.5 text-[10px] font-bold">
-                        {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
-                      </span>
-                    )}
-                    {m.image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.image_url}
-                        alt=""
-                        className="mb-1 max-h-64 w-full rounded-xl object-cover"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    )}
-                    <button
-  type="button"
-  onClick={() => setReplyingTo(m)}
-  className={`mt-1 text-[10px] font-bold ${
-    mine ? "text-white/80" : "text-slate-400"
-  }`}
->
-  ↩️ ریپلای
-</button>
-                    {m.content && <p className="whitespace-pre-wrap text-sm">{m.content}</p>}
-                    <div className="mt-1 flex items-center justify-between gap-3">
-                      <button
-  type="button"
-  onClick={() => handleReply(m)}
-  className={`text-[10px] font-bold ${
-    mine ? "text-white/70" : "text-slate-400"
-  }`}
-  title="پاسخ به این پیام"
->
-  ↩️ پاسخ
-</button>
-                      <p className="text-[10px] opacity-60">{timeAgo(m.created_at)}</p>
-                      <div className="flex items-center gap-3">
-                        {!mine && (
-                          <button
-                            onClick={() => reportUser(m.user_id, m.content)}
-                            className="text-[10px] opacity-50"
-                            title="گزارش"
+                    ) : (
+                      <div className={`flex ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2.5" : "mt-0.5"}`}>
+                        <div className="flex max-w-[78%] items-end gap-1.5">
+                          {!mine && (
+                            <button
+                              onClick={() => openChatWith(m.user_id)}
+                              className={`mb-0.5 shrink-0 ${showMeta ? "" : "invisible"}`}
+                            >
+                              <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={26} />
+                            </button>
+                          )}
+                          <div
+                            className={`px-3.5 py-2 shadow-sm ${bubbleTail} ${
+                              mine
+                                ? "rounded-2xl bg-gradient-to-b from-[#1AA463] to-[#147A4B] text-white"
+                                : "rounded-2xl border border-[#E3EBDE] bg-white text-[#1D2B1F]"
+                            }`}
                           >
-                            🚩
-                          </button>
-                        )}
-                        <button
-  type="button"
-  onClick={() => setReplyingTo(m)}
-  className={`text-[11px] font-bold ${
-    mine ? "text-white/80" : "text-slate-400"
-  }`}
-  title="پاسخ به این پیام"
->
-  ↩️
-</button>
-                        <button
-                          onClick={() => toggleLike(m.id)}
-                          className={`flex items-center gap-1 text-[11px] font-bold ${
-                            mine ? "text-white/80" : liked ? "text-red-500" : "text-slate-400"
-                          }`}
-                        >
-                          {liked ? "❤️" : "🤍"} {count > 0 && count}
-                        </button>
+                            {quoted && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  document
+                                    .getElementById(`message-${quoted.id}`)
+                                    ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                }}
+                                className={`mb-1.5 w-full rounded-lg border-r-4 px-2 py-1.5 text-right ${
+                                  mine ? "border-white/60 bg-white/10" : "border-[#147A4B] bg-[#F7F9F4]"
+                                }`}
+                              >
+                                <p className={`text-[10px] font-bold ${mine ? "text-white/90" : "text-[#147A4B]"}`}>
+                                  پاسخ به {quoted.profiles?.display_name || "کاربر"}
+                                </p>
+                                <p className={`mt-0.5 truncate text-[10px] ${mine ? "text-white/70" : "text-[#8A968C]"}`}>
+                                  {quoted.content || "📷 تصویر"}
+                                </p>
+                              </button>
+                            )}
+
+                            {showMeta && (
+                              <button
+                                onClick={() => openChatWith(m.user_id)}
+                                className="mb-0.5 block text-[11px] font-black text-[#D98F2B]"
+                              >
+                                {m.profiles?.display_name || "کاربر"}
+                              </button>
+                            )}
+
+                            {m.category && (
+                              <span
+                                className={`mb-1 mr-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                  mine ? "bg-white/15 text-white" : "bg-[#F3F6F1] text-[#66766A]"
+                                }`}
+                              >
+                                {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
+                              </span>
+                            )}
+
+                            {m.image_url && (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={m.image_url}
+                                alt=""
+                                className="mb-1 max-h-64 w-full rounded-xl object-cover"
+                                loading="lazy"
+                                decoding="async"
+                              />
+                            )}
+
+                            {m.content && (
+                              <p className="whitespace-pre-wrap text-[13px] leading-6">{m.content}</p>
+                            )}
+
+                            <div className="mt-1 flex items-center justify-between gap-3">
+                              <button
+                                type="button"
+                                onClick={() => handleReply(m)}
+                                className={`text-[10px] font-bold ${mine ? "text-white/75" : "text-[#B0BAB1]"}`}
+                                title="پاسخ به این پیام"
+                              >
+                                ↩️
+                              </button>
+                              <p className={`text-[9px] ${mine ? "text-white/70" : "text-[#B0BAB1]"}`}>
+                                {timeAgo(m.created_at)}
+                              </p>
+                              <div className="flex items-center gap-2.5">
+                                {!mine && (
+                                  <button
+                                    onClick={() => reportUser(m.user_id, m.content)}
+                                    className="text-[10px] text-[#D8DFD5]"
+                                    title="گزارش"
+                                  >
+                                    🚩
+                                  </button>
+                                )}
+                                {mine && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteMessage(m.id)}
+                                    className="text-[10px] text-white/70"
+                                    title="حذف پیام"
+                                  >
+                                    🗑️
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => toggleLike(m.id)}
+                                  className={`flex items-center gap-1 text-[11px] font-bold ${
+                                    mine ? "text-white/90" : liked ? "text-[#E2574C]" : "text-[#B0BAB1]"
+                                  }`}
+                                >
+                                  {liked ? "❤️" : "🤍"} {count > 0 && count}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-        <div ref={bottomRef} />
-      </div>
+                );
+              })
+            )}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* دکمهٔ شناور «برو به آخرین پیام» — فقط وقتی اسکرول بالاست دیده می‌شود */}
+          {showScrollDown && (
+            <button
+              type="button"
+              onClick={() => scrollToBottom()}
+              className="absolute bottom-3 left-3 flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#147A4B] shadow-[0_8px_20px_rgba(20,60,40,.18)] ring-1 ring-[#E3EBDE] transition hover:bg-[#F3FAF5]"
+              aria-label="برو به آخرین پیام"
+            >
+              ↓
+            </button>
+          )}
+        </div>
       )}
 
-      <div className="mt-2 shrink-0 space-y-1 pb-2">
+      {/* =====================================================
+          نوار ارسال پیام
+      ====================================================== */}
+      <div className="shrink-0 space-y-1.5 border-t border-[#E3EBDE] bg-white px-2.5 pb-2 pt-2">
         {sendError && <ErrorState message={sendError} />}
         {replyingTo && (
-  <div className="flex items-center justify-between rounded-xl2 border-r-4 border-jam-green bg-white px-3 py-2 shadow-sm">
-    <div className="min-w-0">
-      <p className="text-[10px] font-bold text-jam-green">
-        در حال پاسخ به {replyingTo.profiles?.display_name || "کاربر"}
-      </p>
-      <p className="truncate text-[11px] text-slate-400">
-        {replyingTo.content || "📷 تصویر"}
-      </p>
-    </div>
+          <div className="flex items-center justify-between rounded-xl border-r-4 border-[#147A4B] bg-[#F7F9F4] px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-[#147A4B]">
+                در حال پاسخ به {replyingTo.profiles?.display_name || "کاربر"}
+              </p>
+              <p className="truncate text-[11px] text-[#8A968C]">
+                {replyingTo.content || "📷 تصویر"}
+              </p>
+            </div>
 
-    <button
-      type="button"
-      onClick={() => setReplyingTo(null)}
-      className="mr-2 shrink-0 rounded-full bg-black/5 px-2 py-1 text-xs text-slate-500"
-      title="لغو پاسخ"
-    >
-      ✕
-    </button>
-  </div>
-)}
-        <div className="flex items-end gap-2 rounded-xl2 glass p-2 shadow-soft">
-          <label className="flex h-10 w-10 shrink-0 cursor-pointer items-center justify-center rounded-full bg-black/5 text-lg">
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              className="mr-2 shrink-0 rounded-full bg-white px-2 py-1 text-xs text-[#66766A] shadow-sm"
+              title="لغو پاسخ"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        <div className="flex items-end gap-1.5 rounded-[22px] border border-[#E3EBDE] bg-[#F7F9F4] p-1.5">
+          <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
             📷
             <input
               type="file"
@@ -864,13 +978,15 @@ function handleReply(message: WallMessage) {
               onChange={(e) => setImage(e.target.files?.[0] ?? null)}
             />
           </label>
-          <EmojiPicker onPick={(emoji) => setText((prev) => prev + emoji)} />
+          <div className="shrink-0">
+            <EmojiPicker onPick={(emoji) => setText((prev) => prev + emoji)} />
+          </div>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="پیام خود را بنویسید..."
             rows={1}
-            className="flex-1 resize-none rounded-xl2 border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-jam-green"
+            className="max-h-28 flex-1 resize-none rounded-xl bg-white px-3 py-2 text-sm text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -882,14 +998,17 @@ function handleReply(message: WallMessage) {
             type="button"
             onClick={handleSend}
             disabled={sending}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-jam-green text-white shadow-glow disabled:opacity-50"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.35)] transition hover:brightness-110 disabled:opacity-50"
           >
             ➤
           </button>
         </div>
-        {image && <p className="text-xs text-slate-400">تصویر انتخاب شد: {image.name}</p>}
+        {image && (
+          <p className="flex items-center gap-1 text-[10px] text-[#8A968C]">
+            📎 تصویر انتخاب شد: {image.name}
+          </p>
+        )}
       </div>
     </div>
   );
 }
-
