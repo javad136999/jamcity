@@ -263,8 +263,7 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.16),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.14),transparent_32%),radial-gradient(circle_at_50%_120%,rgba(226,87,76,.08),transparent_30%)]" />
 
         <div className="relative p-3.5 sm:p-8">
-          <div className="flex flex-col items-center gap-2 text-center sm:gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E3F3E9] text-2xl shadow-[0_0_18px_rgba(57,255,143,.35)] sm:h-16 sm:w-16 sm:text-4xl">
+<div className="flex flex-col items-start gap-2 text-right sm:gap-3">            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E3F3E9] text-2xl shadow-[0_0_18px_rgba(57,255,143,.35)] sm:h-16 sm:w-16 sm:text-4xl">
               🌴
             </span>
             <h1 className="text-[19px] font-black leading-snug text-[#1D2B1F] sm:text-4xl">
@@ -304,10 +303,10 @@ export default function HomePage() {
 
             <Link
               href="/wall"
-              className="group relative w-[132px] shrink-0 overflow-hidden rounded-[18px] border border-[#CFE6D6] bg-[#F3FAF5] p-2.5 shadow-[0_10px_30px_rgba(20,122,75,.08)] transition duration-300 hover:border-[#a9d9bb] hover:bg-[#EAF7EE] sm:absolute sm:bottom-8 sm:left-8 sm:mt-0 sm:w-[350px] sm:rounded-[28px] sm:p-5"
+              className="group relative w-[132px] shrink-0 overflow-hidden rounded-[18px] border border-[#CFE6D6] bg-[#F3FAF5] p-2.5 shadow-[0_10px_30px_rgba(20,122,75,.08)] transition duration-300 hover:border-[#a9d9bb] hover:bg-[#EAF7EE] sm:absolute sm:absolute sm:top-8 sm:left-8 sm:mt-0 sm:w-[350px] sm:rounded-[28px] sm:p-5"
             >
               <div className="relative">
-                <div className="flex flex-col items-center gap-2 text-center sm:gap-3">
+<div className="flex flex-col items-start gap-2 text-right sm:gap-3">
                   <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-3xl shadow-[0_0_18px_6px_rgba(226,87,76,.55)] ring-2 ring-[#E2574C]/70 sm:h-[84px] sm:w-[84px] sm:rounded-[26px] sm:text-6xl sm:shadow-[0_0_26px_10px_rgba(226,87,76,.55)]">
                     💬
                   </div>
