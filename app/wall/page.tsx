@@ -392,16 +392,18 @@ export default function WallPage() {
     async function loadDailyPicks() {
       const today = new Date().toISOString().slice(0, 10);
       const { data: picks, error: picksError } = await supabase
-        .from("wall_daily_picks")
-        .select("message_id")
-        .eq("picked_date", today);
+  .from("wall_daily_picks")
+  .select("message_id")
+  .eq("picked_date", today);
 
-      if (picksError || !picks || picks.length === 0) {
-        setDailyPicks([]);
-        return;
-      }
+if (picksError || !picks || picks.length === 0) {
+  setDailyPicks([]);
+  return;
+}
 
-      const ids = picks.map((p) => p.message_id);
+const ids = (picks as { message_id: string }[]).map(
+  (p) => p.message_id
+);
       const { data: rows, error: msgError } = await supabase
         .from("wall_messages")
         .select("*")
