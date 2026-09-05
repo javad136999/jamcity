@@ -193,50 +193,6 @@ export default function WallPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // =====================================================
-  // چیدمان پویا — به‌جای فاصله‌های ثابت حدسی، ارتفاع واقعی
-  // هدر بالا و نوار پایین سایت رو اندازه می‌گیریم تا صفحه‌ی
-  // چت همیشه دقیقاً بین اون دو جا بگیره، حتی اگه بعداً
-  // ارتفاع هدر/نوار پایین عوض بشه.
-  // =====================================================
-  const wallRootRef = useRef<HTMLDivElement>(null);
-  const [chrome, setChrome] = useState({ top: 0, bottom: 0 });
-
-  useEffect(() => {
-    function measure() {
-      const headerEl = document.querySelector("header");
-      const topH = headerEl ? headerEl.getBoundingClientRect().height : 0;
-
-      let bottomH = 0;
-      document.querySelectorAll("body > *").forEach((el) => {
-        if (!(el instanceof HTMLElement)) return;
-        if (wallRootRef.current && el.contains(wallRootRef.current)) return;
-        const style = window.getComputedStyle(el);
-        if (style.position !== "fixed") return;
-        const rect = el.getBoundingClientRect();
-        const nearBottom = rect.bottom >= window.innerHeight - 4;
-        const isShortBar = rect.height > 0 && rect.height < window.innerHeight * 0.3;
-        if (nearBottom && isShortBar) {
-          bottomH = Math.max(bottomH, rect.height);
-        }
-      });
-
-      setChrome({ top: topH, bottom: bottomH });
-    }
-
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("orientationchange", measure);
-    const ro = new ResizeObserver(measure);
-    ro.observe(document.body);
-
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("orientationchange", measure);
-      ro.disconnect();
-    };
-  }, []);
-
   // فقط ظاهری: نمایش دکمهٔ «برو به آخرین پیام» وقتی کاربر اسکرول کرده بالا
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
@@ -716,11 +672,7 @@ function handleReply(message: WallMessage) {
   if (!user) return <WallGate />;
 
   return (
-    <div
-      ref={wallRootRef}
-      className="fixed inset-x-0 z-30 flex flex-col overflow-hidden bg-[#EAF1E7]"
-      style={{ top: chrome.top, bottom: chrome.bottom }}
-    >
+    <div className="fade-in -mx-4 -mt-6 flex h-[86dvh] flex-col overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:h-[78dvh] sm:rounded-[22px]">
 
       {/* =====================================================
           هدر دیوار — جمع‌وجور، سفید، تم روشن
