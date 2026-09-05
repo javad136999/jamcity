@@ -221,13 +221,13 @@ export default function HomePage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-4 bg-[#F7F9F4] pb-10">
+    <div dir="rtl" className="space-y-2 bg-[#F7F9F4] pb-10">
 
       {/* =====================================================
           TOP UTILITY BAR — لوگو + تماس با مدیر + ورود/ثبت‌نام
           همه جمع‌وجور و بالای صفحه، بدون نیاز به اسکرول
       ====================================================== */}
-      <div className="mx-auto flex max-w-2xl items-center justify-between px-1 pt-2">
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-1 pt-1">
         <Link href="/" className="flex items-center gap-1.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E3F3E9] text-sm">
             🌴
@@ -327,14 +327,19 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* چت عمومی شهر جم — آیکون فشرده با هاله‌ی نئون قرمز */}
+            {/* چت عمومی شهر جم — آیکون نئونی + متن دیوار جم */}
             <Link
               href="/wall"
-              aria-label="چت عمومی شهر جم"
-              className="jam-chat-glow relative flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl ring-2 ring-[#ff2d55]/70 sm:h-14 sm:w-14 sm:text-3xl"
+              aria-label="دیوار شهر جم"
+              className="flex shrink-0 flex-col items-center gap-1"
             >
-              <span className="jam-chat-ping pointer-events-none absolute inset-0 rounded-2xl" />
-              <span className="relative">💬</span>
+              <span className="jam-chat-glow relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl ring-2 ring-[#ff2d55]/70 sm:h-14 sm:w-14 sm:text-3xl">
+                <span className="jam-chat-ping pointer-events-none absolute inset-0 rounded-2xl" />
+                <span className="relative">💬</span>
+              </span>
+              <span className="whitespace-nowrap text-[8px] font-black text-[#c9184a] sm:text-[9px]">
+                دیوار جم
+              </span>
             </Link>
           </div>
 
@@ -355,14 +360,6 @@ export default function HomePage() {
               🛒
               <span>خرید با کف قیمت بازار</span>
             </button>
-
-            <Link
-              href="/wall"
-              className="hidden flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#ffe0e8] bg-[#fff5f7] px-2.5 py-2.5 text-[9px] font-black text-[#c9184a] transition hover:bg-[#ffe9ee] sm:flex sm:flex-none sm:px-5"
-            >
-              💬
-              <span>دیوار جم</span>
-            </Link>
           </div>
         </div>
       </section>
@@ -399,7 +396,7 @@ export default function HomePage() {
 
       {/* HOT PRODUCTS */}
       {products.length > 0 && (
-        <section>
+        <section className="mt-3">
           <div className="mb-4 flex items-end justify-between">
             <div className="flex items-center gap-2.5">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">
