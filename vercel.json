@@ -1,8 +1,1 @@
-﻿{
-  "crons": [
-    {
-      "path": "/api/cron/daily-ads",
-      "schedule": "30 4 * * *"
-    }
-  ]
-}
+{ "crons": [ { "path": "/api/cron/daily-ads", "schedule": "30 4 * * *" } ] }
