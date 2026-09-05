@@ -223,49 +223,6 @@ export default function HomePage() {
   return (
     <div dir="rtl" className="space-y-2 bg-[#F7F9F4] pb-10">
 
-      {/* =====================================================
-          TOP UTILITY BAR — لوگو + تماس با مدیر + ورود/ثبت‌نام
-          همه جمع‌وجور و بالای صفحه، بدون نیاز به اسکرول
-      ====================================================== */}
-      <div className="mx-auto flex max-w-2xl items-center justify-between px-1 pt-1">
-        <Link href="/" className="flex items-center gap-1.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#E3F3E9] text-sm">
-            🌴
-          </span>
-          <span className="text-[10px] font-black text-[#1D2B1F] sm:text-xs">
-            جم سیتی
-          </span>
-        </Link>
-
-        <div className="flex items-center gap-1.5">
-          <Link
-            href="/contact"
-            aria-label="تماس با مدیر"
-            className="flex h-8 w-8 items-center justify-center rounded-full border border-[#E3EBDE] bg-white text-[13px] shadow-sm transition hover:border-[#CFE6D6] hover:bg-[#F3FAF5] active:scale-95"
-          >
-            🎧
-          </Link>
-
-          {user ? (
-            <Link
-              href="/profile"
-              aria-label="حساب کاربری"
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#147A4B] text-[10px] font-black text-white shadow-sm active:scale-95"
-            >
-              {(profile?.display_name || "ک").charAt(0)}
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              aria-label="ورود / ثبت‌نام"
-              className="flex items-center gap-1 rounded-full border border-[#E3EBDE] bg-white px-2.5 py-1.5 text-[9px] font-black text-[#1D2B1F] shadow-sm transition hover:border-[#CFE6D6] hover:bg-[#F3FAF5] active:scale-95"
-            >
-              👤 <span>ورود</span>
-            </Link>
-          )}
-        </div>
-      </div>
-
       {/* JAM CITY NEWS BAR — نئون: کل ردیف یه لینک واحده به /news */}
       <Link
         href="/news"
