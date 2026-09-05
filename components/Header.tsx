@@ -32,35 +32,35 @@ export default function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 glass border-b border-black/5">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3">
-        <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
-          <Link href="/" className="transition hover:text-orange-500">
-            خانه
-          </Link>
-          <Link href="/wall" className="transition hover:text-orange-500">
-            دیوار شهر جم
-          </Link>
-          <Link href="/businesses" className="transition hover:text-orange-500">
-            کسب‌وکارها
-          </Link>
-          {user && (
-            <Link href="/chat" className="relative transition hover:text-orange-500">
-              پیام‌ها
-              {unreadCount > 0 && (
-                <span className="absolute -left-4 -top-2 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                  {unreadCount}
-                </span>
-              )}
-            </Link>
-          )}
-        </nav>
+    <header className="sticky top-0 z-40 border-b border-red-100 bg-white">
+      {/* =====================================================
+          نوار بالای بالای هدر — تم سفید نئونی قرمز
+          راست: تماس با مدیر · وسط: پنل کسب و کار (نئونی) · چپ: ورود/کاربر
+      ====================================================== */}
+      <div className="grid max-w-6xl grid-cols-3 items-center gap-2 mx-auto px-3 py-2 sm:px-4">
+        <div className="flex justify-start">
+          <a
+            href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${encodeURIComponent("سوال درباره شهر جم")}`}
+            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-white px-2.5 py-1.5 text-[9px] font-bold text-red-500 shadow-sm transition hover:bg-red-50 sm:px-3.5 sm:text-[11px]"
+          >
+            ☎️ <span className="hidden xs:inline">تماس با مدیر</span>
+          </a>
+        </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex justify-center">
+          <Link
+            href="/business/manage"
+            className="jam-panel-glow flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-red-600 ring-2 ring-red-400/70 sm:px-5 sm:py-2 sm:text-sm"
+          >
+            🏬 <span>پنل کسب و کار</span>
+          </Link>
+        </div>
+
+        <div className="flex justify-end">
           {!user ? (
             <Link
               href="/login"
-              className="rounded-xl2 bg-jam-green px-3 py-1.5 text-xs font-bold text-white shadow-glow transition hover:brightness-110 sm:px-4 sm:py-2 sm:text-sm"
+              className="whitespace-nowrap rounded-full border border-red-200 bg-white px-2.5 py-1.5 text-[9px] font-bold text-red-500 shadow-sm transition hover:bg-red-50 sm:px-3.5 sm:text-[11px]"
             >
               ورود / ثبت‌نام
             </Link>
@@ -68,52 +68,45 @@ export default function Header() {
             <div className="relative" ref={menuRef}>
               <button
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 rounded-xl2 px-1.5 py-1 text-right transition hover:bg-black/5 sm:gap-2 sm:px-2 sm:py-1.5"
+                className="flex items-center gap-1 rounded-full border border-red-200 bg-white px-1 py-1 transition hover:bg-red-50 sm:gap-1.5 sm:px-1.5"
               >
-                <span className="flex flex-col items-end leading-tight">
-                  <span className="text-[11px] font-bold text-slate-800 sm:text-sm">شهر جم</span>
-                  <span className="text-[9px] text-slate-400 sm:text-[11px]">
-                    {profile?.display_name || "کاربر"}
-                  </span>
-                </span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500 text-sm text-white shadow sm:h-9 sm:w-9 sm:text-base">
-                  📍
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-[10px] text-white shadow sm:h-7 sm:w-7 sm:text-xs">
+                  {(profile?.display_name || "ک").charAt(0)}
                 </span>
               </button>
 
               {menuOpen && (
-                <div className="fade-in absolute left-0 top-14 w-52 overflow-hidden rounded-xl2 glass shadow-soft">
+                <div className="fade-in absolute left-0 top-10 w-52 overflow-hidden rounded-xl2 border border-red-100 bg-white shadow-soft">
+                  <div className="border-b border-red-50 px-4 py-2.5">
+                    <span className="block text-[11px] font-bold text-slate-800">شهر جم</span>
+                    <span className="block text-[10px] text-slate-400">
+                      {profile?.display_name || "کاربر"}
+                    </span>
+                  </div>
                   <Link
                     href="/profile"
-                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-black/5"
+                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50"
                     onClick={() => setMenuOpen(false)}
                   >
                     پروفایل من
                   </Link>
                   <Link
-                    href="/business/manage"
-                    className="block px-4 py-3 text-sm font-bold text-jam-darkgreen hover:bg-black/5"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    🏬 پنل کسب و کار
-                  </Link>
-                  <Link
                     href="/chat"
-                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-black/5"
+                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50"
                     onClick={() => setMenuOpen(false)}
                   >
                     پیام‌ها
                   </Link>
                   <Link
                     href="/discounts"
-                    className="block px-4 py-3 text-sm font-bold text-red-500 hover:bg-black/5"
+                    className="block px-4 py-3 text-sm font-bold text-red-500 hover:bg-red-50"
                     onClick={() => setMenuOpen(false)}
                   >
                     🏷️ تخفیف‌ها
                   </Link>
                   <Link
                     href="/settings"
-                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-black/5"
+                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50"
                     onClick={() => setMenuOpen(false)}
                   >
                     تنظیمات
@@ -121,22 +114,15 @@ export default function Header() {
                   {isAdmin && (
                     <Link
                       href="/admin"
-                      className="block px-4 py-3 text-sm font-bold text-jam-navy hover:bg-black/5"
+                      className="block px-4 py-3 text-sm font-bold text-jam-navy hover:bg-red-50"
                       onClick={() => setMenuOpen(false)}
                     >
                       پنل مدیریت
                     </Link>
                   )}
-                  <a
-                    href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${encodeURIComponent("سوال درباره شهر جم")}`}
-                    className="block px-4 py-3 text-sm text-slate-700 hover:bg-black/5"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    ☎️ تماس با مدیر
-                  </a>
                   <button
                     onClick={handleLogout}
-                    className="block w-full border-t border-black/5 px-4 py-3 text-right text-sm text-red-500 hover:bg-black/5"
+                    className="block w-full border-t border-red-50 px-4 py-3 text-right text-sm text-red-500 hover:bg-red-50"
                   >
                     خروج
                   </button>
@@ -147,16 +133,45 @@ export default function Header() {
         </div>
       </div>
 
-      {user && (
-        <div className="flex justify-center border-t border-black/5 bg-white/40 px-3 py-2">
-          <Link
-            href="/business/manage"
-            className="flex w-full max-w-sm items-center justify-center gap-2 rounded-xl2 bg-jam-green py-2.5 text-sm font-extrabold text-white shadow-glow transition hover:brightness-110 sm:py-3 sm:text-base"
-          >
-            🏬 پنل کسب و کار من
+      {/* ردیف پایینی هدر — فقط ناوبری دسکتاپ، جمع‌وجور */}
+      <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
+        <Link href="/" className="transition hover:text-red-500">
+          خانه
+        </Link>
+        <Link href="/wall" className="transition hover:text-red-500">
+          دیوار شهر جم
+        </Link>
+        <Link href="/businesses" className="transition hover:text-red-500">
+          کسب‌وکارها
+        </Link>
+        {user && (
+          <Link href="/chat" className="relative transition hover:text-red-500">
+            پیام‌ها
+            {unreadCount > 0 && (
+              <span className="absolute -left-4 -top-2 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+                {unreadCount}
+              </span>
+            )}
           </Link>
-        </div>
-      )}
+        )}
+      </nav>
+
+      <style jsx>{`
+        @keyframes jamPanelGlow {
+          0%,
+          100% {
+            box-shadow: 0 0 8px 1px rgba(255, 45, 85, 0.45),
+              0 0 0 1px rgba(255, 45, 85, 0.3);
+          }
+          50% {
+            box-shadow: 0 0 18px 5px rgba(255, 45, 85, 0.75),
+              0 0 0 1px rgba(255, 45, 85, 0.55);
+          }
+        }
+        .jam-panel-glow {
+          animation: jamPanelGlow 2.1s ease-in-out infinite;
+        }
+      `}</style>
     </header>
   );
 }
