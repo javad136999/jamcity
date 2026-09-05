@@ -23,27 +23,27 @@ type NewsItem = {
 const sections = [
   {
     key: "economic",
-    title: "اخبار اقتصادی",
+    title: "اقتصادی",
     icon: "📰",
-    active: "bg-green-500 text-white shadow-md",
+    active: "bg-[#147A4B] text-white shadow-[0_0_18px_rgba(57,255,143,.30)]",
   },
   {
     key: "world",
-    title: "اخبار جهانی",
+    title: "جهانی",
     icon: "🌍",
-    active: "bg-blue-500 text-white shadow-md",
+    active: "bg-[#3B82F6] text-white shadow-[0_0_18px_rgba(59,130,246,.25)]",
   },
   {
     key: "jam",
     title: "اخبار جم",
     icon: "📍",
-    active: "bg-amber-500 text-white shadow-md",
+    active: "bg-[#D98F2B] text-white shadow-[0_0_18px_rgba(255,183,77,.30)]",
   },
   {
     key: "jobs",
-    title: "فرصت‌های شغلی",
+    title: "فرصت شغلی",
     icon: "💼",
-    active: "bg-purple-500 text-white shadow-md",
+    active: "bg-[#8B5CF6] text-white shadow-[0_0_18px_rgba(139,92,246,.25)]",
   },
 ];
 
@@ -92,10 +92,12 @@ export default function NewsPage() {
   }, [activeSection, loadNews]);
 
   return (
-    <main dir="rtl" className="pb-10">
-
+    <main
+      dir="rtl"
+      className="min-h-screen space-y-5 bg-[#F7F9F4] pb-10"
+    >
       {/* CATEGORIES */}
-      <section className="mb-5">
+      <section>
         <div className="flex gap-2 overflow-x-auto pb-1 sm:grid sm:grid-cols-4">
           {sections.map((section) => {
             const isActive = activeSection === section.key;
@@ -105,10 +107,10 @@ export default function NewsPage() {
                 key={section.key}
                 type="button"
                 onClick={() => setActiveSection(section.key)}
-                className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transition sm:min-w-0 ${
+                className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transition ${
                   isActive
                     ? section.active
-                    : "bg-slate-50 text-slate-600 hover:bg-slate-100"
+                    : "border border-[#E3EBDE] bg-white text-[#66766A] hover:bg-[#F3FAF5]"
                 }`}
               >
                 <div className="text-base">
@@ -125,21 +127,20 @@ export default function NewsPage() {
       </section>
 
       {/* CURRENT CATEGORY */}
-      <div className="mb-3 flex items-center justify-between px-1">
-        <h2 className="text-sm font-black text-slate-700">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-sm font-black text-[#1D2B1F]">
           {sections.find((x) => x.key === activeSection)?.title}
         </h2>
 
         {!loading && (
-          <span className="text-[9px] font-bold text-slate-400">
-            {news.length} خبر
+          <span className="text-[9px] font-bold text-[#8A968C]">
+            {new Intl.NumberFormat("fa-IR").format(news.length)} خبر
           </span>
         )}
       </div>
 
       {/* NEWS */}
       <section>
-
         {/* LOADING */}
         {loading && (
           <div className="py-10 text-center">
@@ -147,7 +148,7 @@ export default function NewsPage() {
               📰
             </div>
 
-            <p className="mt-3 text-[10px] text-slate-400">
+            <p className="mt-3 text-[10px] text-[#8A968C]">
               در حال دریافت اخبار...
             </p>
           </div>
@@ -160,14 +161,14 @@ export default function NewsPage() {
               ⚠️
             </div>
 
-            <h2 className="mt-3 text-sm font-black text-red-700">
+            <h2 className="mt-3 text-sm font-black text-red-600">
               {error}
             </h2>
 
             <button
               type="button"
               onClick={() => loadNews(activeSection)}
-              className="mt-4 rounded-xl bg-red-500 px-5 py-2 text-[10px] font-bold text-white"
+              className="mt-4 rounded-xl bg-[#147A4B] px-5 py-2 text-[10px] font-bold text-white"
             >
               تلاش مجدد
             </button>
@@ -181,51 +182,51 @@ export default function NewsPage() {
               📰
             </div>
 
-            <h2 className="mt-3 text-sm font-black text-slate-700">
+            <h2 className="mt-3 text-sm font-black text-[#1D2B1F]">
               خبری در این دسته وجود ندارد
             </h2>
 
-            <p className="mt-2 text-[10px] leading-6 text-slate-400">
+            <p className="mt-2 text-[10px] leading-6 text-[#8A968C]">
               به‌محض دریافت خبر جدید، اینجا نمایش داده خواهد شد.
             </p>
 
             <button
               type="button"
               onClick={() => loadNews(activeSection)}
-              className="mt-4 rounded-xl bg-slate-900 px-5 py-2 text-[10px] font-bold text-white"
+              className="mt-4 rounded-xl bg-[#1D2B1F] px-5 py-2 text-[10px] font-bold text-white"
             >
               بروزرسانی اخبار
             </button>
           </div>
         )}
 
-        {/* TEXT NEWS LIST */}
+        {/* NEWS LIST */}
         {!loading && !error && news.length > 0 && (
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-[#E3EBDE]">
             {news.map((item) => (
               <article
                 key={item.id}
                 className="py-4"
               >
                 {/* TITLE */}
-                <h2 className="text-[13px] font-black leading-6 text-slate-800">
+                <h2 className="text-[13px] font-black leading-6 text-[#1D2B1F]">
                   {item.title}
                 </h2>
 
                 {/* SUMMARY */}
                 {item.summary && (
-                  <p className="mt-1 text-[10px] leading-6 text-slate-500">
+                  <p className="mt-1 text-[10px] leading-6 text-[#66766A]">
                     {item.summary}
                   </p>
                 )}
 
                 {/* SOURCE + DATE */}
                 <div className="mt-2 flex items-center gap-3 text-[8px]">
-                  <span className="font-bold text-green-600">
+                  <span className="font-bold text-[#147A4B]">
                     {item.source_name || "جم‌سیتی"}
                   </span>
 
-                  <span className="text-slate-400">
+                  <span className="text-[#8A968C]">
                     {item.published_at
                       ? new Date(item.published_at).toLocaleDateString(
                           "fa-IR"
@@ -240,14 +241,14 @@ export default function NewsPage() {
                     href={item.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mt-2 inline-block text-[9px] font-bold text-green-600"
+                    className="mt-2 inline-block text-[9px] font-bold text-[#147A4B]"
                   >
                     مشاهده منبع ←
                   </a>
                 ) : (
                   <Link
                     href={`/news/${item.id}`}
-                    className="mt-2 inline-block text-[9px] font-bold text-green-600"
+                    className="mt-2 inline-block text-[9px] font-bold text-[#147A4B]"
                   >
                     ادامه خبر ←
                   </Link>
