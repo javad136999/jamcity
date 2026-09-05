@@ -34,31 +34,6 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 glass border-b border-black/5">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-3 py-2.5 sm:px-4 sm:py-3">
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5">
-          {user && (
-            <button
-              onClick={handleLogout}
-              className="whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-2 sm:text-sm"
-            >
-              خروج
-            </button>
-          )}
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="flex items-center gap-1 whitespace-nowrap rounded-full bg-jam-navy px-3 py-1.5 text-[11px] font-bold text-white transition hover:brightness-110 sm:px-4 sm:py-2 sm:text-sm"
-            >
-              ⚙️ پنل مدیریت
-            </Link>
-          )}
-          <a
-            href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${encodeURIComponent("سوال درباره شهر جم")}`}
-            className="flex items-center gap-1 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-bold text-slate-600 transition hover:bg-slate-50 sm:px-4 sm:py-2 sm:text-sm"
-          >
-            ☎️ تماس با مدیر
-          </a>
-        </div>
-
         <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
           <Link href="/" className="transition hover:text-orange-500">
             خانه
