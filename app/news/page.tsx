@@ -214,30 +214,61 @@ className={`min-w-[82px] shrink-0 rounded-[14px] px-2 py-2 text-center transitio
         )}
 
         {/* NEWS LIST */}
-        {!loading && !error && news.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {news.map((item) => (
-              <article
-                key={item.id}
-className="overflow-hidden border-b border-slate-200 pb-4 transition"              >
+       {/* NEWS LIST */}
+{!loading && !error && news.length > 0 && (
+  <div className="divide-y divide-slate-200">
+    {news.map((item) => (
+      <article
+        key={item.id}
+        className="py-4"
+      >
+        {/* SOURCE + DATE */}
+        <div className="mb-1 flex items-center justify-between gap-2">
+          <span className="truncate text-[8px] font-bold text-green-600">
+            {item.source_name || "جم‌سیتی"}
+          </span>
 
-                {/* IMAGE */}
-                {item.image_url ? (
-                  <div className="h-44 overflow-hidden bg-slate-100">
-                    <img
-                      src={item.image_url}
-                      alt={item.title}
-                      loading="lazy"
-                      className="h-full w-full object-cover transition duration-500 hover:scale-105"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex h-28 items-center justify-center bg-slate-50">
-                    <span className="text-4xl opacity-30">
-                      📰
-                    </span>
-                  </div>
-                )}
+          <span className="shrink-0 text-[8px] text-slate-400">
+            {item.published_at
+              ? new Date(item.published_at).toLocaleDateString("fa-IR")
+              : ""}
+          </span>
+        </div>
+
+        {/* TITLE */}
+        <h2 className="text-[13px] font-black leading-6 text-slate-800">
+          {item.title}
+        </h2>
+
+        {/* SUMMARY */}
+        {item.summary && (
+          <p className="mt-1 text-[10px] leading-6 text-slate-500">
+            {item.summary}
+          </p>
+        )}
+
+        {/* BUTTON */}
+        {item.source_url ? (
+          <a
+            href={item.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 inline-block text-[9px] font-bold text-green-600"
+          >
+            مشاهده منبع ←
+          </a>
+        ) : (
+          <Link
+            href={`/news/${item.id}`}
+            className="mt-2 inline-block text-[9px] font-bold text-green-600"
+          >
+            ادامه خبر ←
+          </Link>
+        )}
+      </article>
+    ))}
+  </div>
+)}
 
                 {/* CONTENT */}
                 <div className="p-4">
