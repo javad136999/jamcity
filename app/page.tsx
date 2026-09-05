@@ -283,7 +283,7 @@ export default function HomePage() {
       {/* چت عمومی - کوچک و جمع‌وجور */}
       <Link
         href="/wall"
-        className="group flex w-full items-center gap-2.5 rounded-2xl border border-[#CFE6D6] bg-[#F3FAF5] px-2.5 py-2 transition hover:bg-[#EAF7EE] sm:w-[300px] sm:px-3 sm:py-2.5"
+        className="group flex w-full items-center gap-2.5 rounded-2xl border border-[#CFE6D6] bg-[#F3FAF5] px-2.5 py-2 transition hover:bg-[#EAF7EE] sm:w-[350px] sm:px-3 sm:py-2.5"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-[0_0_12px_4px_rgba(226,87,76,.30)] ring-1 ring-[#E2574C]/50 sm:h-11 sm:w-11 sm:text-2xl">
           💬
