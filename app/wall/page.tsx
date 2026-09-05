@@ -380,6 +380,58 @@ export default function WallPage() {
   // لایت‌باکس تصویر — نمایش تمام‌صفحه با کلیک روی عکس پیام
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
 
+  // =====================================================
+  // آگهی‌های ویژهٔ امروز — نمایش پیام‌های انتخاب‌شده توسط
+  // کرون‌جاب روزانه، با نام و آواتار واقعی کاربر اصلی
+  // =====================================================
+  const [dailyPicks, setDailyPicks] = useState<WallMessage[] | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function loadDailyPicks() {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: picks, error: picksError } = await supabase
+        .from("wall_daily_picks")
+        .select("message_id")
+        .eq("picked_date", today);
+
+      if (picksError || !picks || picks.length === 0) {
+        setDailyPicks([]);
+        return;
+      }
+
+      const ids = picks.map((p) => p.message_id);
+      const { data: rows, error: msgError } = await supabase
+        .from("wall_messages")
+        .select("*")
+        .in("id", ids);
+
+      if (msgError || !rows) {
+        setDailyPicks([]);
+        return;
+      }
+
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", userIds);
+
+      const profileMap = new Map(
+        (profilesData ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+      );
+
+      rows.forEach((r) => {
+        r.profiles = profileMap.get(r.user_id) ?? null;
+      });
+
+      setDailyPicks(rows as WallMessage[]);
+    }
+
+    loadDailyPicks();
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     supabase
@@ -773,6 +825,47 @@ function handleReply(message: WallMessage) {
           </button>
         </div>
       </div>
+
+      {/* =====================================================
+          آگهی‌های ویژهٔ امروز — انتخاب روزانه از بین آگهی‌های
+          واقعیِ کاربران، با نام و آواتار خودشون
+      ====================================================== */}
+      {!browse && dailyPicks && dailyPicks.length > 0 && (
+        <div className="shrink-0 space-y-1.5 border-b border-[#F0DCB4] bg-[#FFFBF2] px-3 py-2.5">
+          <p className="text-[10px] font-black text-[#D98F2B]">✨ آگهی‌های ویژهٔ امروز</p>
+          <div className="flex gap-2 overflow-x-auto pb-0.5">
+            {dailyPicks.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById(`message-${m.id}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "center" });
+                  } else {
+                    openChatWith(m.user_id);
+                  }
+                }}
+                className="flex w-40 shrink-0 flex-col overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white text-right shadow-sm"
+              >
+                {m.image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={m.image_url} alt="" className="h-20 w-full object-cover" loading="lazy" />
+                )}
+                <div className="space-y-1 p-2">
+                  <p className="truncate text-[10px] font-bold text-[#1D2B1F]">
+                    {m.content || "بدون توضیح"}
+                  </p>
+                  <p className="flex items-center gap-1 truncate text-[9px] text-[#8A968C]">
+                    <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={14} />
+                    {m.profiles?.display_name || "کاربر"}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* =====================================================
           بدنه — لیست پیام‌ها یا نتایج جستجو
