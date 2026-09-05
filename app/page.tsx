@@ -263,49 +263,21 @@ export default function HomePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.16),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.14),transparent_32%),radial-gradient(circle_at_50%_120%,rgba(226,87,76,.08),transparent_30%)]" />
 
         <div className="relative p-3.5 sm:p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#E3F3E9] text-base sm:h-11 sm:w-11 sm:rounded-2xl sm:text-2xl">
-                🌿
+          <div className="flex flex-col items-center gap-2 text-center sm:gap-3">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E3F3E9] text-2xl shadow-[0_0_18px_rgba(57,255,143,.35)] sm:h-16 sm:w-16 sm:text-4xl">
+              🌴
+            </span>
+            <h1 className="text-[19px] font-black leading-snug text-[#1D2B1F] sm:text-4xl">
+              به شهر جم
+              <span className="bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">
+                {" "}خوش آمدید
               </span>
-              <div>
-                <p className="text-[11px] font-black text-[#1D2B1F] sm:text-sm">
-                  جم سیتی
-                </p>
-                <p className="text-[7px] text-[#147A4B] sm:text-[8px]">
-                  شهر دیجیتال جم
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="/wall"
-              className="flex items-center gap-1 rounded-full bg-[#0f9a56] px-2.5 py-1.5 text-[8px] font-bold text-white shadow-[0_0_14px_rgba(57,255,143,.55)] sm:px-3 sm:py-2 sm:text-[9px]"
-            >
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-              زنده
-            </Link>
+            </h1>
           </div>
 
           <div className="mt-5 flex items-center gap-2.5 sm:mt-8 sm:block">
             <div className="min-w-0 flex-1 max-w-2xl">
-              <p className="mb-1 text-[8px] font-bold text-[#147A4B] sm:mb-2 sm:text-[10px]">
-                خوش اومدی به جم 👋
-              </p>
-
-              <h1 className="text-[20px] font-black leading-[1.45] text-[#1D2B1F] sm:text-5xl sm:leading-[1.35]">
-                همه چیز شهر،
-                <span className="block bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">
-                  همین‌جا کنارته.
-                </span>
-              </h1>
-
-              <p className="mt-2 text-[8px] leading-5 text-[#66766A] sm:mt-4 sm:text-sm sm:leading-7">
-                با مردم جم حرف بزن، آگهی ببین، کسب‌وکار پیدا کن،
-                تخفیف بگیر و هر چیزی که توی شهر اتفاق می‌افته رو دنبال کن.
-              </p>
-
-              <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-6 sm:gap-2">
+              <div className="mt-3 flex flex-nowrap gap-1.5 overflow-x-auto sm:mt-6 sm:flex-wrap sm:gap-2">
                 <Link
                   href="/wall"
                   className="rounded-xl bg-[#0f9a56] px-3 py-2 text-[8px] font-black text-white shadow-[0_0_22px_rgba(57,255,143,.5)] transition hover:bg-[#0c8248] hover:shadow-[0_0_30px_rgba(57,255,143,.7)] sm:rounded-2xl sm:px-6 sm:py-3.5 sm:text-xs"
@@ -335,24 +307,17 @@ export default function HomePage() {
               className="group relative w-[132px] shrink-0 overflow-hidden rounded-[18px] border border-[#CFE6D6] bg-[#F3FAF5] p-2.5 shadow-[0_10px_30px_rgba(20,122,75,.08)] transition duration-300 hover:border-[#a9d9bb] hover:bg-[#EAF7EE] sm:absolute sm:bottom-8 sm:left-8 sm:mt-0 sm:w-[350px] sm:rounded-[28px] sm:p-5"
             >
               <div className="relative">
-                <div className="flex items-center gap-2 sm:gap-4">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-xl shadow-sm sm:h-[68px] sm:w-[68px] sm:rounded-[24px] sm:text-5xl">
+                <div className="flex flex-col items-center gap-2 text-center sm:gap-3">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white text-3xl shadow-[0_0_18px_6px_rgba(226,87,76,.55)] ring-2 ring-[#E2574C]/70 sm:h-[84px] sm:w-[84px] sm:rounded-[26px] sm:text-6xl sm:shadow-[0_0_26px_10px_rgba(226,87,76,.55)]">
                     💬
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <h2 className="truncate text-[11px] font-black text-[#1D2B1F] sm:text-sm">
-                        چت عمومی شهر جم
-                      </h2>
+                    <h2 className="truncate text-[13px] font-black text-[#1D2B1F] sm:text-lg">
+                      چت عمومی شهر جم
+                    </h2>
 
-                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-[#0f9a56] px-1.5 py-0.5 text-[6px] font-bold text-white shadow-[0_0_10px_rgba(57,255,143,.6)] sm:px-2 sm:py-1 sm:text-[8px]">
-                        <span className="h-1 w-1 animate-pulse rounded-full bg-white sm:h-1.5 sm:w-1.5" />
-                        زنده
-                      </span>
-                    </div>
-
-                    <p className="mt-1 truncate text-[9px] text-[#66766A] sm:mt-1 sm:text-[9px]">
+                    <p className="mt-1 truncate text-[9px] text-[#66766A] sm:mt-1 sm:text-[10px]">
                       گفتگو با همشهری‌ها
                     </p>
                   </div>
