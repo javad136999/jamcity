@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -18,8 +17,24 @@ type Business = Database["public"]["Tables"]["businesses"]["Row"] & {
 };
 
 type Report = Database["public"]["Tables"]["reports"]["Row"] & {
-  reporter?: { display_name: string; username: string } | null;
-  reported?: { display_name: string; username: string; banned: boolean } | null;
+  reporter?: {
+    display_name: string;
+    username: string;
+  } | null;
+  reported?: {
+    display_name: string;
+    username: string;
+    banned: boolean;
+  } | null;
+};
+
+type RaffleWinner = {
+  id: string;
+  phone: string;
+  label: string;
+  amount: number | null;
+  given: boolean;
+  created_at: string;
 };
 
 const TABS = [
@@ -30,28 +45,47 @@ const TABS = [
   { value: "all", label: "همه" },
 ] as const;
 
-const STATUS_META: Record<string, { label: string; color: string }> = {
-  pending: { label: "در انتظار تایید", color: "bg-yellow-100 text-yellow-700" },
-  approved: { label: "فعال", color: "bg-emerald-100 text-emerald-700" },
-  rejected: { label: "رد شده", color: "bg-red-100 text-red-700" },
-  suspended: { label: "معلق / منقضی", color: "bg-slate-200 text-slate-600" },
+const STATUS_META: Record<
+  string,
+  { label: string; color: string }
+> = {
+  pending: {
+    label: "در انتظار تایید",
+    color: "bg-yellow-100 text-yellow-700",
+  },
+  approved: {
+    label: "فعال",
+    color: "bg-emerald-100 text-emerald-700",
+  },
+  rejected: {
+    label: "رد شده",
+    color: "bg-red-100 text-red-700",
+  },
+  suspended: {
+    label: "معلق / منقضی",
+    color: "bg-slate-200 text-slate-600",
+  },
 };
 
 export default function AdminPage() {
   const { user, isAdmin, loading: authLoading } = useAuth();
-  const router = useRouter();
   const supabase = createClient();
 
   const [view, setView] = useState<
-    "businesses" | "stats" | "reports" | "fakeads"
+    "businesses" | "stats" | "reports" | "fakeads" | "raffle"
   >("businesses");
 
   const [tab, setTab] =
     useState<(typeof TABS)[number]["value"]>("pending");
 
-  const [businesses, setBusinesses] = useState<Business[] | null>(null);
+  const [businesses, setBusinesses] =
+    useState<Business[] | null>(null);
+
   const [busyId, setBusyId] = useState<string | null>(null);
-const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
+
+  const [editingBusinessId, setEditingBusinessId] =
+    useState<string | null>(null);
+
   const [visitCounts, setVisitCounts] = useState<{
     today: number;
     month: number;
@@ -59,42 +93,69 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
   } | null>(null);
 
   const [reports, setReports] = useState<Report[] | null>(null);
+
   const [reportFilter, setReportFilter] =
     useState<"open" | "resolved">("open");
 
-  // وضعیت انتشار خودکار آگهی‌ها
+  // =========================
+  // آگهی‌های خودکار
+  // =========================
+
   const [autoAdsActive, setAutoAdsActive] = useState(true);
   const [autoAdBusy, setAutoAdBusy] = useState(false);
 
+  // =========================
+  // قرعه‌کشی
+  // =========================
+
+  const [raffleLoading, setRaffleLoading] = useState(false);
+
+  const [raffleParticipants, setRaffleParticipants] =
+    useState(0);
+
+  const [raffleSpins, setRaffleSpins] = useState(0);
+
+  const [rafflePrizesLeft, setRafflePrizesLeft] =
+    useState(0);
+
+  const [raffleWinners, setRaffleWinners] =
+    useState<RaffleWinner[]>([]);
+
+  // =========================
+  // آمار بازدید
+  // =========================
+
   useEffect(() => {
-  if (!isAdmin || view !== "stats") return;
+    if (!isAdmin || view !== "stats") return;
 
-  async function loadVisits() {
-    const { data, error } = await (supabase as any).rpc(
-      "get_site_visit_stats"
-    );
+    async function loadVisits() {
+      const { data, error } = await (supabase as any).rpc(
+        "get_site_visit_stats"
+      );
 
-    if (error) {
-      console.error("VISIT STATS ERROR:", error);
-      return;
+      if (error) {
+        console.error("VISIT STATS ERROR:", error);
+        return;
+      }
+
+      const stats = Array.isArray(data) ? data[0] : data;
+
+      setVisitCounts({
+        today: Number(stats?.today ?? 0),
+        month: Number(stats?.month ?? 0),
+        year: Number(stats?.year ?? 0),
+      });
     }
 
-    console.log("VISIT STATS:", data);
+    loadVisits();
+  }, [isAdmin, view, supabase]);
 
-    const stats = Array.isArray(data) ? data[0] : data;
-
-    setVisitCounts({
-      today: Number(stats?.today ?? 0),
-      month: Number(stats?.month ?? 0),
-      year: Number(stats?.year ?? 0),
-    });
-  }
-
-  loadVisits();
-}, [isAdmin, view, supabase]);
+  // =========================
   // کسب‌وکارها
+  // =========================
+
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!isAdmin || view !== "businesses") return;
 
     let builder = supabase
       .from("businesses")
@@ -114,20 +175,36 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
         return;
       }
 
-      setBusinesses((data as unknown as Business[]) ?? []);
+      setBusinesses(
+        (data as unknown as Business[]) ?? []
+      );
     });
-  }, [tab, isAdmin, supabase]);
+  }, [tab, isAdmin, view, supabase]);
 
+  // =========================
   // گزارش‌ها
+  // =========================
+
   useEffect(() => {
     if (!isAdmin || view !== "reports") return;
 
     async function loadReports() {
-      const { data: rawReports } = await supabase
+      const { data: rawReports, error } = await supabase
         .from("reports")
         .select("*")
-        .eq("resolved", reportFilter === "resolved")
-        .order("created_at", { ascending: false });
+        .eq(
+          "resolved",
+          reportFilter === "resolved"
+        )
+        .order("created_at", {
+          ascending: false,
+        });
+
+      if (error) {
+        console.error("REPORTS ERROR:", error);
+        setReports([]);
+        return;
+      }
 
       const rows = (rawReports as Report[]) ?? [];
 
@@ -139,18 +216,27 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
           ])
         );
 
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, display_name, username, banned")
-          .in("id", ids);
+        const { data: profilesData } =
+          await supabase
+            .from("profiles")
+            .select(
+              "id, display_name, username, banned"
+            )
+            .in("id", ids);
 
         const map = new Map(
-          (profilesData ?? []).map((p) => [p.id, p])
+          (profilesData ?? []).map((p) => [
+            p.id,
+            p,
+          ])
         );
 
         rows.forEach((r) => {
-          r.reporter = map.get(r.reporter_id) ?? null;
-          r.reported = map.get(r.reported_user_id) ?? null;
+          r.reporter =
+            map.get(r.reporter_id) ?? null;
+
+          r.reported =
+            map.get(r.reported_user_id) ?? null;
         });
       }
 
@@ -158,11 +244,131 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
     }
 
     loadReports();
-  }, [isAdmin, view, reportFilter, supabase]);
+  }, [
+    isAdmin,
+    view,
+    reportFilter,
+    supabase,
+  ]);
 
-  // ==========================================
+  // =========================
+  // بارگذاری قرعه‌کشی
+  // =========================
+
+  async function loadRaffleStats() {
+    if (!isAdmin) return;
+
+    setRaffleLoading(true);
+
+    try {
+      const raffleSupabase = supabase as any;
+
+      const [
+        participantsResult,
+        spinsResult,
+        prizesResult,
+        winnersResult,
+      ] = await Promise.all([
+        raffleSupabase
+          .from("raffle_participants")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+
+        raffleSupabase
+          .from("raffle_spins")
+          .select("id", {
+            count: "exact",
+            head: true,
+          }),
+
+        raffleSupabase
+          .from("raffle_segments")
+          .select("id", {
+            count: "exact",
+            head: true,
+          })
+          .eq("type", "prize")
+          .eq("is_available", true),
+
+        raffleSupabase
+          .from("raffle_spins")
+          .select(
+            "id,phone,label,amount,given,created_at"
+          )
+          .eq("is_win", true)
+          .order("created_at", {
+            ascending: false,
+          }),
+      ]);
+
+      if (participantsResult.error) {
+        console.error(
+          "RAFFLE PARTICIPANTS ERROR:",
+          participantsResult.error
+        );
+      }
+
+      if (spinsResult.error) {
+        console.error(
+          "RAFFLE SPINS ERROR:",
+          spinsResult.error
+        );
+      }
+
+      if (prizesResult.error) {
+        console.error(
+          "RAFFLE PRIZES ERROR:",
+          prizesResult.error
+        );
+      }
+
+      if (winnersResult.error) {
+        console.error(
+          "RAFFLE WINNERS ERROR:",
+          winnersResult.error
+        );
+      }
+
+      setRaffleParticipants(
+        participantsResult.count ?? 0
+      );
+
+      setRaffleSpins(
+        spinsResult.count ?? 0
+      );
+
+      setRafflePrizesLeft(
+        prizesResult.count ?? 0
+      );
+
+      setRaffleWinners(
+        (winnersResult.data ??
+          []) as RaffleWinner[]
+      );
+    } catch (error) {
+      console.error(
+        "LOAD RAFFLE ERROR:",
+        error
+      );
+    } finally {
+      setRaffleLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!isAdmin || view !== "raffle") return;
+
+    loadRaffleStats();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin, view]);
+
+  // =========================
   // انتشار فوری آگهی
-  // ==========================================
+  // =========================
+
   async function publishAutoAdNow() {
     if (autoAdBusy) return;
 
@@ -174,23 +380,40 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
       );
 
       if (error) {
-        console.error("PUBLISH AUTO AD ERROR:", error);
-        alert("❌ خطا در انتشار آگهی:\n" + error.message);
+        console.error(
+          "PUBLISH AUTO AD ERROR:",
+          error
+        );
+
+        alert(
+          "❌ خطا در انتشار آگهی:\n" +
+            error.message
+        );
+
         return;
       }
 
-      alert("✅ آگهی با موفقیت منتشر شد.");
+      alert(
+        "✅ آگهی با موفقیت منتشر شد."
+      );
     } catch (error) {
-      console.error("PUBLISH AUTO AD ERROR:", error);
-      alert("❌ خطای غیرمنتظره هنگام انتشار آگهی.");
+      console.error(
+        "PUBLISH AUTO AD ERROR:",
+        error
+      );
+
+      alert(
+        "❌ خطای غیرمنتظره هنگام انتشار آگهی."
+      );
     } finally {
       setAutoAdBusy(false);
     }
   }
 
-  // ==========================================
-  // توقف / فعال‌سازی انتشار خودکار
-  // ==========================================
+  // =========================
+  // توقف / فعال‌سازی آگهی
+  // =========================
+
   async function toggleAutoAds() {
     if (autoAdBusy) return;
 
@@ -207,28 +430,105 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
       );
 
       if (error) {
-        console.error("TOGGLE AUTO ADS ERROR:", error);
-        alert("❌ خطا در تغییر وضعیت انتشار خودکار:\n" + error.message);
+        console.error(
+          "TOGGLE AUTO ADS ERROR:",
+          error
+        );
+
+        alert(
+          "❌ خطا در تغییر وضعیت انتشار خودکار:\n" +
+            error.message
+        );
+
         return;
       }
 
       setAutoAdsActive(nextState);
 
       if (nextState) {
-        alert("▶️ انتشار خودکار آگهی‌ها فعال شد.");
+        alert(
+          "▶️ انتشار خودکار آگهی‌ها فعال شد."
+        );
       } else {
-        alert("⏸️ انتشار خودکار آگهی‌ها متوقف شد.");
+        alert(
+          "⏸️ انتشار خودکار آگهی‌ها متوقف شد."
+        );
       }
     } catch (error) {
-      console.error("TOGGLE AUTO ADS ERROR:", error);
-      alert("❌ خطای غیرمنتظره هنگام تغییر وضعیت.");
+      console.error(
+        "TOGGLE AUTO ADS ERROR:",
+        error
+      );
+
+      alert(
+        "❌ خطای غیرمنتظره هنگام تغییر وضعیت."
+      );
     } finally {
       setAutoAdBusy(false);
     }
   }
 
+  // =========================
+  // وضعیت هدیه برنده
+  // =========================
+
+  async function toggleRaffleGiven(
+    id: string,
+    given: boolean
+  ) {
+    const raffleSupabase = supabase as any;
+
+    setRaffleWinners((prev) =>
+      prev.map((winner) =>
+        winner.id === id
+          ? {
+              ...winner,
+              given,
+            }
+          : winner
+      )
+    );
+
+    const { error } = await raffleSupabase
+      .from("raffle_spins")
+      .update({ given })
+      .eq("id", id);
+
+    if (error) {
+      console.error(
+        "UPDATE RAFFLE GIVEN ERROR:",
+        error
+      );
+
+      setRaffleWinners((prev) =>
+        prev.map((winner) =>
+          winner.id === id
+            ? {
+                ...winner,
+                given: !given,
+              }
+            : winner
+        )
+      );
+
+      alert(
+        "❌ تغییر وضعیت هدیه انجام نشد."
+      );
+    }
+  }
+
+  // =========================
+  // مسدود کردن کاربر
+  // =========================
+
   async function banUser(userId: string) {
-    if (!confirm("این کاربر از دیوار شهر جم مسدود شود؟")) return;
+    if (
+      !confirm(
+        "این کاربر از دیوار شهر جم مسدود شود؟"
+      )
+    ) {
+      return;
+    }
 
     setBusyId(userId);
 
@@ -243,7 +543,10 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
           ? {
               ...r,
               reported: r.reported
-                ? { ...r.reported, banned: true }
+                ? {
+                    ...r.reported,
+                    banned: true,
+                  }
                 : null,
             }
           : r
@@ -252,6 +555,10 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
 
     setBusyId(null);
   }
+
+  // =========================
+  // رفع مسدودیت
+  // =========================
 
   async function unbanUser(userId: string) {
     setBusyId(userId);
@@ -267,7 +574,10 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
           ? {
               ...r,
               reported: r.reported
-                ? { ...r.reported, banned: false }
+                ? {
+                    ...r.reported,
+                    banned: false,
+                  }
                 : null,
             }
           : r
@@ -277,64 +587,109 @@ const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
     setBusyId(null);
   }
 
+  // =========================
+  // بستن گزارش
+  // =========================
+
   async function resolveReport(id: string) {
     setBusyId(id);
 
-    await supabase
+    const { error } = await supabase
       .from("reports")
       .update({ resolved: true })
       .eq("id", id);
 
-    setReports((prev) =>
-      (prev ?? []).filter((r) => r.id !== id)
-    );
-
-    setBusyId(null);
-  }
-async function approve(id: string) {
-  setBusyId(id);
-
-  try {
-    
-const { error } = await (supabase as any).rpc(
-  "admin_approve_business",
-  {
-    p_business_id: id,
-  }
-);
     if (error) {
-      console.error("APPROVE BUSINESS ERROR:", error);
-      alert("❌ تایید انجام نشد:\n" + error.message);
-      return;
+      console.error(
+        "RESOLVE REPORT ERROR:",
+        error
+      );
     }
 
-    const reviewed_at = new Date().toISOString();
-    const expires_at = new Date(
-      Date.now() + 30 * 24 * 60 * 60 * 1000
-    ).toISOString();
-
-    setBusinesses((prev) =>
-      (prev ?? []).map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              subscription_status: "approved",
-              reviewed_at,
-              expires_at,
-            }
-          : b
+    setReports((prev) =>
+      (prev ?? []).filter(
+        (r) => r.id !== id
       )
     );
 
-    alert("✅ کسب‌وکار با موفقیت تایید شد.");
-  } catch (error) {
-    console.error("APPROVE BUSINESS UNEXPECTED ERROR:", error);
-    alert("❌ خطای غیرمنتظره هنگام تایید کسب‌وکار.");
-  } finally {
     setBusyId(null);
   }
-}
 
+  // =========================
+  // تایید کسب‌وکار
+  // =========================
+
+  async function approve(id: string) {
+    setBusyId(id);
+
+    try {
+      const { error } = await (supabase as any).rpc(
+        "admin_approve_business",
+        {
+          p_business_id: id,
+        }
+      );
+
+      if (error) {
+        console.error(
+          "APPROVE BUSINESS ERROR:",
+          error
+        );
+
+        alert(
+          "❌ تایید انجام نشد:\n" +
+            error.message
+        );
+
+        return;
+      }
+
+      const reviewed_at =
+        new Date().toISOString();
+
+      const expires_at = new Date(
+        Date.now() +
+          30 *
+            24 *
+            60 *
+            60 *
+            1000
+      ).toISOString();
+
+      setBusinesses((prev) =>
+        (prev ?? []).map((b) =>
+          b.id === id
+            ? {
+                ...b,
+                subscription_status:
+                  "approved",
+                reviewed_at,
+                expires_at,
+              }
+            : b
+        )
+      );
+
+      alert(
+        "✅ کسب‌وکار با موفقیت تایید شد."
+      );
+    } catch (error) {
+      console.error(
+        "APPROVE BUSINESS UNEXPECTED ERROR:",
+        error
+      );
+
+      alert(
+        "❌ خطای غیرمنتظره هنگام تایید کسب‌وکار."
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  // =========================
+  // تغییر وضعیت کسب‌وکار
+  // =========================
 
   async function setStatus(
     id: string,
@@ -342,13 +697,29 @@ const { error } = await (supabase as any).rpc(
   ) {
     setBusyId(id);
 
-    await supabase
+    const { error } = await supabase
       .from("businesses")
       .update({
         subscription_status: status,
-        reviewed_at: new Date().toISOString(),
+        reviewed_at:
+          new Date().toISOString(),
       })
       .eq("id", id);
+
+    if (error) {
+      console.error(
+        "SET BUSINESS STATUS ERROR:",
+        error
+      );
+
+      alert(
+        "❌ تغییر وضعیت انجام نشد:\n" +
+          error.message
+      );
+
+      setBusyId(null);
+      return;
+    }
 
     setBusinesses((prev) =>
       (prev ?? []).map((b) =>
@@ -363,102 +734,173 @@ const { error } = await (supabase as any).rpc(
 
     setBusyId(null);
   }
-async function updateBusinessCategory(
-  id: string,
-  category: string,
-  icon: string
-) {
-  setBusyId(id);
 
-  try {
-    const { error } = await supabase
-      .from("businesses")
-      .update({
-        category,
-        icon,
-      })
-      .eq("id", id);
+  // =========================
+  // تغییر دسته‌بندی
+  // =========================
 
-    if (error) {
-      console.error("UPDATE BUSINESS CATEGORY ERROR:", error);
-      alert("❌ ذخیره انجام نشد:\n" + error.message);
-      return;
+  async function updateBusinessCategory(
+    id: string,
+    category: string,
+    icon: string
+  ) {
+    setBusyId(id);
+
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .update({
+          category,
+          icon,
+        })
+        .eq("id", id);
+
+      if (error) {
+        console.error(
+          "UPDATE BUSINESS CATEGORY ERROR:",
+          error
+        );
+
+        alert(
+          "❌ ذخیره انجام نشد:\n" +
+            error.message
+        );
+
+        return;
+      }
+
+      setBusinesses((prev) =>
+        (prev ?? []).map((b) =>
+          b.id === id
+            ? {
+                ...b,
+                category,
+                icon,
+              }
+            : b
+        )
+      );
+
+      setEditingBusinessId(null);
+
+      alert(
+        "✅ دسته‌بندی و آیکون ذخیره شد."
+      );
+    } catch (error) {
+      console.error(
+        "UPDATE BUSINESS CATEGORY UNEXPECTED ERROR:",
+        error
+      );
+
+      alert(
+        "❌ خطای غیرمنتظره هنگام ذخیره."
+      );
+    } finally {
+      setBusyId(null);
     }
-
-    setBusinesses((prev) =>
-      (prev ?? []).map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              category,
-              icon,
-            }
-          : b
-      )
-    );
-
-    setEditingBusinessId(null);
-    alert("✅ دسته‌بندی و آیکون ذخیره شد.");
-  } catch (error) {
-    console.error("UPDATE BUSINESS CATEGORY UNEXPECTED ERROR:", error);
-    alert("❌ خطای غیرمنتظره هنگام ذخیره.");
-  } finally {
-    setBusyId(null);
   }
-}
+
+  // =========================
+  // حذف کسب‌وکار
+  // =========================
+
   async function remove(id: string) {
-  if (!confirm("آیا از حذف کامل این کسب و کار مطمئن هستید؟")) {
-    return;
+    if (
+      !confirm(
+        "آیا از حذف کامل این کسب و کار مطمئن هستید؟"
+      )
+    ) {
+      return;
+    }
+
+    setBusyId(id);
+
+    try {
+      const { error } = await supabase
+        .from("businesses")
+        .delete()
+        .eq("id", id);
+
+      if (error) {
+        console.error(
+          "DELETE BUSINESS ERROR:",
+          error
+        );
+
+        alert(
+          "❌ حذف انجام نشد:\n" +
+            error.message
+        );
+
+        return;
+      }
+
+      const {
+        data,
+        error: checkError,
+      } = await supabase
+        .from("businesses")
+        .select("id")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (checkError) {
+        console.error(
+          "DELETE CHECK ERROR:",
+          checkError
+        );
+
+        alert(
+          "⚠️ حذف انجام شد ولی بررسی نتیجه با خطا مواجه شد."
+        );
+
+        return;
+      }
+
+      if (data) {
+        console.error(
+          "DELETE FAILED: row still exists",
+          data
+        );
+
+        alert(
+          "❌ رکورد از دیتابیس حذف نشد."
+        );
+
+        return;
+      }
+
+      setBusinesses((prev) =>
+        (prev ?? []).filter(
+          (b) => b.id !== id
+        )
+      );
+
+      alert(
+        "✅ کسب‌وکار با موفقیت حذف شد."
+      );
+    } catch (error) {
+      console.error(
+        "DELETE BUSINESS UNEXPECTED ERROR:",
+        error
+      );
+
+      alert(
+        "❌ خطای غیرمنتظره هنگام حذف."
+      );
+    } finally {
+      setBusyId(null);
+    }
   }
 
-  setBusyId(id);
-
-  try {
-    const { error } = await supabase
-      .from("businesses")
-      .delete()
-      .eq("id", id);
-
-    if (error) {
-      console.error("DELETE BUSINESS ERROR:", error);
-      alert("❌ حذف انجام نشد:\n" + error.message);
-      return;
-    }
-
-    // بررسی می‌کنیم واقعاً حذف شده یا نه
-    const { data, error: checkError } = await supabase
-      .from("businesses")
-      .select("id")
-      .eq("id", id)
-      .maybeSingle();
-
-    if (checkError) {
-      console.error("DELETE CHECK ERROR:", checkError);
-      alert("⚠️ حذف انجام شد ولی بررسی نتیجه با خطا مواجه شد.");
-      return;
-    }
-
-    if (data) {
-      console.error("DELETE FAILED: row still exists", data);
-      alert("❌ رکورد از دیتابیس حذف نشد.");
-      return;
-    }
-
-    setBusinesses((prev) =>
-      (prev ?? []).filter((b) => b.id !== id)
-    );
-
-    alert("✅ کسب‌وکار با موفقیت حذف شد.");
-  } catch (error) {
-    console.error("DELETE BUSINESS UNEXPECTED ERROR:", error);
-    alert("❌ خطای غیرمنتظره هنگام حذف.");
-  } finally {
-    setBusyId(null);
-  }
-}
+  // =========================
+  // دسترسی
+  // =========================
 
   if (authLoading || !isAdmin) {
-    return <Spinner label="در حال بررسی دسترسی..." />;
+    return (
+      <Spinner label="در حال بررسی دسترسی..." />
+    );
   }
 
   return (
@@ -471,13 +913,14 @@ async function updateBusinessCategory(
         </h1>
 
         <p className="text-sm text-slate-500">
-          بررسی، تایید و مدیریت کسب و کارهای شهر جم
+          بررسی، تایید و مدیریت بخش‌های شهر جم
         </p>
       </div>
 
       {/* ==========================================
-          کنترل آگهی‌های خودکار
+          مدیریت آگهی‌های خودکار
          ========================================== */}
+
       <div className="rounded-xl2 glass p-4 shadow-soft">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -497,7 +940,9 @@ async function updateBusinessCategory(
                 : "bg-red-100 text-red-600"
             }`}
           >
-            {autoAdsActive ? "● فعال" : "● متوقف"}
+            {autoAdsActive
+              ? "● فعال"
+              : "● متوقف"}
           </span>
         </div>
 
@@ -528,10 +973,16 @@ async function updateBusinessCategory(
         </div>
       </div>
 
-      {/* منوی اصلی */}
+      {/* ==========================================
+          منوی اصلی
+         ========================================== */}
+
       <div className="flex flex-wrap gap-2">
+
         <button
-          onClick={() => setView("businesses")}
+          onClick={() =>
+            setView("businesses")
+          }
           className={`rounded-full px-4 py-2 text-sm font-bold transition ${
             view === "businesses"
               ? "bg-jam-green text-white shadow-glow"
@@ -542,7 +993,9 @@ async function updateBusinessCategory(
         </button>
 
         <button
-          onClick={() => setView("stats")}
+          onClick={() =>
+            setView("stats")
+          }
           className={`rounded-full px-4 py-2 text-sm font-bold transition ${
             view === "stats"
               ? "bg-jam-green text-white shadow-glow"
@@ -553,7 +1006,9 @@ async function updateBusinessCategory(
         </button>
 
         <button
-          onClick={() => setView("reports")}
+          onClick={() =>
+            setView("reports")
+          }
           className={`rounded-full px-4 py-2 text-sm font-bold transition ${
             view === "reports"
               ? "bg-red-500 text-white shadow-glow"
@@ -562,14 +1017,261 @@ async function updateBusinessCategory(
         >
           🚩 گزارش‌ها
         </button>
+
+        <button
+          onClick={() =>
+            setView("raffle")
+          }
+          className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+            view === "raffle"
+              ? "bg-amber-500 text-white shadow-glow"
+              : "bg-black/5 text-slate-500"
+          }`}
+        >
+          🎡 قرعه‌کشی
+        </button>
+
       </div>
 
-      {/* گزارش‌ها */}
-      {view === "reports" ? (
+      {/* ==========================================
+          قرعه‌کشی
+         ========================================== */}
+
+      {view === "raffle" ? (
+        <div
+          dir="rtl"
+          className="space-y-4"
+        >
+
+          {/* عنوان قرعه‌کشی */}
+
+          <div className="rounded-xl2 glass p-5 shadow-soft">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+
+              <div>
+                <h2 className="text-xl font-black text-slate-800">
+                  🎡 مدیریت قرعه‌کشی جم
+                </h2>
+
+                <p className="mt-1 text-xs text-slate-500">
+                  مشاهده شرکت‌کنندگان، چرخش‌ها و برندگان
+                </p>
+              </div>
+
+              <button
+                onClick={loadRaffleStats}
+                disabled={raffleLoading}
+                className="rounded-xl bg-jam-navy px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+              >
+                {raffleLoading
+                  ? "در حال بروزرسانی..."
+                  : "🔄 بروزرسانی"}
+              </button>
+
+            </div>
+          </div>
+
+          {/* آمار */}
+
+          <div className="grid gap-3 sm:grid-cols-3">
+
+            <div className="rounded-xl2 glass p-5 text-center shadow-soft">
+              <p className="text-3xl font-black text-jam-green">
+                {raffleParticipants.toLocaleString(
+                  "fa-IR"
+                )}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                👥 شرکت‌کنندگان
+              </p>
+            </div>
+
+            <div className="rounded-xl2 glass p-5 text-center shadow-soft">
+              <p className="text-3xl font-black text-jam-navy">
+                {raffleSpins.toLocaleString(
+                  "fa-IR"
+                )}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                🎯 کل چرخش‌ها
+              </p>
+            </div>
+
+            <div className="rounded-xl2 glass p-5 text-center shadow-soft">
+              <p className="text-3xl font-black text-amber-500">
+                {rafflePrizesLeft.toLocaleString(
+                  "fa-IR"
+                )}
+              </p>
+
+              <p className="mt-1 text-xs text-slate-500">
+                🎁 جوایز باقی‌مانده
+              </p>
+            </div>
+
+          </div>
+
+          {/* لیست برندگان */}
+
+          <div className="rounded-xl2 glass p-5 shadow-soft">
+
+            <div className="mb-4 flex items-center justify-between">
+
+              <div>
+                <h2 className="text-base font-black text-slate-800">
+                  🏆 برندگان قرعه‌کشی
+                </h2>
+
+                <p className="mt-1 text-[11px] text-slate-500">
+                  این لیست مستقیماً از سوابق چرخش‌ها خوانده می‌شود.
+                </p>
+              </div>
+
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                {raffleWinners.length.toLocaleString(
+                  "fa-IR"
+                )} برنده
+              </span>
+
+            </div>
+
+            {raffleLoading ? (
+              <div className="flex justify-center py-10">
+                <Spinner label="در حال بارگذاری برندگان..." />
+              </div>
+            ) : raffleWinners.length === 0 ? (
+              <EmptyState
+                icon="🎁"
+                title="هنوز برنده‌ای ثبت نشده"
+              />
+            ) : (
+              <div className="space-y-3">
+
+                {raffleWinners.map(
+                  (winner, index) => (
+                    <div
+                      key={winner.id}
+                      className="rounded-xl2 border border-slate-200 bg-white p-4"
+                    >
+
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+
+                        <div className="flex items-center gap-3">
+
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-lg">
+                            🏆
+                          </div>
+
+                          <div>
+
+                            <div className="flex flex-wrap items-center gap-2">
+
+                              <span className="text-[10px] font-bold text-slate-400">
+                                #{(
+                                  index + 1
+                                ).toLocaleString(
+                                  "fa-IR"
+                                )}
+                              </span>
+
+                              <p
+                                dir="ltr"
+                                className="font-black text-slate-800"
+                              >
+                                {winner.phone}
+                              </p>
+
+                            </div>
+
+                            <p className="mt-1 text-xs font-bold text-amber-600">
+                              🎁 {winner.label}
+                            </p>
+
+                            {winner.amount !==
+                              null && (
+                              <p className="mt-1 text-[11px] text-slate-500">
+                                مبلغ جایزه:{" "}
+                                {new Intl.NumberFormat(
+                                  "fa-IR"
+                                ).format(
+                                  winner.amount
+                                )}{" "}
+                                تومان
+                              </p>
+                            )}
+
+                            <p className="mt-1 text-[10px] text-slate-400">
+                              🕐{" "}
+                              {new Date(
+                                winner.created_at
+                              ).toLocaleString(
+                                "fa-IR"
+                              )}
+                            </p>
+
+                          </div>
+
+                        </div>
+
+                        <label className="flex cursor-pointer items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-xs">
+
+                          <input
+                            type="checkbox"
+                            checked={
+                              winner.given
+                            }
+                            onChange={(e) =>
+                              toggleRaffleGiven(
+                                winner.id,
+                                e.target.checked
+                              )
+                            }
+                            className="h-4 w-4 cursor-pointer"
+                          />
+
+                          <span
+                            className={
+                              winner.given
+                                ? "font-bold text-emerald-600"
+                                : "font-bold text-slate-500"
+                            }
+                          >
+                            {winner.given
+                              ? "✅ هدیه داده شد"
+                              : "🎁 هدیه داده نشد"}
+                          </span>
+
+                        </label>
+
+                      </div>
+
+                    </div>
+                  )
+                )}
+
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+      ) : view === "reports" ? (
+
+        /* ==========================================
+           گزارش‌ها
+           ========================================== */
+
         <div className="space-y-4">
+
           <div className="flex gap-2">
+
             <button
-              onClick={() => setReportFilter("open")}
+              onClick={() =>
+                setReportFilter("open")
+              }
               className={`rounded-full px-4 py-2 text-xs font-bold transition ${
                 reportFilter === "open"
                   ? "bg-jam-navy text-white"
@@ -580,7 +1282,9 @@ async function updateBusinessCategory(
             </button>
 
             <button
-              onClick={() => setReportFilter("resolved")}
+              onClick={() =>
+                setReportFilter("resolved")
+              }
               className={`rounded-full px-4 py-2 text-xs font-bold transition ${
                 reportFilter === "resolved"
                   ? "bg-jam-navy text-white"
@@ -589,6 +1293,7 @@ async function updateBusinessCategory(
             >
               بررسی‌شده
             </button>
+
           </div>
 
           {reports === null ? (
@@ -600,15 +1305,20 @@ async function updateBusinessCategory(
             />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
+
               {reports.map((r) => (
                 <div
                   key={r.id}
                   className="space-y-2 rounded-xl2 glass p-4 shadow-soft"
                 >
+
                   <div className="flex items-center justify-between text-xs">
+
                     <span className="text-slate-400">
                       گزارش‌دهنده:{" "}
-                      {r.reporter?.display_name ?? "ناشناس"}
+                      {r.reporter
+                        ?.display_name ??
+                        "ناشناس"}
                     </span>
 
                     <span className="rounded-full bg-black/5 px-2 py-0.5 font-bold text-slate-600">
@@ -616,11 +1326,14 @@ async function updateBusinessCategory(
                         ? "دیوار شهر جم"
                         : "چت خصوصی"}
                     </span>
+
                   </div>
 
                   <p className="text-sm font-bold text-slate-800">
                     کاربر گزارش‌شده:{" "}
-                    {r.reported?.display_name ?? "ناشناس"}
+                    {r.reported
+                      ?.display_name ??
+                      "ناشناس"}
 
                     {r.reported?.banned && (
                       <span className="mr-2 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">
@@ -642,15 +1355,23 @@ async function updateBusinessCategory(
                   )}
 
                   <p className="text-[10px] text-slate-400">
-                    {new Date(r.created_at).toLocaleString("fa-IR")}
+                    {new Date(
+                      r.created_at
+                    ).toLocaleString("fa-IR")}
                   </p>
 
                   <div className="flex flex-wrap gap-2 border-t border-black/5 pt-2">
+
                     {r.reported?.banned ? (
                       <button
-                        disabled={busyId === r.reported_user_id}
+                        disabled={
+                          busyId ===
+                          r.reported_user_id
+                        }
                         onClick={() =>
-                          unbanUser(r.reported_user_id)
+                          unbanUser(
+                            r.reported_user_id
+                          )
                         }
                         className="rounded-xl2 bg-jam-green px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
                       >
@@ -658,9 +1379,14 @@ async function updateBusinessCategory(
                       </button>
                     ) : (
                       <button
-                        disabled={busyId === r.reported_user_id}
+                        disabled={
+                          busyId ===
+                          r.reported_user_id
+                        }
                         onClick={() =>
-                          banUser(r.reported_user_id)
+                          banUser(
+                            r.reported_user_id
+                          )
                         }
                         className="rounded-xl2 bg-red-500 px-3 py-1.5 text-xs font-bold text-white disabled:opacity-50"
                       >
@@ -670,30 +1396,45 @@ async function updateBusinessCategory(
 
                     {!r.resolved && (
                       <button
-                        disabled={busyId === r.id}
-                        onClick={() => resolveReport(r.id)}
+                        disabled={
+                          busyId === r.id
+                        }
+                        onClick={() =>
+                          resolveReport(r.id)
+                        }
                         className="rounded-xl2 border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 disabled:opacity-50"
                       >
                         بستن گزارش
                       </button>
                     )}
+
                   </div>
+
                 </div>
               ))}
+
             </div>
           )}
+
         </div>
 
       ) : view === "stats" ? (
 
-        /* آمار */
+        /* ==========================================
+           آمار بازدید
+           ========================================== */
+
         <div className="grid gap-3 sm:grid-cols-3">
+
           <div className="rounded-xl2 glass p-6 text-center shadow-soft">
             <p className="text-3xl font-extrabold text-jam-green">
               {visitCounts
-                ? visitCounts.today.toLocaleString("fa-IR")
+                ? visitCounts.today.toLocaleString(
+                    "fa-IR"
+                  )
                 : "…"}
             </p>
+
             <p className="mt-1 text-xs text-slate-500">
               بازدید امروز
             </p>
@@ -702,9 +1443,12 @@ async function updateBusinessCategory(
           <div className="rounded-xl2 glass p-6 text-center shadow-soft">
             <p className="text-3xl font-extrabold text-jam-green">
               {visitCounts
-                ? visitCounts.month.toLocaleString("fa-IR")
+                ? visitCounts.month.toLocaleString(
+                    "fa-IR"
+                  )
                 : "…"}
             </p>
+
             <p className="mt-1 text-xs text-slate-500">
               بازدید این ماه
             </p>
@@ -713,26 +1457,35 @@ async function updateBusinessCategory(
           <div className="rounded-xl2 glass p-6 text-center shadow-soft">
             <p className="text-3xl font-extrabold text-jam-green">
               {visitCounts
-                ? visitCounts.year.toLocaleString("fa-IR")
+                ? visitCounts.year.toLocaleString(
+                    "fa-IR"
+                  )
                 : "…"}
             </p>
+
             <p className="mt-1 text-xs text-slate-500">
               بازدید امسال
             </p>
           </div>
+
         </div>
 
       ) : (
 
-        /* کسب‌وکارها */
+        /* ==========================================
+           کسب‌وکارها
+           ========================================== */
+
         <>
+
           <div className="flex flex-wrap gap-2">
+
             {TABS.map((t) => (
               <button
                 key={t.value}
-                onClick={() => {
-                  setTab(t.value);
-                }}
+                onClick={() =>
+                  setTab(t.value)
+                }
                 className={`rounded-full px-4 py-2 text-xs font-bold transition ${
                   tab === t.value
                     ? "bg-jam-navy text-white"
@@ -742,6 +1495,7 @@ async function updateBusinessCategory(
                 {t.label}
               </button>
             ))}
+
           </div>
 
           {businesses === null ? (
@@ -753,10 +1507,18 @@ async function updateBusinessCategory(
             />
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
+
               {businesses.map((b) => {
-                const tier = tierMeta(b.subscription_tier);
+
+                const tier =
+                  tierMeta(
+                    b.subscription_tier
+                  );
+
                 const st =
-                  STATUS_META[b.subscription_status] ??
+                  STATUS_META[
+                    b.subscription_status
+                  ] ??
                   STATUS_META.pending;
 
                 return (
@@ -764,20 +1526,29 @@ async function updateBusinessCategory(
                     key={b.id}
                     className="space-y-3 rounded-xl2 glass p-4 shadow-soft"
                   >
+
                     <div className="flex items-center gap-3">
+
                       <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-2xl shadow">
                         {b.icon}
                       </span>
 
                       <div className="min-w-0 flex-1">
+
                         <p className="truncate font-bold text-slate-800">
                           {b.name}
                         </p>
 
                         <p className="truncate text-xs text-slate-400">
-                          {businessCategoryLabel(b.category)} ·{" "}
-                          {b.profiles?.display_name || "ناشناس"}
+                          {businessCategoryLabel(
+                            b.category
+                          )}{" "}
+                          ·{" "}
+                          {b.profiles
+                            ?.display_name ||
+                            "ناشناس"}
                         </p>
+
                       </div>
 
                       <span
@@ -785,10 +1556,14 @@ async function updateBusinessCategory(
                       >
                         {st.label}
                       </span>
+
                     </div>
 
                     <div className="space-y-1 text-xs text-slate-500">
-                      <p>📍 {b.address}</p>
+
+                      <p>
+                        📍 {b.address}
+                      </p>
 
                       {b.phone && (
                         <p
@@ -804,109 +1579,192 @@ async function updateBusinessCategory(
                           ⏳ انقضا:{" "}
                           {new Date(
                             b.expires_at
-                          ).toLocaleDateString("fa-IR")}
+                          ).toLocaleDateString(
+                            "fa-IR"
+                          )}
                         </p>
                       )}
+
                     </div>
 
                     {tier && (
                       <p className="text-xs font-bold text-amber-700">
-                        {tier.name} — {formatPrice(tier.price)}
+                        {tier.name} —{" "}
+                        {formatPrice(
+                          tier.price
+                        )}
                       </p>
                     )}
 
                     {b.receipt_url && (
                       <a
-                        href={b.receipt_url}
+                        href={
+                          b.receipt_url
+                        }
                         target="_blank"
                         rel="noreferrer"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={b.receipt_url}
+                          src={
+                            b.receipt_url
+                          }
                           alt="فیش واریزی"
                           className="h-40 w-full rounded-xl2 border border-slate-200 object-cover"
                         />
                       </a>
                     )}
-<div className="rounded-xl2 border border-slate-200 bg-white/70 p-3 space-y-2">
-  <p className="text-xs font-bold text-slate-600">
-    ویرایش دسته‌بندی و آیکون
-  </p>
 
-  <div className="flex gap-2">
-    <select
-      value={b.category}
-      onChange={(e) => {
-        const selected = BUSINESS_CATEGORIES.find(
-          (c) => c.slug === e.target.value
-        );
+                    {/* ویرایش دسته‌بندی */}
 
-        if (!selected) return;
+                    <div className="space-y-2 rounded-xl2 border border-slate-200 bg-white/70 p-3">
 
-        setBusinesses((prev) =>
-          (prev ?? []).map((item) =>
-            item.id === b.id
-              ? {
-                  ...item,
-                  category: selected.slug,
-                  icon: selected.icon,
-                }
-              : item
-          )
-        );
-      }}
-      className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
-    >
-      {BUSINESS_CATEGORIES.map((category) => (
-        <option key={category.slug} value={category.slug}>
-          {category.icon} {category.name}
-        </option>
-      ))}
-    </select>
+                      <p className="text-xs font-bold text-slate-600">
+                        ویرایش دسته‌بندی و آیکون
+                      </p>
 
-    <button
-      disabled={busyId === b.id}
-      onClick={() => {
-        const selected = BUSINESS_CATEGORIES.find(
-          (c) => c.slug === b.category
-        );
+                      <div className="flex gap-2">
 
-        if (!selected) return;
+                        <select
+                          value={
+                            b.category
+                          }
+                          onChange={(e) => {
 
-        updateBusinessCategory(
-          b.id,
-          selected.slug,
-          selected.icon
-        );
-      }}
-      className="rounded-xl bg-jam-navy px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-    >
-      💾 ذخیره
-    </button>
-  </div>
+                            const selected =
+                              BUSINESS_CATEGORIES.find(
+                                (c) =>
+                                  c.slug ===
+                                  e.target
+                                    .value
+                              );
 
-  <div className="text-xs text-slate-400">
-    آیکون: <span className="text-lg">{b.icon}</span>
-  </div>
-</div>
-                    <div className="flex flex-wrap gap-2">
-                      {(b.subscription_status === "pending" ||
-                        b.subscription_status === "suspended") && (
+                            if (
+                              !selected
+                            )
+                              return;
+
+                            setBusinesses(
+                              (prev) =>
+                                (prev ?? []).map(
+                                  (
+                                    item
+                                  ) =>
+                                    item.id ===
+                                    b.id
+                                      ? {
+                                          ...item,
+                                          category:
+                                            selected.slug,
+                                          icon:
+                                            selected.icon,
+                                        }
+                                      : item
+                                )
+                            );
+                          }}
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
+                        >
+
+                          {BUSINESS_CATEGORIES.map(
+                            (category) => (
+                              <option
+                                key={
+                                  category.slug
+                                }
+                                value={
+                                  category.slug
+                                }
+                              >
+                                {
+                                  category.icon
+                                }{" "}
+                                {
+                                  category.name
+                                }
+                              </option>
+                            )
+                          )}
+
+                        </select>
+
                         <button
-                          disabled={busyId === b.id}
-                          onClick={() => approve(b.id)}
+                          disabled={
+                            busyId ===
+                            b.id
+                          }
+                          onClick={() => {
+
+                            const selected =
+                              BUSINESS_CATEGORIES.find(
+                                (c) =>
+                                  c.slug ===
+                                  b.category
+                              );
+
+                            if (
+                              !selected
+                            )
+                              return;
+
+                            updateBusinessCategory(
+                              b.id,
+                              selected.slug,
+                              selected.icon
+                            );
+                          }}
+                          className="rounded-xl bg-jam-navy px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                        >
+                          💾 ذخیره
+                        </button>
+
+                      </div>
+
+                      <div className="text-xs text-slate-400">
+                        آیکون:{" "}
+                        <span className="text-lg">
+                          {b.icon}
+                        </span>
+                      </div>
+
+                    </div>
+
+                    {/* دکمه‌ها */}
+
+                    <div className="flex flex-wrap gap-2">
+
+                      {(b.subscription_status ===
+                        "pending" ||
+                        b.subscription_status ===
+                          "suspended") && (
+                        <button
+                          disabled={
+                            busyId ===
+                            b.id
+                          }
+                          onClick={() =>
+                            approve(
+                              b.id
+                            )
+                          }
                           className="flex-1 rounded-xl2 bg-jam-green py-2 text-sm font-bold text-white shadow-glow disabled:opacity-50"
                         >
                           ✅ تایید
                         </button>
                       )}
 
-                      {b.subscription_status === "pending" && (
+                      {b.subscription_status ===
+                        "pending" && (
                         <button
-                          disabled={busyId === b.id}
+                          disabled={
+                            busyId ===
+                            b.id
+                          }
                           onClick={() =>
-                            setStatus(b.id, "rejected")
+                            setStatus(
+                              b.id,
+                              "rejected"
+                            )
                           }
                           className="flex-1 rounded-xl2 bg-red-500 py-2 text-sm font-bold text-white disabled:opacity-50"
                         >
@@ -914,11 +1772,18 @@ async function updateBusinessCategory(
                         </button>
                       )}
 
-                      {b.subscription_status === "approved" && (
+                      {b.subscription_status ===
+                        "approved" && (
                         <button
-                          disabled={busyId === b.id}
+                          disabled={
+                            busyId ===
+                            b.id
+                          }
                           onClick={() =>
-                            setStatus(b.id, "suspended")
+                            setStatus(
+                              b.id,
+                              "suspended"
+                            )
                           }
                           className="flex-1 rounded-xl2 bg-slate-500 py-2 text-sm font-bold text-white disabled:opacity-50"
                         >
@@ -927,20 +1792,29 @@ async function updateBusinessCategory(
                       )}
 
                       <button
-                        disabled={busyId === b.id}
-                        onClick={() => remove(b.id)}
+                        disabled={
+                          busyId === b.id
+                        }
+                        onClick={() =>
+                          remove(b.id)
+                        }
                         className="rounded-xl2 border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-500 disabled:opacity-50"
                       >
                         🗑️ حذف
                       </button>
+
                     </div>
+
                   </div>
                 );
               })}
+
             </div>
           )}
+
         </>
       )}
+
     </div>
   );
 }
