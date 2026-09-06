@@ -1,0 +1,26 @@
+name: Market Prices Fetch
+
+on:
+  schedule:
+    # هر ۱۵ دقیقه یک‌بار (UTC). عدد را کم/زیاد کن اگر می‌خواهی تندتر/کندتر بروزرسانی شود.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  fetch-market-prices:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run market prices script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BRSAPI_KEY: ${{ secrets.BRSAPI_KEY }}
+        run: node scripts/fetch-market-prices.js
