@@ -226,10 +226,6 @@ export default function WallPage() {
     });
 
     channel
-      .on("presence", { event: "sync" }, () => {
-        const state = channel.presenceState();
-        setOnlineCount(Object.keys(state).length);
-      })
       .on("broadcast", { event: "typing" }, (payload) => {
         const { userId, name, typing } = payload.payload as {
           userId: string;
@@ -686,12 +682,6 @@ function handleReply(message: WallMessage) {
             <div className="min-w-0">
               <h1 className="truncate text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
               <p className="flex items-center gap-2 text-[10px] font-bold">
-                {onlineCount !== null && (
-                  <span className="flex items-center gap-1 text-[#147A4B]">
-                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#147A4B]" />
-                    {onlineCount.toLocaleString("fa-IR")} آنلاین
-                  </span>
-                )}
                 {memberCount !== null && (
                   <span className="text-[#8A968C]">· {memberCount.toLocaleString("fa-IR")} عضو</span>
                 )}
