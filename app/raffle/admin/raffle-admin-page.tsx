@@ -19,7 +19,10 @@ type Winner = {
 };
 
 export default function RaffleAdminPage() {
-  const supabase = createClient();
+  // Cast to `any` here because the raffle_* tables aren't in the generated
+  // Supabase Database types yet, which otherwise makes TS infer `never` for
+  // insert/update payloads and fails `next build`'s type-check step.
+  const supabase = createClient() as any;
   const { user, profile, loading: authLoading } = useAuth() as any;
 
   const [loading, setLoading] = useState(true);
@@ -70,10 +73,7 @@ export default function RaffleAdminPage() {
 
   async function toggleGiven(id: string, given: boolean) {
     setWinners((prev) => prev.map((w) => (w.id === id ? { ...w, given } : w)));
-const { error } = await supabase
-  .from("raffle_spins")
-  .update({ given } as never)
-  .eq("id", id);
+    const { error } = await supabase.from("raffle_spins").update({ given }).eq("id", id);
     if (error) {
       console.error("Failed to update given status:", error.message);
       // revert on failure
