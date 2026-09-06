@@ -223,7 +223,6 @@ export default function HomePage() {
 
   return (
     <div dir="rtl" className="space-y-2 bg-[#F7F9F4] pb-10">
-
       {/* JAM CITY NEWS BAR — نئون: کل ردیف یه لینک واحده به /news */}
       <Link
         href="/news"
