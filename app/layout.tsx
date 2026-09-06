@@ -1,19 +1,20 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import VisitTracker from "@/components/VisitTracker";
+import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 
 export const metadata: Metadata = {
-  title: "جم‌سیتی | همه‌چیز برای زندگی بهتر در جم",
+  title: "Ø¬Ù…â€ŒØ³ÛŒØªÛŒ | Ù‡Ù…Ù‡â€ŒÚ†ÛŒØ² Ø¨Ø±Ø§ÛŒ Ø²Ù†Ø¯Ú¯ÛŒ Ø¨Ù‡ØªØ± Ø¯Ø± Ø¬Ù…",
   description:
-    "جم‌سیتی؛ پلتفرم شهری جم برای ثبت آگهی، پیدا کردن کسب‌وکارها و خدمات شهری و گفتگو با شهروندان جم.",
+    "Ø¬Ù…â€ŒØ³ÛŒØªÛŒ› Ù¾Ù„ØªÙÙØ±Ù… Ø´Ù‡Ø±ÛŒ Ø¬Ù… Ø¨Ø±Ø§ÛŒ Ø«Ø¨Øª Ø¢Ú¯Ù‡ÛŒØŒ Ù¾ÛŒØ¯Ø§ Ú©Ø±Ø¯Ù† Ú©Ø³Ø¨â€ŒÙˆÚ©Ø§Ø±Ù‡Ø§ Ùˆ Ø®Ø¯Ù…Ø§Øª Ø´Ù‡Ø±ÛŒ Ùˆ Ú¯ÙÙØªÚ¯Ùˆ Ø¨Ø§ Ø´Ù‡Ø±ÙˆÙ†Ø¯Ø§Ù† Ø¬Ù…",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "جم‌سیتی",
+    title: "Ø¬Ù…â€ŒØ³ÛŒØªÛŒ",
   },
   icons: {
     icon: "/icons/icon-192.png",
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl">
       <body className="gradient-bg min-h-screen">
+        <ServiceWorkerRegistration />
         <AuthProvider>
           <VisitTracker />
           <Header />
