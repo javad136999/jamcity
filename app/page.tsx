@@ -322,6 +322,27 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* RAFFLE CTA — بنر چرخ گردون قرعه‌کشی */}
+      <Link
+        href="/raffle"
+        className="group relative mx-auto flex max-w-md items-center gap-3 overflow-hidden rounded-[20px] border border-[#F0DCB4] bg-gradient-to-l from-[#FBEEDA] to-white px-4 py-3 shadow-[0_0_20px_rgba(255,183,77,.15)] transition hover:shadow-[0_0_28px_rgba(255,183,77,.3)]"
+      >
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm">
+          🎡
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[12px] font-black text-[#1D2B1F]">
+            چرخ گردون قرعه‌کشی جم
+          </p>
+          <p className="truncate text-[9px] text-[#8A7150]">
+            ۲ چرخش رایگان + با دعوت دوستات چرخش بیشتر بگیر
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[#D98F2B] px-3 py-1.5 text-[9px] font-black text-white transition group-hover:bg-[#c47f26]">
+          بچرخون ←
+        </span>
+      </Link>
+
       <style jsx>{`
         @keyframes jamChatGlow {
           0%, 100% {
