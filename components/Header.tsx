@@ -55,7 +55,8 @@ export default function Header() {
             className="jam-panel-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#0f9a56] px-3 py-2 text-[11px] font-black text-white ring-2 ring-red-500/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
           >
             <span className="text-sm sm:text-2xl">🏬</span>
-            <span className="hidden xs:inline">پنل کسب و کار</span>
+            <span className="sm:hidden">پنل</span>
+            <span className="hidden sm:inline">پنل کسب و کار</span>
           </Link>
         </div>
 
