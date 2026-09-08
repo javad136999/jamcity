@@ -44,7 +44,8 @@ export default function Header() {
             href={`mailto:${ADMIN_CONTACT_EMAIL}?subject=${encodeURIComponent("سوال درباره شهر جم")}`}
             className="flex items-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-white px-2.5 py-1.5 text-[9px] font-bold text-red-500 shadow-sm transition hover:bg-red-50 sm:px-3.5 sm:text-[11px]"
           >
-            ☎️ <span className="hidden xs:inline">تماس با مدیر</span>
+            ☎️ <span className="sm:hidden">تماس</span>
+            <span className="hidden sm:inline">تماس با مدیر</span>
           </a>
         </div>
 
@@ -52,11 +53,10 @@ export default function Header() {
           <InstallAppButton />
           <Link
             href="/business/manage"
-            className="jam-panel-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#0f9a56] px-3 py-2 text-[11px] font-black text-white ring-2 ring-red-500/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
+            className="jam-panel-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#00D66B] px-3 py-2 text-[11px] font-black text-white ring-2 ring-red-500/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
           >
             <span className="text-sm sm:text-2xl">🏬</span>
-            <span className="sm:hidden">پنل</span>
-            <span className="hidden sm:inline">پنل کسب و کار</span>
+            <span>پنل کسب و کار</span>
           </Link>
         </div>
 
