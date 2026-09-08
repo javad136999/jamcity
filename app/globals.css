@@ -1,4 +1,3 @@
-
 @import url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css");
 @import "leaflet/dist/leaflet.css";
 
@@ -289,3 +288,67 @@ a {
     transform 0.2s ease;
 }
 
+/* =========================================================
+   BUSINESS PANEL — LIGHT THEME OVERRIDE
+   فقط داخل .business-light-theme اعمال می‌شه (مسیرهای /business/*)
+   بقیه‌ی سایت همچنان تم مشکی + سبز نئونی خودش رو حفظ می‌کنه
+========================================================= */
+
+.business-light-theme {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.10), transparent 30%),
+    radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.08), transparent 30%),
+    linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f0fdf4 100%);
+  color: #0f172a;
+}
+
+.business-light-theme .glass {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.92),
+    rgba(255, 255, 255, 0.72)
+  );
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  box-shadow:
+    0 8px 30px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.business-light-theme input,
+.business-light-theme textarea,
+.business-light-theme select {
+  color: #0f172a;
+}
+
+.business-light-theme input::placeholder,
+.business-light-theme textarea::placeholder {
+  color: rgba(100, 116, 139, 0.6);
+}
+
+.business-light-theme ::selection {
+  background: rgba(16, 185, 129, 0.25);
+  color: #0f172a;
+}
+
+.business-light-theme .neon-green {
+  color: #0d9488;
+  text-shadow: none;
+}
+
+.business-light-theme .neon-border {
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow: none;
+}
+
+.business-light-theme .skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(15, 23, 42, 0.04) 25%,
+    rgba(16, 185, 129, 0.1) 37%,
+    rgba(15, 23, 42, 0.04) 63%
+  );
+  background-size: 400% 100%;
+}
