@@ -96,7 +96,7 @@ export const SUBSCRIPTION_TIERS = [
   {
     value: "gold",
     name: "اشتراک طلایی",
-    price: 2000000,
+    price: 500000,
     color: "from-yellow-500 to-amber-300",
     perks: [
       "⭐ درج روی نقشه با نشان ستاره طلایی",
@@ -107,7 +107,7 @@ export const SUBSCRIPTION_TIERS = [
   {
     value: "silver",
     name: "اشتراک نقره‌ای",
-    price: 1000000,
+    price: 300000,
     color: "from-slate-400 to-slate-300",
     perks: ["📍 درج روی نقشه شهر جم", "🏬 پنل کامل مدیریت منو و محصولات"],
   },
