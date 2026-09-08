@@ -6,6 +6,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { ADMIN_CONTACT_EMAIL } from "@/lib/constants";
+import InstallAppButton from "@/components/InstallAppButton";
 
 export default function Header() {
   const { user, profile, unreadCount, isAdmin } = useAuth();
@@ -34,8 +35,8 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-red-100 bg-white">
       {/* =====================================================
-          نوار بالای بالای هدر — تم سفید نئونی قرمز
-          راست: تماس با مدیر · وسط: پنل کسب و کار (نئونی) · چپ: ورود/کاربر
+          نوار بالای بالای هدر — تم سفید نئونی قرمز/سبز
+          راست: تماس با مدیر · وسط: نصب اپلیکیشن (نئونی سبز) + پنل کسب و کار (نئونی قرمز) · چپ: ورود/کاربر
       ====================================================== */}
       <div className="grid max-w-6xl grid-cols-3 items-center gap-2 mx-auto px-3 py-2 sm:px-4">
         <div className="flex justify-start">
@@ -47,13 +48,14 @@ export default function Header() {
           </a>
         </div>
 
-        <div className="flex justify-center">
+        <div className="flex min-w-0 items-center justify-center gap-1.5 sm:gap-3">
+          <InstallAppButton />
           <Link
             href="/business/manage"
-            className="jam-panel-glow flex items-center gap-2 whitespace-nowrap rounded-full bg-[#0f9a56] px-4 py-2 text-[12px] font-black text-white ring-2 ring-red-500/80 sm:px-7 sm:py-3 sm:text-base"
+            className="jam-panel-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#0f9a56] px-3 py-2 text-[11px] font-black text-white ring-2 ring-red-500/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
           >
-            <span className="text-base sm:text-2xl">🏬</span>
-            <span>پنل کسب و کار</span>
+            <span className="text-sm sm:text-2xl">🏬</span>
+            <span className="hidden xs:inline">پنل کسب و کار</span>
           </Link>
         </div>
 

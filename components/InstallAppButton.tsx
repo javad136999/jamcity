@@ -81,9 +81,10 @@ export default function InstallAppButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="fixed bottom-20 left-3 z-30 flex items-center gap-1.5 rounded-full bg-[#147A4B] px-4 py-2.5 text-[12px] font-black text-white shadow-[0_8px_20px_rgba(20,122,75,.35)] transition hover:brightness-110 md:bottom-6"
+        className="jam-install-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-2 text-[11px] font-black text-[#0f9a56] ring-2 ring-emerald-400/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
       >
-        📲 نصب اپلیکیشن
+        <span className="text-sm sm:text-2xl">📲</span>
+        <span className="hidden xs:inline">نصب اپلیکیشن</span>
       </button>
 
       {showIOSGuide && (
@@ -113,6 +114,23 @@ export default function InstallAppButton() {
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes jamInstallGlow {
+          0%,
+          100% {
+            box-shadow: 0 0 10px 2px rgba(16, 185, 129, 0.5),
+              0 0 0 1px rgba(16, 185, 129, 0.35);
+          }
+          50% {
+            box-shadow: 0 0 24px 8px rgba(16, 185, 129, 0.85),
+              0 0 0 1px rgba(16, 185, 129, 0.6);
+          }
+        }
+        .jam-install-glow {
+          animation: jamInstallGlow 2.1s ease-in-out infinite;
+        }
+      `}</style>
     </>
   );
 }
