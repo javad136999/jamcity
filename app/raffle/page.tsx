@@ -92,7 +92,8 @@ function RafflePageContent() {
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<{ text: string; win: boolean } | null>(null);
-  const [copyMsg, setCopyMsg] = useState("");
+  const [shareMsg, setShareMsg] = useState("");
+  const [sharing, setSharing] = useState(false);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -132,11 +133,7 @@ function RafflePageContent() {
     return Math.max(0, participant.spins_allowed - participant.spins_used);
   }, [participant]);
 
-  const referralLink = useMemo(() => {
-    if (!participant || typeof window === "undefined") return "";
-    const base = `${window.location.origin}/raffle`;
-    return `${base}?ref=${participant.referral_code}`;
-  }, [participant]);
+
 
   async function verifyPhone() {
     const phone = normalizePhone(phoneInput);
@@ -207,14 +204,47 @@ function RafflePageContent() {
     setVerifying(false);
   }
 
-  async function copyRefLink() {
+  async function shareWithFriends() {
+    if (!participant || sharing) return;
+
+    const siteLink = "https://jamapp.ir";
+    setSharing(true);
+    setShareMsg("");
+
     try {
-      await navigator.clipboard.writeText(referralLink);
-      setCopyMsg("لینک کپی شد!");
-    } catch {
-      setCopyMsg("لینک رو دستی کپی کن");
+      if (!navigator.share) {
+        setShareMsg("امکان ارسال مستقیم روی این دستگاه وجود ندارد");
+        return;
+      }
+
+      await navigator.share({
+        title: "جم‌سیتی",
+        text: "🎉 با جم‌سیتی همراه شو!\n\nاخبار، آگهی‌ها، کسب‌وکارها و خدمات شهر جم در یکجا\n\n",
+        url: siteLink,
+      });
+
+      const newSpinsAllowed = participant.spins_allowed + 1;
+
+      const { error } = await supabase
+        .from("raffle_participants")
+        .update({ spins_allowed: newSpinsAllowed })
+        .eq("id", participant.id);
+
+      if (error) {
+        console.error("Failed to add share spin:", error.message);
+        setShareMsg("ارسال انجام شد، اما شارژ شانس انجام نشد");
+        return;
+      }
+
+      setParticipant({ ...participant, spins_allowed: newSpinsAllowed });
+      setShareMsg("🎉 یک چرخش اضافه شد!");
+      setTimeout(() => setShareMsg(""), 3000);
+    } catch (error) {
+      // لغو کردن پنل Share نباید شانس اضافه کند.
+      console.log("Share cancelled:", error);
+    } finally {
+      setSharing(false);
     }
-    setTimeout(() => setCopyMsg(""), 2500);
   }
 
   async function doSpin() {
@@ -312,7 +342,7 @@ function RafflePageContent() {
               value={phoneInput}
               onChange={(e) => setPhoneInput(e.target.value)}
               placeholder="09xxxxxxxxx"
-              className="flex-1 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2.5 text-center text-sm outline-none focus:border-[#147A4B]"
+              className="flex-1 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2.5 text-center text-sm font-bold text-[#1D2B1F] caret-[#147A4B] outline-none focus:border-[#147A4B] placeholder:text-[#A8B2AA]"
             />
             <button
               onClick={verifyPhone}
@@ -352,22 +382,23 @@ function RafflePageContent() {
           </div>
           <div className="mt-2">
             <label className="mb-1 block text-[11px] text-[#8A7150]">
-              لینک دعوت دوستانت (هر دعوت = یک چرخش اضافه)
+              دوستانت رو دعوت کن؛ هر بار ارسال = یک چرخش اضافه 🎁
             </label>
-            <div className="flex gap-2" dir="ltr">
-              <input
-                readOnly
-                value={referralLink}
-                className="flex-1 truncate rounded-xl border border-[#F0DCB4] bg-white px-2 py-2 text-[11px] text-[#66766A]"
-              />
-              <button
-                onClick={copyRefLink}
-                className="shrink-0 rounded-xl bg-[#D98F2B] px-4 py-2 text-[11px] font-black text-white"
-              >
-                کپی
-              </button>
-            </div>
-            {copyMsg && <p className="mt-1 text-[11px] text-[#147A4B]">{copyMsg}</p>}
+
+            <button
+              onClick={shareWithFriends}
+              disabled={sharing}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="text-base">📤</span>
+              {sharing ? "در حال ارسال..." : "ارسال به دوستان"}
+            </button>
+
+            {shareMsg && (
+              <p className="mt-1 text-center text-[11px] text-[#147A4B]">
+                {shareMsg}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -424,9 +455,9 @@ function RafflePageContent() {
                       y={labelPos.y}
                       textAnchor="middle"
                       dominantBaseline="middle"
-                      fontSize={showAsPrize ? 10 : 12}
-                      fontWeight={showAsPrize ? 700 : 500}
-                      fill={showAsPrize ? "#5c4200" : "#8A968C"}
+                      fontSize={isPrize ? 10 : 12}
+                      fontWeight={isPrize ? 700 : 500}
+                      fill={isPrize ? "#5c4200" : "#8A968C"}
                       transform={`rotate(${midAngle}, ${labelPos.x}, ${labelPos.y})`}
                     >
                       {lines.map((line, li) => (
