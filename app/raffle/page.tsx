@@ -437,11 +437,12 @@ function RafflePageContent() {
                 const p1 = polar(CX, CY, R, startAngle);
                 const p2 = polar(CX, CY, R, endAngle);
                 const largeArc = step > 180 ? 1 : 0;
-                const showAsPrize = seg.type === "prize" && seg.is_available;
+                const isPrize = seg.type === "prize";
+                const showAsPrize = isPrize && seg.is_available;
                 const fill = showAsPrize ? PRIZE_COLOR : EMPTY_COLORS[i % 2];
                 const midAngle = startAngle + step / 2;
                 const labelPos = polar(CX, CY, R * 0.6, midAngle);
-                const lines = showAsPrize ? seg.label.split(" ") : ["پوچ"];
+                const lines = isPrize ? seg.label.split(" ") : ["پوچ"];
                 return (
                   <g key={seg.id}>
                     <path
