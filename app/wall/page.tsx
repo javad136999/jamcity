@@ -520,20 +520,40 @@ rows.forEach((r) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
- const initialScrollDone = useRef(false);
+  // =====================================================
+  // اسکرول اولیه به آخرین پیام
+  // نکته: فقط یک‌بار اسکرول کردن بلافاصله بعد از لود پیام‌ها کافی نیست،
+  // چون عکس‌ها/آواتارها دیرتر لود می‌شن و ارتفاع صفحه رو عوض می‌کنن؛
+  // اسکرول رو چند بار با فاصله تکرار می‌کنیم تا همیشه آخرین پیام معلوم باشه.
+  // =====================================================
+  const initialScrollDone = useRef(false);
 
-useEffect(() => {
-  if (messages === null || initialScrollDone.current) return;
+  useEffect(() => {
+    if (messages === null || initialScrollDone.current) return;
+    initialScrollDone.current = true;
 
-  initialScrollDone.current = true;
+    const scrollNow = () => bottomRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
 
-  requestAnimationFrame(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "instant",
-      block: "end",
-    });
-  });
-}, [messages]);
+    requestAnimationFrame(scrollNow);
+
+    const timers = [50, 150, 350, 700, 1200].map((delay) => setTimeout(scrollNow, delay));
+
+    return () => timers.forEach(clearTimeout);
+  }, [messages]);
+
+  // اگر کاربر همین الان پایین صفحه بود و پیام جدیدی از بقیه رسید،
+  // خودکار روی همون آخرین پیام بمونه (اگر بالا رفته و داره پیام‌های
+  // قدیمی رو می‌خونه، مزاحمش نمی‌شیم)
+  const prevMessageCount = useRef(0);
+  useEffect(() => {
+    if (messages === null) return;
+    const count = messages.length;
+    if (count > prevMessageCount.current && !showScrollDown) {
+      requestAnimationFrame(() => scrollToBottom("smooth"));
+    }
+    prevMessageCount.current = count;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages]);
 
   async function handleSend() {
     if (!user || sending || (!text.trim() && !image)) return;
@@ -897,7 +917,17 @@ function handleReply(message: WallMessage) {
                         >
                           <button type="button" onClick={() => setLightboxUrl(m.image_url)} className="block w-full">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
+                            <img
+                              src={m.image_url!}
+                              alt=""
+                              className="max-h-72 w-full object-cover"
+                              loading="lazy"
+                              decoding="async"
+                              onLoad={() => {
+                                if (!initialScrollDone.current || showScrollDown) return;
+                                bottomRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+                              }}
+                            />
                           </button>
                           <div className="min-w-0 space-y-2 p-3">
                             {quoted && (
@@ -1043,6 +1073,10 @@ function handleReply(message: WallMessage) {
                                   className="mb-1 max-h-64 w-full rounded-xl object-cover"
                                   loading="lazy"
                                   decoding="async"
+                                  onLoad={() => {
+                                    if (!initialScrollDone.current || showScrollDown) return;
+                                    bottomRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+                                  }}
                                 />
                               </button>
                             )}
