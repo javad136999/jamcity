@@ -843,11 +843,11 @@ function handleReply(message: WallMessage) {
           )}
         </div>
       ) : (
-        <div className="relative min-h-0 flex-1">
+        <div className="relative min-h-0 flex-1 overflow-hidden">
           <div
             ref={scrollAreaRef}
             onScroll={handleScrollArea}
-            className="h-full min-h-0 space-y-1 overflow-y-auto bg-[#EAF1E7] px-3 py-3"
+            className="h-full min-h-0 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-3 py-3"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
@@ -881,7 +881,7 @@ function handleReply(message: WallMessage) {
                 const bubbleTail = mine ? "rounded-br-md" : "rounded-bl-md";
 
                 return (
-                  <div key={m.id} id={`message-${m.id}`}>
+                  <div key={m.id} id={`message-${m.id}`} className="min-w-0 max-w-full">
                     {showDateDivider && (
                       <div className="my-3 flex items-center justify-center">
                         <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold text-[#8A968C] shadow-sm">
@@ -891,15 +891,15 @@ function handleReply(message: WallMessage) {
                     )}
 
                     {isAdCard ? (
-                      <div className={`flex ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2" : "mt-0.5"}`}>
+                      <div className={`flex min-w-0 max-w-full ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2" : "mt-0.5"}`}>
                         <div
-                          className={`max-w-[80%] overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white shadow-[0_4px_16px_rgba(20,60,40,.06)] ${bubbleTail}`}
+                          className={`min-w-0 max-w-[80%] overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white shadow-[0_4px_16px_rgba(20,60,40,.06)] ${bubbleTail}`}
                         >
                           <button type="button" onClick={() => setLightboxUrl(m.image_url)} className="block w-full">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={m.image_url!} alt="" className="max-h-72 w-full object-cover" loading="lazy" decoding="async" />
                           </button>
-                          <div className="space-y-2 p-3">
+                          <div className="min-w-0 space-y-2 p-3">
                             {quoted && (
                               <button
                                 type="button"
@@ -908,7 +908,7 @@ function handleReply(message: WallMessage) {
                                     .getElementById(`message-${quoted.id}`)
                                     ?.scrollIntoView({ behavior: "smooth", block: "center" });
                                 }}
-                                className="w-full rounded-lg border-r-4 border-[#147A4B] bg-[#F7F9F4] px-3 py-2 text-right"
+                                className="min-w-0 w-full max-w-full overflow-hidden rounded-lg border-r-4 border-[#147A4B] bg-[#F7F9F4] px-3 py-2 text-right"
                               >
                                 <p className="text-[10px] font-bold text-[#147A4B]">
                                   پاسخ به {quoted.profiles?.display_name || "کاربر"}
@@ -930,7 +930,7 @@ function handleReply(message: WallMessage) {
                                 {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
                               </span>
                             )}
-                            <p className="whitespace-pre-wrap text-sm font-bold leading-6 text-[#1D2B1F]">
+                            <p className="whitespace-pre-wrap break-words text-sm font-bold leading-6 text-[#1D2B1F]">
                               {m.content}
                             </p>
                             <div className="flex items-center justify-between pt-0.5">
@@ -977,8 +977,8 @@ function handleReply(message: WallMessage) {
                         </div>
                       </div>
                     ) : (
-                      <div className={`flex ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2.5" : "mt-0.5"}`}>
-                        <div className="flex max-w-[78%] items-end gap-1.5">
+                      <div className={`flex min-w-0 max-w-full ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2.5" : "mt-0.5"}`}>
+                        <div className="flex min-w-0 max-w-[78%] items-end gap-1.5">
                           {!mine && (
                             <button
                               onClick={() => openChatWith(m.user_id)}
@@ -988,7 +988,7 @@ function handleReply(message: WallMessage) {
                             </button>
                           )}
                           <div
-                            className={`px-3.5 py-2 shadow-sm ${bubbleTail} ${
+                            className={`min-w-0 px-3.5 py-2 shadow-sm ${bubbleTail} ${
                               mine
                                 ? "rounded-2xl bg-gradient-to-b from-[#1AA463] to-[#147A4B] text-white"
                                 : "rounded-2xl border border-[#E3EBDE] bg-white text-[#1D2B1F]"
@@ -1002,7 +1002,7 @@ function handleReply(message: WallMessage) {
                                     .getElementById(`message-${quoted.id}`)
                                     ?.scrollIntoView({ behavior: "smooth", block: "center" });
                                 }}
-                                className={`mb-1.5 w-full rounded-lg border-r-4 px-2 py-1.5 text-right ${
+                                className={`mb-1.5 min-w-0 w-full max-w-full overflow-hidden rounded-lg border-r-4 px-2 py-1.5 text-right ${
                                   mine ? "border-white/60 bg-white/10" : "border-[#147A4B] bg-[#F7F9F4]"
                                 }`}
                               >
@@ -1051,13 +1051,13 @@ function handleReply(message: WallMessage) {
                               <audio
                                 controls
                                 src={m.audio_url}
-                                className="mb-1 h-9 w-56 max-w-full"
+                                className="mb-1 h-9 w-full max-w-[224px]"
                                 style={{ filter: mine ? "invert(1) hue-rotate(180deg)" : "none" }}
                               />
                             )}
 
                             {m.content && (
-                              <p className="whitespace-pre-wrap text-[13px] leading-6">{m.content}</p>
+                              <p className="whitespace-pre-wrap break-words text-[13px] leading-6">{m.content}</p>
                             )}
 
                             <div className="mt-1 flex items-center justify-between gap-3">
