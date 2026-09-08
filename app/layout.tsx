@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import VisitTracker from "@/components/VisitTracker";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import InstallAppButton from "@/components/InstallAppButton";
 
 export const metadata: Metadata = {
   title: "Ø¬Ù…â€ŒØ³ÛŒØªÛŒ | Ù‡Ù…Ù‡â€ŒÚ†ÛŒØ² Ø¨Ø±Ø§ÛŒ Ø²Ù†Ø¯Ú¯ÛŒ Ø¨Ù‡ØªØ± Ø¯Ø± Ø¬Ù…",
@@ -45,6 +46,7 @@ export default function RootLayout({
             {children}
           </main>
           <BottomNav />
+          <InstallAppButton />
         </AuthProvider>
       </body>
     </html>
