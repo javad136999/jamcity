@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/Feedback";
+import { useAuth } from "@/lib/auth-context";
 
 type Segment = {
   id: string;
@@ -87,6 +88,8 @@ export default function RafflePage() {
 function RafflePageContent() {
   const supabase = createClient() as any;
   const searchParams = useSearchParams();
+
+  const { user, loading: authLoading } = useAuth();
 
   const [segments, setSegments] = useState<Segment[] | null>(null);
   const [history, setHistory] = useState<SpinHistoryItem[]>([]);
@@ -176,6 +179,11 @@ function RafflePageContent() {
     );
   }, [participant]);
 
+  /*
+    بررسی شماره موبایل:
+    فقط شماره‌ای که متعلق به حساب فعلی جم‌سیتی است
+    اجازه ورود به قرعه‌کشی دارد.
+  */
   async function verifyPhone() {
     const phone = normalizePhone(phoneInput);
 
@@ -189,26 +197,59 @@ function RafflePageContent() {
       return;
     }
 
+    if (authLoading) {
+      setPhoneMsg({
+        text:
+          "در حال بررسی حساب کاربری...",
+        type: "info",
+      });
+
+      return;
+    }
+
+    /*
+      کاربر باید ابتدا وارد حساب جم‌سیتی شده باشد.
+    */
+    if (!user) {
+      setPhoneMsg({
+        text:
+          "ابتدا با حساب کاربری خودت وارد جم‌سیتی شو.",
+        type: "err",
+      });
+
+      return;
+    }
+
     setVerifying(true);
 
     setPhoneMsg({
-      text: "در حال بررسی...",
+      text:
+        "در حال بررسی شماره حساب...",
       type: "info",
     });
 
+    /*
+      شماره واقعی حساب از profiles.username گرفته می‌شود.
+      در سیستم ثبت‌نام جم‌سیتی، username همان شماره موبایل است.
+    */
     const {
-      data: existing,
-      error: fetchError,
+      data: profile,
+      error: profileError,
     } = await supabase
-      .from("raffle_participants")
-      .select("*")
-      .eq("phone", phone)
+      .from("profiles")
+      .select("id,username")
+      .eq("id", user.id)
       .maybeSingle();
 
-    if (fetchError) {
+    if (profileError) {
+      console.error(
+        "Failed to load user profile:",
+        profileError.message
+      );
+
       setPhoneMsg({
         text:
-          "مشکلی پیش اومد، دوباره امتحان کن",
+          "خطا در بررسی حساب کاربری، دوباره امتحان کن.",
         type: "err",
       });
 
@@ -216,10 +257,78 @@ function RafflePageContent() {
       return;
     }
 
+    /*
+      اگر پروفایل یا شماره حساب وجود نداشته باشد،
+      اجازه ورود به قرعه‌کشی داده نمی‌شود.
+    */
+    if (!profile?.username) {
+      setPhoneMsg({
+        text:
+          "شماره موبایل برای حساب شما ثبت نشده است.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    const accountPhone =
+      normalizePhone(profile.username);
+
+    /*
+      شماره واردشده باید دقیقاً با شماره حساب
+      کاربر فعلی یکی باشد.
+    */
+    if (phone !== accountPhone) {
+      setPhoneMsg({
+        text:
+          "این شماره با حساب کاربری شما مطابقت ندارد. برای استفاده از شماره دیگر، ابتدا با آن شماره ثبت‌نام کنید.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    /*
+      حالا فقط شماره متعلق به حساب فعلی
+      در جدول قرعه‌کشی جستجو می‌شود.
+    */
+    const {
+      data: existing,
+      error: fetchError,
+    } = await supabase
+      .from("raffle_participants")
+      .select("*")
+      .eq("phone", accountPhone)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error(
+        "Failed to load raffle participant:",
+        fetchError.message
+      );
+
+      setPhoneMsg({
+        text:
+          "مشکلی پیش اومد، دوباره امتحان کن.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    /*
+      اگر قبلاً وارد قرعه‌کشی شده،
+      همان شانس‌های قبلی حفظ می‌شود.
+    */
     if (existing) {
       setParticipant(
         existing as Participant
       );
+
+      setPhoneInput(accountPhone);
 
       setPhoneMsg({
         text: "خوش برگشتی!",
@@ -230,6 +339,10 @@ function RafflePageContent() {
       return;
     }
 
+    /*
+      فقط برای شماره حساب فعلی participant ساخته می‌شود.
+      دیگر نمی‌توان شماره شخص دیگری را ثبت کرد.
+    */
     const refCode =
       searchParams.get("ref");
 
@@ -242,7 +355,7 @@ function RafflePageContent() {
     } = await supabase
       .from("raffle_participants")
       .insert({
-        phone,
+        phone: accountPhone,
         spins_used: 0,
         spins_allowed: FREE_SPINS,
         referral_code: referralCode,
@@ -259,7 +372,7 @@ function RafflePageContent() {
 
       setPhoneMsg({
         text:
-          "مشکلی در ثبت شماره پیش اومد، دوباره امتحان کن",
+          "مشکلی در ثبت شماره پیش اومد، دوباره امتحان کن.",
         type: "err",
       });
 
@@ -267,6 +380,10 @@ function RafflePageContent() {
       return;
     }
 
+    /*
+      اگر کاربر از لینک دعوت آمده باشد،
+      یک چرخش به دعوت‌کننده اضافه می‌شود.
+    */
     if (refCode) {
       const { data: referrer } =
         await supabase
@@ -277,7 +394,7 @@ function RafflePageContent() {
 
       if (
         referrer &&
-        referrer.phone !== phone
+        referrer.phone !== accountPhone
       ) {
         await supabase
           .from("raffle_participants")
@@ -292,6 +409,8 @@ function RafflePageContent() {
     setParticipant(
       created as Participant
     );
+
+    setPhoneInput(accountPhone);
 
     setPhoneMsg({
       text:
@@ -638,6 +757,21 @@ function RafflePageContent() {
   const CX = 160;
   const CY = 160;
 
+  /*
+    تا وقتی وضعیت ورود مشخص نشده،
+    فرم شماره نمایش داده نمی‌شود.
+  */
+  if (authLoading) {
+    return (
+      <div
+        dir="rtl"
+        className="flex min-h-screen items-center justify-center bg-[#F7F9F4]"
+      >
+        <Spinner label="در حال بررسی حساب کاربری..." />
+      </div>
+    );
+  }
+
   return (
     <div
       dir="rtl"
@@ -653,7 +787,24 @@ function RafflePageContent() {
         </p>
       </div>
 
-      {!participant && (
+      {!user && (
+        <div className="rounded-[20px] border border-[#F0DCB4] bg-white p-5 text-center shadow-sm">
+          <div className="text-3xl">
+            🔐
+          </div>
+
+          <h2 className="mt-2 text-sm font-black text-[#1D2B1F]">
+            ابتدا وارد حساب جم‌سیتی شو
+          </h2>
+
+          <p className="mt-2 text-[11px] leading-6 text-[#8A968C]">
+            برای شرکت در قرعه‌کشی باید با حساب کاربری خودت وارد شده باشی.
+            شماره شخص دیگری قابل استفاده نیست.
+          </p>
+        </div>
+      )}
+
+      {user && !participant && (
         <div className="rounded-[20px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
           <label className="mb-2 block text-[12px] font-bold text-[#3A4A3D]">
             شماره موبایلت رو وارد کن
@@ -682,7 +833,9 @@ function RafflePageContent() {
               disabled={verifying}
               className="shrink-0 rounded-xl bg-[#147A4B] px-5 py-2.5 text-xs font-black text-white disabled:opacity-50"
             >
-              ورود
+              {verifying
+                ? "بررسی..."
+                : "ورود"}
             </button>
           </div>
 
@@ -937,7 +1090,9 @@ function RafflePageContent() {
             className="w-full rounded-full bg-gradient-to-l from-[#147A4B] to-[#0f9a56] py-3 text-sm font-black text-white shadow-[0_0_20px_rgba(57,255,143,.35)] disabled:opacity-40"
           >
             {!participant
-              ? "ابتدا شماره‌ات رو وارد کن"
+              ? !user
+                ? "ابتدا وارد حساب جم‌سیتی شو"
+                : "ابتدا شماره‌ات رو وارد کن"
               : spinning
               ? "در حال چرخش..."
               : remaining <= 0
