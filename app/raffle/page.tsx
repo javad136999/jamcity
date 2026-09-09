@@ -33,9 +33,20 @@ type SpinHistoryItem = {
 };
 
 const FREE_SPINS = 2;
-const MAX_SPINS_PER_PHONE = 10;
+const MAX_SPINS_PER_PHONE = 7;
 const PRIZE_COLOR = "#F4C542";
 const EMPTY_COLORS = ["#EAF3EC", "#DCEAE1"];
+
+/**
+ * از مبلغ ریالی جایزه، برچسب فارسی «کارت شارژ N هزارتومانی» می‌سازد.
+ */
+function tomanLabel(amountRial: number) {
+  const thousands = amountRial / 10000;
+
+  return `کارت شارژ ${new Intl.NumberFormat("fa-IR").format(
+    thousands
+  )} هزارتومانی`;
+}
 
 function normalizePhone(input: string) {
   let p = (input || "").replace(/[^0-9]/g, "");
@@ -78,17 +89,10 @@ function generateReferralCode() {
  */
 function prepareSegments(loaded: Segment[]) {
   const normalized = loaded.map((seg) => {
-    if (seg.type === "prize" && seg.amount === 100000) {
+    if (seg.type === "prize" && seg.amount) {
       return {
         ...seg,
-        label: "کارت شارژ ۱۰ هزارتومانی",
-      };
-    }
-
-    if (seg.type === "prize" && seg.amount === 50000) {
-      return {
-        ...seg,
-        label: "کارت شارژ ۵ هزارتومانی",
+        label: tomanLabel(seg.amount),
       };
     }
 
@@ -699,15 +703,9 @@ function RafflePageContent() {
         ) {
           isWin = true;
 
-          if (seg.amount === 100000) {
-            label =
-              "کارت شارژ ۱۰ هزارتومانی";
-          } else if (seg.amount === 50000) {
-            label =
-              "کارت شارژ ۵ هزارتومانی";
-          } else {
-            label = seg.label;
-          }
+          label = seg.amount
+            ? tomanLabel(seg.amount)
+            : seg.label;
         } else {
           isWin = false;
           label = "پوچ";
