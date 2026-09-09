@@ -372,80 +372,6 @@ export default function HomePage() {
         }
       `}</style>
 
-      {/* HOT PRODUCTS */}
-      {products.length > 0 && (
-        <section className="mt-3">
-          <div className="mb-4 flex items-end justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">
-                🔥
-              </span>
-              <div>
-                <h2 className="text-lg font-black text-[#1D2B1F] sm:text-xl">
-                  الان توی جم چی هست؟
-                </h2>
-                <p className="text-[9px] text-[#8A968C]">
-                  آخرین محصولات و پیشنهادهای شهر
-                </p>
-              </div>
-            </div>
-
-            <Link href="/businesses" className="shrink-0 text-[9px] font-bold text-[#147A4B]">
-              بیشتر ←
-            </Link>
-          </div>
-
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {products.slice(0, 7).map((product) => {
-              const b = findBusiness(product.business_id);
-              if (!b) return null;
-
-              return (
-                <Link
-                  key={product.id}
-                  href={`/business/${b.id}`}
-                  className="group min-w-[180px] max-w-[180px] overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="relative h-36 overflow-hidden bg-[#F3F6F1]">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-5xl">
-                        <span>{b.icon}</span>
-                      </div>
-                    )}
-
-                    {(product.discount_percent ?? 0) > 0 && (
-                      <span className="absolute left-2 top-2 rounded-full bg-[#E2574C] px-2.5 py-1 text-[8px] font-black text-white">
-                        {product.discount_percent}% تخفیف
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-3">
-                    <h3 className="truncate text-[11px] font-black text-[#1D2B1F]">
-                      {product.name}
-                    </h3>
-                    <p className="mt-1 truncate text-[8px] text-[#8A968C]">
-                      {b.name}
-                    </p>
-                    {product.price !== null && (
-                      <p className="mt-3 text-[9px] font-black text-[#147A4B]">
-                        {formatPrice(product.price)}
-                      </p>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
       {/* MAP */}
       <section>
         {categories.length > 0 && (
@@ -553,6 +479,80 @@ export default function HomePage() {
                 )}
               </Link>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* HOT PRODUCTS */}
+      {products.length > 0 && (
+        <section className="mt-3">
+          <div className="mb-4 flex items-end justify-between">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">
+                🔥
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-[#1D2B1F] sm:text-xl">
+                  الان توی جم چی هست؟
+                </h2>
+                <p className="text-[9px] text-[#8A968C]">
+                  آخرین محصولات و پیشنهادهای شهر
+                </p>
+              </div>
+            </div>
+
+            <Link href="/businesses" className="shrink-0 text-[9px] font-bold text-[#147A4B]">
+              بیشتر ←
+            </Link>
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {products.slice(0, 7).map((product) => {
+              const b = findBusiness(product.business_id);
+              if (!b) return null;
+
+              return (
+                <Link
+                  key={product.id}
+                  href={`/business/${b.id}`}
+                  className="group min-w-[130px] max-w-[130px] overflow-hidden rounded-[18px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <div className="relative h-24 overflow-hidden bg-[#F3F6F1]">
+                    {product.image_url ? (
+                      <img
+                        src={product.image_url}
+                        alt={product.name}
+                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-3xl">
+                        <span>{b.icon}</span>
+                      </div>
+                    )}
+
+                    {(product.discount_percent ?? 0) > 0 && (
+                      <span className="absolute left-1.5 top-1.5 rounded-full bg-[#E2574C] px-2 py-0.5 text-[7px] font-black text-white">
+                        {product.discount_percent}% تخفیف
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="p-2">
+                    <h3 className="truncate text-[10px] font-black text-[#1D2B1F]">
+                      {product.name}
+                    </h3>
+                    <p className="mt-0.5 truncate text-[7px] text-[#8A968C]">
+                      {b.name}
+                    </p>
+                    {product.price !== null && (
+                      <p className="mt-1.5 text-[8px] font-black text-[#147A4B]">
+                        {formatPrice(product.price)}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}
