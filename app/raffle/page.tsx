@@ -102,6 +102,7 @@ function RafflePageContent() {
   const [phoneMsg, setPhoneMsg] = useState<{
     text: string;
     type: "err" | "ok" | "info";
+    register?: boolean;
   } | null>(null);
 
   const [spinning, setSpinning] = useState(false);
@@ -179,11 +180,6 @@ function RafflePageContent() {
     );
   }, [participant]);
 
-  /*
-    بررسی شماره موبایل:
-    فقط شماره‌ای که متعلق به حساب فعلی جم‌سیتی است
-    اجازه ورود به قرعه‌کشی دارد.
-  */
   async function verifyPhone() {
     const phone = normalizePhone(phoneInput);
 
@@ -207,9 +203,6 @@ function RafflePageContent() {
       return;
     }
 
-    /*
-      کاربر باید ابتدا وارد حساب جم‌سیتی شده باشد.
-    */
     if (!user) {
       setPhoneMsg({
         text:
@@ -228,10 +221,6 @@ function RafflePageContent() {
       type: "info",
     });
 
-    /*
-      شماره واقعی حساب از profiles.username گرفته می‌شود.
-      در سیستم ثبت‌نام جم‌سیتی، username همان شماره موبایل است.
-    */
     const {
       data: profile,
       error: profileError,
@@ -257,10 +246,6 @@ function RafflePageContent() {
       return;
     }
 
-    /*
-      اگر پروفایل یا شماره حساب وجود نداشته باشد،
-      اجازه ورود به قرعه‌کشی داده نمی‌شود.
-    */
     if (!profile?.username) {
       setPhoneMsg({
         text:
@@ -275,25 +260,18 @@ function RafflePageContent() {
     const accountPhone =
       normalizePhone(profile.username);
 
-    /*
-      شماره واردشده باید دقیقاً با شماره حساب
-      کاربر فعلی یکی باشد.
-    */
     if (phone !== accountPhone) {
       setPhoneMsg({
         text:
-          "این شماره با حساب کاربری شما مطابقت ندارد. برای استفاده از شماره دیگر، ابتدا با آن شماره ثبت‌نام کنید.",
+          "این شماره با حساب کاربری شما مطابقت ندارد.",
         type: "err",
+        register: true,
       });
 
       setVerifying(false);
       return;
     }
 
-    /*
-      حالا فقط شماره متعلق به حساب فعلی
-      در جدول قرعه‌کشی جستجو می‌شود.
-    */
     const {
       data: existing,
       error: fetchError,
@@ -319,10 +297,6 @@ function RafflePageContent() {
       return;
     }
 
-    /*
-      اگر قبلاً وارد قرعه‌کشی شده،
-      همان شانس‌های قبلی حفظ می‌شود.
-    */
     if (existing) {
       setParticipant(
         existing as Participant
@@ -339,10 +313,6 @@ function RafflePageContent() {
       return;
     }
 
-    /*
-      فقط برای شماره حساب فعلی participant ساخته می‌شود.
-      دیگر نمی‌توان شماره شخص دیگری را ثبت کرد.
-    */
     const refCode =
       searchParams.get("ref");
 
@@ -380,10 +350,6 @@ function RafflePageContent() {
       return;
     }
 
-    /*
-      اگر کاربر از لینک دعوت آمده باشد،
-      یک چرخش به دعوت‌کننده اضافه می‌شود.
-    */
     if (refCode) {
       const { data: referrer } =
         await supabase
@@ -540,14 +506,6 @@ function RafflePageContent() {
       return;
     }
 
-    /*
-      فقط خانه‌های قابل انتخاب:
-      - پوچ
-      - جایزه‌ای که هنوز موجود است
-
-      جایزه‌ای که قبلاً برده شده،
-      دیگر انتخاب نمی‌شود.
-    */
     const eligibleIndexes =
       currentSegments
         .map((seg, index) => {
@@ -615,11 +573,6 @@ function RafflePageContent() {
           ? seg.label
           : "پوچ";
 
-      /*
-        اتمیک کردن مصرف جایزه:
-        فقط اگر is_available هنوز true باشد،
-        جایزه به این کاربر تعلق می‌گیرد.
-      */
       if (
         seg.type === "prize" &&
         seg.is_available
@@ -664,12 +617,6 @@ function RafflePageContent() {
         win: isWin,
       });
 
-      /*
-        ثبت نتیجه چرخش.
-        برای کارت شارژ ۵ تومنی:
-        is_win = true
-        amount = 50000
-      */
       const {
         error: spinInsertError,
       } = await supabase
@@ -695,9 +642,6 @@ function RafflePageContent() {
         );
       }
 
-      /*
-        مصرف یک چرخش.
-      */
       const newSpinsUsed =
         participant.spins_used + 1;
 
@@ -757,10 +701,6 @@ function RafflePageContent() {
   const CX = 160;
   const CY = 160;
 
-  /*
-    تا وقتی وضعیت ورود مشخص نشده،
-    فرم شماره نمایش داده نمی‌شود.
-  */
   if (authLoading) {
     return (
       <div
@@ -840,8 +780,8 @@ function RafflePageContent() {
           </div>
 
           {phoneMsg && (
-            <p
-              className={`mt-2 text-center text-[11px] ${
+            <div
+              className={`mt-2 flex items-center justify-center gap-2 text-[11px] ${
                 phoneMsg.type === "err"
                   ? "text-[#E2574C]"
                   : phoneMsg.type === "ok"
@@ -849,8 +789,21 @@ function RafflePageContent() {
                   : "text-[#8A968C]"
               }`}
             >
-              {phoneMsg.text}
-            </p>
+              <span>{phoneMsg.text}</span>
+
+              {phoneMsg.register && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.href = "/register";
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#147A4B] px-2.5 py-1 text-[10px] font-black text-white shadow-sm active:scale-95"
+                >
+                  <span>👤</span>
+                  ثبت‌نام
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
