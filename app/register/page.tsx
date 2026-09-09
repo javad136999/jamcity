@@ -38,13 +38,13 @@ export default function RegisterPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || "ثبت‌نام انجام نشد.");
+        setError(data.error || "╪½╪¿╪¬ΓÇî┘å╪º┘à ╪º┘å╪¼╪º┘à ┘å╪┤╪».");
         return;
       }
 
       router.push("/login");
     } catch {
-      setError("خطایی رخ داد. دوباره تلاش کنید.");
+      setError("╪«╪╖╪º█î█î ╪▒╪« ╪»╪º╪». ╪»┘ê╪¿╪º╪▒┘ç ╪¬┘ä╪º╪┤ ┌⌐┘å█î╪».");
     } finally {
       setLoading(false);
     }
@@ -57,15 +57,15 @@ export default function RegisterPage() {
     >
       <div className="text-center">
         <span className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-jam-green to-jam-darkgreen text-3xl font-bold text-white shadow-glow">
-          ج
+          ╪¼
         </span>
 
         <h1 className="text-2xl font-extrabold text-slate-800">
-          ساخت حساب در شهر جم
+          ╪│╪º╪«╪¬ ╪¡╪│╪º╪¿ ╪»╪▒ ╪┤┘ç╪▒ ╪¼┘à
         </h1>
 
         <p className="mt-2 text-sm text-slate-400">
-          اطلاعات خود را برای ساخت حساب وارد کنید
+          ╪º╪╖┘ä╪º╪╣╪º╪¬ ╪«┘ê╪» ╪▒╪º ╪¿╪▒╪º█î ╪│╪º╪«╪¬ ╪¡╪│╪º╪¿ ┘ê╪º╪▒╪» ┌⌐┘å█î╪»
         </p>
       </div>
 
@@ -77,7 +77,7 @@ export default function RegisterPage() {
 
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-600">
-            نام نمایشی
+            ┘å╪º┘à ┘å┘à╪º█î╪┤█î
           </label>
 
           <input
@@ -87,18 +87,18 @@ export default function RegisterPage() {
             maxLength={50}
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="مثلاً علی رضایی"
+            placeholder="┘à╪½┘ä╪º┘ï ╪╣┘ä█î ╪▒╪╢╪º█î█î"
             className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
           />
 
           <p className="text-xs leading-5 text-slate-400">
-            این نام در پروفایل، چت، دیوار و آگهی‌های شما نمایش داده می‌شود.
+            ╪º█î┘å ┘å╪º┘à ╪»╪▒ ┘╛╪▒┘ê┘ü╪º█î┘ä╪î ┌å╪¬╪î ╪»█î┘ê╪º╪▒ ┘ê ╪ó┌»┘ç█îΓÇî┘ç╪º█î ╪┤┘à╪º ┘å┘à╪º█î╪┤ ╪»╪º╪»┘ç ┘à█îΓÇî╪┤┘ê╪».
           </p>
         </div>
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">
-            شماره موبایل
+            ╪┤┘à╪º╪▒┘ç ┘à┘ê╪¿╪º█î┘ä
           </label>
 
           <input
@@ -114,7 +114,7 @@ export default function RegisterPage() {
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">
-            رمز عبور
+            ╪▒┘à╪▓ ╪╣╪¿┘ê╪▒
           </label>
 
           <input
@@ -124,14 +124,14 @@ export default function RegisterPage() {
             dir="ltr"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="حداقل ۶ کاراکتر"
+            placeholder="╪¡╪»╪º┘é┘ä █╢ ┌⌐╪º╪▒╪º┌⌐╪¬╪▒"
             className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
           />
         </div>
 
         <div className="space-y-1">
           <label className="text-xs font-bold text-slate-600">
-            عبارت بازیابی
+            ╪╣╪¿╪º╪▒╪¬ ╪¿╪º╪▓█î╪º╪¿█î
           </label>
 
           <input
@@ -140,13 +140,13 @@ export default function RegisterPage() {
             minLength={6}
             value={recoveryPhrase}
             onChange={(e) => setRecoveryPhrase(e.target.value)}
-            placeholder="مثلاً گل آبی جم ۱۴۰۵"
+            placeholder="┘à╪½┘ä╪º┘ï ┌»┘ä ╪ó╪¿█î ╪¼┘à █▒█┤█░█╡"
             className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
           />
 
           <p className="text-xs leading-6 text-slate-400">
-            یک عبارت مخصوص خودتان انتخاب کنید و حتماً آن را به خاطر بسپارید.
-            برای بازیابی رمز عبور به آن نیاز خواهید داشت.
+            █î┌⌐ ╪╣╪¿╪º╪▒╪¬ ┘à╪«╪╡┘ê╪╡ ╪«┘ê╪»╪¬╪º┘å ╪º┘å╪¬╪«╪º╪¿ ┌⌐┘å█î╪» ┘ê ╪¡╪¬┘à╪º┘ï ╪ó┘å ╪▒╪º ╪¿┘ç ╪«╪º╪╖╪▒ ╪¿╪│┘╛╪º╪▒█î╪».
+            ╪¿╪▒╪º█î ╪¿╪º╪▓█î╪º╪¿█î ╪▒┘à╪▓ ╪╣╪¿┘ê╪▒ ╪¿┘ç ╪ó┘å ┘å█î╪º╪▓ ╪«┘ê╪º┘ç█î╪» ╪»╪º╪┤╪¬.
           </p>
         </div>
 
@@ -155,17 +155,17 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50"
         >
-          {loading ? "در حال ساخت حساب..." : "ساخت حساب"}
+          {loading ? "╪»╪▒ ╪¡╪º┘ä ╪│╪º╪«╪¬ ╪¡╪│╪º╪¿..." : "╪│╪º╪«╪¬ ╪¡╪│╪º╪¿"}
         </button>
       </form>
 
       <p className="text-center text-xs text-slate-400">
-        قبلاً ثبت‌نام کرده‌اید؟{" "}
+        ┘é╪¿┘ä╪º┘ï ╪½╪¿╪¬ΓÇî┘å╪º┘à ┌⌐╪▒╪»┘çΓÇî╪º█î╪»╪ƒ{" "}
         <Link
           href="/login"
           className="font-bold text-jam-green hover:underline"
         >
-          وارد شوید
+          ┘ê╪º╪▒╪» ╪┤┘ê█î╪»
         </Link>
       </p>
     </div>

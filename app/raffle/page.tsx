@@ -178,10 +178,6 @@ function RafflePageContent() {
   const [shareMsg, setShareMsg] = useState("");
   const [sharing, setSharing] = useState(false);
 
-  // شماره دوستی که قرار است دعوت شود
-  const [friendPhone, setFriendPhone] = useState("");
-  const [showFriendInput, setShowFriendInput] = useState(false);
-
   const svgRef = useRef<SVGSVGElement>(null);
 
   async function loadSegments() {
@@ -458,116 +454,82 @@ function RafflePageContent() {
   }
 
   /**
-   * باز کردن فرم وارد کردن شماره دوست
-   */
-  function openFriendInvite() {
-    if (!participant || sharing) return;
-
-    setShareMsg("");
-    setFriendPhone("");
-    setShowFriendInput(true);
-  }
-
-  /**
-   * ثبت دعوت دوست
+   * ارسال لینک به دوستان از طریق Share خود گوشی
    *
-   * هر شماره جدید = ۲ شانس
-   * شماره تکراری = ۰ شانس
-   * شماره خود کاربر = ۰ شانس
+   * بعد از Share موفق = ۱ شانس اضافه
+   * لغو Share = بدون شانس اضافه
    */
-  async function submitFriendInvite() {
+  async function shareWithFriends() {
     if (!participant || sharing) return;
-
-    const invitedPhone =
-      normalizePhone(friendPhone);
-
-    if (!isValidPhone(invitedPhone)) {
-      setShareMsg(
-        "شماره موبایل معتبر نیست."
-      );
-      return;
-    }
-
-    if (invitedPhone === participant.phone) {
-      setShareMsg(
-        "نمی‌توانی شماره خودت را وارد کنی."
-      );
-      return;
-    }
 
     setSharing(true);
     setShareMsg("");
 
     try {
-      const { data, error } =
-        await supabase.rpc(
-          "add_raffle_referral",
-          {
-            p_referrer_id:
-              participant.id,
-            p_referrer_phone:
-              participant.phone,
-            p_invited_phone:
-              invitedPhone,
-          }
+      if (!navigator.share) {
+        setShareMsg(
+          "امکان ارسال مستقیم روی این دستگاه وجود ندارد."
         );
+        return;
+      }
 
-      if (error) {
+      await navigator.share({
+        title: "قرعه‌کشی جم‌سیتی 🎡",
+        text:
+          "🎁 در قرعه‌کشی جم‌سیتی شرکت کن و شانس بردن کارت شارژ داشته باش!\n\nبرای ورود:",
+        url: "https://jamapp.ir",
+      });
+
+      const newSpinsAllowed =
+        participant.spins_allowed + 1;
+
+      const {
+        error: shareUpdateError,
+      } = await supabase
+        .from("raffle_participants")
+        .update({
+          spins_allowed: newSpinsAllowed,
+        })
+        .eq("id", participant.id);
+
+      if (shareUpdateError) {
         console.error(
-          "Failed to add raffle referral:",
-          error.message
+          "Failed to add share spin:",
+          shareUpdateError.message
         );
 
         setShareMsg(
-          "ثبت دعوت انجام نشد. دوباره تلاش کن."
+          "ارسال انجام شد، اما ثبت شانس با خطا مواجه شد."
         );
 
         return;
       }
 
-      const addedSpins =
-        Number(data ?? 0);
-
-      if (addedSpins === 2) {
-        setParticipant({
-          ...participant,
-          spins_allowed:
-            participant.spins_allowed + 2,
-        });
-
-        setFriendPhone("");
-        setShowFriendInput(false);
-
-        setShareMsg(
-          "🎉 دعوت با موفقیت ثبت شد؛ ۲ چرخش اضافه شد!"
-        );
-
-        setTimeout(() => {
-          setShareMsg("");
-        }, 4000);
-
-        return;
-      }
-
-      if (addedSpins === 0) {
-        setShareMsg(
-          "این شماره قبلاً دعوت شده یا شماره خودت است."
-        );
-
-        return;
-      }
+      setParticipant({
+        ...participant,
+        spins_allowed: newSpinsAllowed,
+      });
 
       setShareMsg(
-        "دعوت ثبت شد."
+        "🎉 ارسال موفق بود؛ ۱ شانس اضافه شد!"
       );
-    } catch (error) {
+
+      setTimeout(() => {
+        setShareMsg("");
+      }, 4000);
+    } catch (error: any) {
+      // لغو Share نباید شانس اضافه کند
+      if (error?.name === "AbortError") {
+        return;
+      }
+
       console.error(
-        "Referral error:",
+        "Share error:",
         error
       );
 
       setShareMsg(
-        "خطایی رخ داد. دوباره تلاش کن."
+        "ارسال انجام نشد. دوباره تلاش کن."
       );
     } finally {
       setSharing(false);
@@ -962,71 +924,22 @@ function RafflePageContent() {
 
           <div className="mt-2">
             <label className="mb-1 block text-[11px] text-[#8A7150]">
-              دوستانت رو دعوت کن؛ هر شماره جدید = ۲ چرخش اضافه 🎁
+              دوستاتو دعوت کن؛ با هر ارسال موفق ۱ چرخش اضافه بگیر 🎁
             </label>
 
-            {!showFriendInput ? (
-              <button
-                onClick={openFriendInvite}
-                disabled={sharing}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <span className="text-base">
-                  📤
-                </span>
+            <button
+              onClick={shareWithFriends}
+              disabled={sharing}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <span className="text-base">
+                📤
+              </span>
 
-                ارسال به دوستان
-              </button>
-            ) : (
-              <div className="rounded-xl border border-[#E3EBDE] bg-white p-3">
-                <p className="mb-2 text-center text-[11px] font-bold text-[#3A4A3D]">
-                  شماره موبایل دوستت را وارد کن
-                </p>
-
-                <div
-                  className="flex gap-2"
-                  dir="ltr"
-                >
-                  <input
-                    type="tel"
-                    inputMode="numeric"
-                    maxLength={14}
-                    autoFocus
-                    value={friendPhone}
-                    onChange={(e) =>
-                      setFriendPhone(
-                        e.target.value
-                      )
-                    }
-                    placeholder="09xxxxxxxxx"
-                    className="min-w-0 flex-1 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2.5 text-center text-sm font-bold text-[#1D2B1F] caret-[#147A4B] outline-none focus:border-[#147A4B] placeholder:text-[#A8B2AA]"
-                  />
-
-                  <button
-                    onClick={submitFriendInvite}
-                    disabled={sharing}
-                    className="shrink-0 rounded-xl bg-[#147A4B] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50"
-                  >
-                    {sharing
-                      ? "ثبت..."
-                      : "ثبت"}
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowFriendInput(false);
-                    setFriendPhone("");
-                    setShareMsg("");
-                  }}
-                  disabled={sharing}
-                  className="mt-2 w-full rounded-xl bg-[#F3F6F1] py-2 text-[10px] font-bold text-[#8A968C]"
-                >
-                  انصراف
-                </button>
-              </div>
-            )}
+              {sharing
+                ? "در حال ارسال..."
+                : "ارسال به دوستان"}
+            </button>
 
             {shareMsg && (
               <p className="mt-2 text-center text-[11px] font-bold text-[#147A4B]">
