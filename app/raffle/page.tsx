@@ -100,8 +100,6 @@ function prepareSegments(loaded: Segment[]) {
     )
     .filter((index) => index !== -1);
 
-  // اگر دقیقاً دو جایزه داریم و کنار هم هستند،
-  // جایزه دوم را به نزدیک‌ترین خانه غیرمجاور منتقل می‌کنیم.
   if (
     prizeIndexes.length === 2 &&
     Math.abs(prizeIndexes[0] - prizeIndexes[1]) === 1
@@ -112,7 +110,6 @@ function prepareSegments(loaded: Segment[]) {
     const reordered = [...normalized];
     const prize = reordered.splice(secondPrizeIndex, 1)[0];
 
-    // ابتدا خانه‌های غیرمجاور را بررسی می‌کنیم.
     const possibleIndexes = reordered
       .map((_, index) => index)
       .filter(
@@ -127,8 +124,6 @@ function prepareSegments(loaded: Segment[]) {
       return reordered;
     }
 
-    // حالت جایگزین برای چرخونه‌های کوچک
-    // اگر جای دیگری نبود، جایزه را در انتهای آرایه قرار می‌دهیم.
     reordered.push(prize);
 
     return reordered;
@@ -182,6 +177,10 @@ function RafflePageContent() {
 
   const [shareMsg, setShareMsg] = useState("");
   const [sharing, setSharing] = useState(false);
+
+  // شماره دوستی که قرار است دعوت شود
+  const [friendPhone, setFriendPhone] = useState("");
+  const [showFriendInput, setShowFriendInput] = useState(false);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -458,71 +457,117 @@ function RafflePageContent() {
     setVerifying(false);
   }
 
-  async function shareWithFriends() {
+  /**
+   * باز کردن فرم وارد کردن شماره دوست
+   */
+  function openFriendInvite() {
     if (!participant || sharing) return;
 
-    const siteLink = "https://jamapp.ir";
+    setShareMsg("");
+    setFriendPhone("");
+    setShowFriendInput(true);
+  }
+
+  /**
+   * ثبت دعوت دوست
+   *
+   * هر شماره جدید = ۲ شانس
+   * شماره تکراری = ۰ شانس
+   * شماره خود کاربر = ۰ شانس
+   */
+  async function submitFriendInvite() {
+    if (!participant || sharing) return;
+
+    const invitedPhone =
+      normalizePhone(friendPhone);
+
+    if (!isValidPhone(invitedPhone)) {
+      setShareMsg(
+        "شماره موبایل معتبر نیست."
+      );
+      return;
+    }
+
+    if (invitedPhone === participant.phone) {
+      setShareMsg(
+        "نمی‌توانی شماره خودت را وارد کنی."
+      );
+      return;
+    }
 
     setSharing(true);
     setShareMsg("");
 
     try {
-      if (!navigator.share) {
-        setShareMsg(
-          "امکان ارسال مستقیم روی این دستگاه وجود ندارد"
+      const { data, error } =
+        await supabase.rpc(
+          "add_raffle_referral",
+          {
+            p_referrer_id:
+              participant.id,
+            p_referrer_phone:
+              participant.phone,
+            p_invited_phone:
+              invitedPhone,
+          }
         );
-        return;
-      }
-
-      await navigator.share({
-        title: "جم‌سیتی",
-        text:
-          "🎉 با جم‌سیتی همراه شو!\n\n" +
-          "اخبار، آگهی‌ها، کسب‌وکارها و خدمات شهر جم در یکجا\n\n",
-        url: siteLink,
-      });
-
-      const newSpinsAllowed =
-        participant.spins_allowed + 1;
-
-      const { error } = await supabase
-        .from("raffle_participants")
-        .update({
-          spins_allowed:
-            newSpinsAllowed,
-        })
-        .eq("id", participant.id);
 
       if (error) {
         console.error(
-          "Failed to add share spin:",
+          "Failed to add raffle referral:",
           error.message
         );
 
         setShareMsg(
-          "ارسال انجام شد، اما شارژ شانس انجام نشد"
+          "ثبت دعوت انجام نشد. دوباره تلاش کن."
         );
 
         return;
       }
 
-      setParticipant({
-        ...participant,
-        spins_allowed:
-          newSpinsAllowed,
-      });
+      const addedSpins =
+        Number(data ?? 0);
+
+      if (addedSpins === 2) {
+        setParticipant({
+          ...participant,
+          spins_allowed:
+            participant.spins_allowed + 2,
+        });
+
+        setFriendPhone("");
+        setShowFriendInput(false);
+
+        setShareMsg(
+          "🎉 دعوت با موفقیت ثبت شد؛ ۲ چرخش اضافه شد!"
+        );
+
+        setTimeout(() => {
+          setShareMsg("");
+        }, 4000);
+
+        return;
+      }
+
+      if (addedSpins === 0) {
+        setShareMsg(
+          "این شماره قبلاً دعوت شده یا شماره خودت است."
+        );
+
+        return;
+      }
 
       setShareMsg(
-        "🎉 یک چرخش اضافه شد!"
+        "دعوت ثبت شد."
+      );
+    } catch (error) {
+      console.error(
+        "Referral error:",
+        error
       );
 
-      setTimeout(() => {
-        setShareMsg("");
-      }, 3000);
-    } catch (error) {
-      console.log(
-        "Share cancelled:",
-        error
+      setShareMsg(
+        "خطایی رخ داد. دوباره تلاش کن."
       );
     } finally {
       setSharing(false);
@@ -672,7 +717,6 @@ function RafflePageContent() {
         ) {
           isWin = true;
 
-          // نوشته نهایی جایزه
           if (seg.amount === 100000) {
             label =
               "کارت شارژ ۱۰ هزارتومانی";
@@ -918,25 +962,74 @@ function RafflePageContent() {
 
           <div className="mt-2">
             <label className="mb-1 block text-[11px] text-[#8A7150]">
-              دوستانت رو دعوت کن؛ هر بار ارسال = یک چرخش اضافه 🎁
+              دوستانت رو دعوت کن؛ هر شماره جدید = ۲ چرخش اضافه 🎁
             </label>
 
-            <button
-              onClick={shareWithFriends}
-              disabled={sharing}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="text-base">
-                📤
-              </span>
+            {!showFriendInput ? (
+              <button
+                onClick={openFriendInvite}
+                disabled={sharing}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <span className="text-base">
+                  📤
+                </span>
 
-              {sharing
-                ? "در حال ارسال..."
-                : "ارسال به دوستان"}
-            </button>
+                ارسال به دوستان
+              </button>
+            ) : (
+              <div className="rounded-xl border border-[#E3EBDE] bg-white p-3">
+                <p className="mb-2 text-center text-[11px] font-bold text-[#3A4A3D]">
+                  شماره موبایل دوستت را وارد کن
+                </p>
+
+                <div
+                  className="flex gap-2"
+                  dir="ltr"
+                >
+                  <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={14}
+                    autoFocus
+                    value={friendPhone}
+                    onChange={(e) =>
+                      setFriendPhone(
+                        e.target.value
+                      )
+                    }
+                    placeholder="09xxxxxxxxx"
+                    className="min-w-0 flex-1 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2.5 text-center text-sm font-bold text-[#1D2B1F] caret-[#147A4B] outline-none focus:border-[#147A4B] placeholder:text-[#A8B2AA]"
+                  />
+
+                  <button
+                    onClick={submitFriendInvite}
+                    disabled={sharing}
+                    className="shrink-0 rounded-xl bg-[#147A4B] px-4 py-2.5 text-xs font-black text-white disabled:opacity-50"
+                  >
+                    {sharing
+                      ? "ثبت..."
+                      : "ثبت"}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowFriendInput(false);
+                    setFriendPhone("");
+                    setShareMsg("");
+                  }}
+                  disabled={sharing}
+                  className="mt-2 w-full rounded-xl bg-[#F3F6F1] py-2 text-[10px] font-bold text-[#8A968C]"
+                >
+                  انصراف
+                </button>
+              </div>
+            )}
 
             {shareMsg && (
-              <p className="mt-1 text-center text-[11px] text-[#147A4B]">
+              <p className="mt-2 text-center text-[11px] font-bold text-[#147A4B]">
                 {shareMsg}
               </p>
             )}
