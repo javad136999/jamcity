@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/Feedback";
 import { useAuth } from "@/lib/auth-context";
@@ -71,6 +71,72 @@ function generateReferralCode() {
   return c;
 }
 
+/**
+ * متن و ترتیب جوایز را برای نمایش چرخونه تنظیم می‌کند.
+ * دو جایزه هیچ‌وقت در دو خانه مجاور قرار نمی‌گیرند.
+ */
+function prepareSegments(loaded: Segment[]) {
+  const normalized = loaded.map((seg) => {
+    if (seg.type === "prize" && seg.amount === 100000) {
+      return {
+        ...seg,
+        label: "کارت شارژ ۱۰ هزارتومانی",
+      };
+    }
+
+    if (seg.type === "prize" && seg.amount === 50000) {
+      return {
+        ...seg,
+        label: "کارت شارژ ۵ هزارتومانی",
+      };
+    }
+
+    return seg;
+  });
+
+  const prizeIndexes = normalized
+    .map((seg, index) =>
+      seg.type === "prize" ? index : -1
+    )
+    .filter((index) => index !== -1);
+
+  // اگر دقیقاً دو جایزه داریم و کنار هم هستند،
+  // جایزه دوم را به نزدیک‌ترین خانه غیرمجاور منتقل می‌کنیم.
+  if (
+    prizeIndexes.length === 2 &&
+    Math.abs(prizeIndexes[0] - prizeIndexes[1]) === 1
+  ) {
+    const firstPrizeIndex = prizeIndexes[0];
+    const secondPrizeIndex = prizeIndexes[1];
+
+    const reordered = [...normalized];
+    const prize = reordered.splice(secondPrizeIndex, 1)[0];
+
+    // ابتدا خانه‌های غیرمجاور را بررسی می‌کنیم.
+    const possibleIndexes = reordered
+      .map((_, index) => index)
+      .filter(
+        (index) =>
+          index !== firstPrizeIndex &&
+          Math.abs(index - firstPrizeIndex) > 1
+      );
+
+    if (possibleIndexes.length > 0) {
+      const targetIndex = possibleIndexes[0];
+      reordered.splice(targetIndex, 0, prize);
+      return reordered;
+    }
+
+    // حالت جایگزین برای چرخونه‌های کوچک
+    // اگر جای دیگری نبود، جایزه را در انتهای آرایه قرار می‌دهیم.
+    reordered.push(prize);
+
+    return reordered;
+  }
+
+  return normalized;
+}
+
 export default function RafflePage() {
   return (
     <Suspense
@@ -88,6 +154,7 @@ export default function RafflePage() {
 function RafflePageContent() {
   const supabase = createClient() as any;
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const { user, loading: authLoading } = useAuth();
 
@@ -136,7 +203,11 @@ function RafflePageContent() {
       return;
     }
 
-    setSegments((data ?? []) as Segment[]);
+    const prepared = prepareSegments(
+      (data ?? []) as Segment[]
+    );
+
+    setSegments(prepared);
   }
 
   async function loadHistory() {
@@ -494,8 +565,10 @@ function RafflePageContent() {
     }
 
     const currentSegments =
-      (freshSegments ??
-        segments) as Segment[];
+      prepareSegments(
+        (freshSegments ??
+          segments) as Segment[]
+      );
 
     setSegments(currentSegments);
 
@@ -598,7 +671,17 @@ function RafflePageContent() {
           updated.length > 0
         ) {
           isWin = true;
-          label = seg.label;
+
+          // نوشته نهایی جایزه
+          if (seg.amount === 100000) {
+            label =
+              "کارت شارژ ۱۰ هزارتومانی";
+          } else if (seg.amount === 50000) {
+            label =
+              "کارت شارژ ۵ هزارتومانی";
+          } else {
+            label = seg.label;
+          }
         } else {
           isWin = false;
           label = "پوچ";
@@ -795,7 +878,7 @@ function RafflePageContent() {
                 <button
                   type="button"
                   onClick={() => {
-                    window.location.href = "/register";
+                    router.push("/register");
                   }}
                   className="inline-flex items-center gap-1 rounded-lg bg-[#147A4B] px-2.5 py-1 text-[10px] font-black text-white shadow-sm active:scale-95"
                 >
