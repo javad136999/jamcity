@@ -33,6 +33,7 @@ type SpinHistoryItem = {
 };
 
 const FREE_SPINS = 2;
+const MAX_SPINS_PER_PHONE = 10;
 const PRIZE_COLOR = "#F4C542";
 const EMPTY_COLORS = ["#EAF3EC", "#DCEAE1"];
 
@@ -426,13 +427,20 @@ function RafflePageContent() {
 
       if (
         referrer &&
-        referrer.phone !== accountPhone
+        referrer.phone !== accountPhone &&
+        referrer.spins_allowed < MAX_SPINS_PER_PHONE
       ) {
+        const newReferrerSpinsAllowed =
+          Math.min(
+            referrer.spins_allowed + 1,
+            MAX_SPINS_PER_PHONE
+          );
+
         await supabase
           .from("raffle_participants")
           .update({
             spins_allowed:
-              referrer.spins_allowed + 1,
+              newReferrerSpinsAllowed,
           })
           .eq("id", referrer.id);
       }
@@ -462,6 +470,16 @@ function RafflePageContent() {
   async function shareWithFriends() {
     if (!participant || sharing) return;
 
+    if (
+      participant.spins_allowed >=
+      MAX_SPINS_PER_PHONE
+    ) {
+      setShareMsg(
+        "این شماره به سقف مجاز چرخش (۱۰ بار) رسیده."
+      );
+      return;
+    }
+
     setSharing(true);
     setShareMsg("");
 
@@ -480,8 +498,10 @@ function RafflePageContent() {
         url: "https://jamapp.ir",
       });
 
-      const newSpinsAllowed =
-        participant.spins_allowed + 1;
+      const newSpinsAllowed = Math.min(
+        participant.spins_allowed + 1,
+        MAX_SPINS_PER_PHONE
+      );
 
       const {
         error: shareUpdateError,
@@ -923,23 +943,38 @@ function RafflePageContent() {
           </div>
 
           <div className="mt-2">
-            <label className="mb-1 block text-[11px] text-[#8A7150]">
-              دوستاتو دعوت کن؛ با هر ارسال موفق ۱ چرخش اضافه بگیر 🎁
-            </label>
+            <p className="mb-2 text-center text-[10px] text-[#B08B4F]">
+              سقف مجاز هر شماره: {MAX_SPINS_PER_PHONE} چرخش
+              {" "}
+              (فعلاً {participant.spins_allowed} چرخش)
+            </p>
 
-            <button
-              onClick={shareWithFriends}
-              disabled={sharing}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <span className="text-base">
-                📤
-              </span>
+            {participant.spins_allowed >=
+            MAX_SPINS_PER_PHONE ? (
+              <p className="rounded-xl bg-[#FBEEDA] px-3 py-2.5 text-center text-[11px] font-bold text-[#8A7150]">
+                این شماره به سقف مجاز چرخش رسیده. برای ادامه باید با شماره‌ی دیگه‌ای وارد بشی.
+              </p>
+            ) : (
+              <>
+                <label className="mb-1 block text-[11px] text-[#8A7150]">
+                  دوستاتو دعوت کن؛ با هر ارسال موفق ۱ چرخش اضافه بگیر 🎁
+                </label>
 
-              {sharing
-                ? "در حال ارسال..."
-                : "ارسال به دوستان"}
-            </button>
+                <button
+                  onClick={shareWithFriends}
+                  disabled={sharing}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="text-base">
+                    📤
+                  </span>
+
+                  {sharing
+                    ? "در حال ارسال..."
+                    : "ارسال به دوستان"}
+                </button>
+              </>
+            )}
 
             {shareMsg && (
               <p className="mt-2 text-center text-[11px] font-bold text-[#147A4B]">
