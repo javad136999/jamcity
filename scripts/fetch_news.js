@@ -1,404 +1,105 @@
 ﻿const https = require("https");
 
-/*
-|--------------------------------------------------------------------------
-| Supabase
-|--------------------------------------------------------------------------
-*/
-
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("Missing Supabase environment variables.");
+  console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   process.exit(1);
 }
 
-/*
-|--------------------------------------------------------------------------
-| فقط همین ۴ دسته مجاز هستند
-|--------------------------------------------------------------------------
-*/
-
 const VALID_SECTIONS = ["jam", "jobs", "economic", "world"];
 
-/*
-|--------------------------------------------------------------------------
-| منابع خبری
-|--------------------------------------------------------------------------
-*/
-
-const FEEDS = [
+const RSS_FEEDS = [
   {
-    name: "مهر",
     url: "https://www.mehrnews.com/rss",
+    sourceName: "خبرگزاری مهر",
     sourceType: "iran",
   },
   {
-    name: "ایسنا",
     url: "https://www.isna.ir/rss",
+    sourceName: "ایسنا",
     sourceType: "iran",
   },
   {
-    name: "تسنیم",
     url: "https://www.tasnimnews.com/fa/rss",
+    sourceName: "تسنیم",
     sourceType: "iran",
   },
   {
-    name: "ایرنا",
     url: "https://www.irna.ir/rss",
+    sourceName: "ایرنا",
     sourceType: "iran",
   },
   {
-    name: "خبرآنلاین",
     url: "https://www.khabaronline.ir/rss",
+    sourceName: "خبرآنلاین",
     sourceType: "iran",
   },
   {
-    name: "شانا",
     url: "https://www.shana.ir/rss",
+    sourceName: "شانا",
     sourceType: "iran",
   },
   {
-    name: "اتحاد خبر",
     url: "https://www.ettehadkhabar.ir/fa/rss",
+    sourceName: "اتحاد خبر",
     sourceType: "south",
   },
   {
-    name: "بامداد جنوب",
     url: "https://bamdadjonoub.ir/feed/",
+    sourceName: "بامداد جنوب",
     sourceType: "south",
   },
   {
-    name: "BBC World",
     url: "https://feeds.bbci.co.uk/news/world/rss.xml",
+    sourceName: "BBC World",
     sourceType: "world",
   },
 ];
 
-/*
-|--------------------------------------------------------------------------
-| دریافت URL با Retry
-|--------------------------------------------------------------------------
-*/
+const SPECIAL_HTML_SOURCES = [
+  {
+    url: "https://www.mehrnews.com/tag/%D8%A8%D9%88%D8%B4%D9%87%D8%B1",
+    sourceName: "خبرگزاری مهر - بوشهر",
+    sourceType: "jam",
+  },
+  {
+    url: "https://khabarfarsi.com/city/71",
+    sourceName: "خبر فارسی - شهرستان جم",
+    sourceType: "jam",
+  },
+];
 
-function fetchUrl(url, retries = 2) {
-  return new Promise((resolve, reject) => {
-    function attempt(number) {
-      const request = https.get(
-        url,
-        {
-          headers: {
-            "User-Agent":
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 JamCityNewsBot/4.0",
-            Accept:
-              "application/rss+xml, application/xml, text/xml, text/html, */*",
-          },
-        },
-        (response) => {
-          let data = "";
-
-          response.setEncoding("utf8");
-
-          response.on("data", (chunk) => {
-            data += chunk;
-          });
-
-          response.on("end", () => {
-            if (response.statusCode >= 200 && response.statusCode < 400) {
-              resolve(data);
-              return;
-            }
-
-            if (number < retries) {
-              console.log(
-                "Retry " +
-                  number +
-                  "/" +
-                  retries +
-                  " → " +
-                  url
-              );
-
-              setTimeout(() => attempt(number + 1), 1000);
-              return;
-            }
-
-            reject(
-              new Error(
-                "HTTP " + response.statusCode + " for " + url
-              )
-            );
-          });
-        }
-      );
-
-      request.on("error", (error) => {
-        if (number < retries) {
-          console.log(
-            "Retry " +
-              number +
-              "/" +
-              retries +
-              " → " +
-              url
-          );
-
-          setTimeout(() => attempt(number + 1), 1000);
-          return;
-        }
-
-        reject(error);
-      });
-
-      request.setTimeout(30000, () => {
-        request.destroy(new Error("Timeout: " + url));
-      });
-    }
-
-    attempt(1);
-  });
-}
-
-/*
-|--------------------------------------------------------------------------
-| پاکسازی HTML
-|--------------------------------------------------------------------------
-*/
-
-function stripHtml(text) {
-  if (!text) {
-    return "";
-  }
-
-  return String(text)
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<!\[CDATA\[/gi, "")
-    .replace(/\]\]>/gi, "")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&#x27;/gi, "'")
-    .replace(/&#x2F;/gi, "/")
-    .replace(/&#(\d+);/g, (_, code) => {
-      try {
-        return String.fromCharCode(Number(code));
-      } catch {
-        return "";
-      }
-    })
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/*
-|--------------------------------------------------------------------------
-| استخراج XML Tag
-|--------------------------------------------------------------------------
-*/
-
-function getTag(item, tag) {
-  const regex = new RegExp(
-    "<" +
-      tag +
-      "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" +
-      tag +
-      ">",
-    "i"
-  );
-
-  const match = item.match(regex);
-
-  if (!match) {
-    return "";
-  }
-
-  return stripHtml(match[1]);
-}
-
-/*
-|--------------------------------------------------------------------------
-| استخراج RSS
-|--------------------------------------------------------------------------
-*/
-
-function parseRSS(xml) {
-  const items = [];
-
-  const matches = xml.match(
-    /<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi
-  );
-
-  if (!matches) {
-    return items;
-  }
-
-  for (const item of matches) {
-    const title = getTag(item, "title");
-
-    const description =
-      getTag(item, "description") ||
-      getTag(item, "summary") ||
-      getTag(item, "content:encoded");
-
-    const link =
-      getTag(item, "link") ||
-      getTag(item, "guid");
-
-    const pubDate =
-      getTag(item, "pubDate") ||
-      getTag(item, "published") ||
-      getTag(item, "updated");
-
-    if (!title) {
-      continue;
-    }
-
-    let publishedAt = new Date().toISOString();
-
-    if (pubDate) {
-      const parsedDate = new Date(pubDate);
-
-      if (!isNaN(parsedDate.getTime())) {
-        publishedAt = parsedDate.toISOString();
-      }
-    }
-
-    items.push({
-      title: title.trim(),
-      summary: description ? description.trim() : null,
-      source_url: link ? link.trim() : null,
-      published_at: publishedAt,
-    });
-  }
-
-  return items;
-}
-
-/*
-|--------------------------------------------------------------------------
-| نرمال‌سازی فارسی
-|--------------------------------------------------------------------------
-*/
-
-function normalizeText(text) {
-  return String(text || "")
-    .toLowerCase()
-    .replace(/ي/g, "ی")
-    .replace(/ى/g, "ی")
-    .replace(/ك/g, "ک")
-    .replace(/ۀ/g, "ه")
-    .replace(/ة/g, "ه")
-    .replace(/ؤ/g, "و")
-    .replace(/إ/g, "ا")
-    .replace(/أ/g, "ا")
-    .replace(/ئ/g, "ی")
-    .replace(/‌/g, " ")
-    .replace(/\u200c/g, " ")
-    .replace(/[ًٌٍَُِّْـ]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/*
-|--------------------------------------------------------------------------
-| بررسی Keyword
-|--------------------------------------------------------------------------
-*/
-
-function containsKeyword(text, keywords) {
-  const normalized = normalizeText(text);
-
-  for (const keyword of keywords) {
-    const key = normalizeText(keyword);
-
-    if (key && normalized.includes(key)) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/*
-|--------------------------------------------------------------------------
-| 🚫 اخبار ممنوع امام جمعه / نماز جمعه
-|--------------------------------------------------------------------------
-*/
-
-const BLOCKED_RELIGIOUS_NEWS = [
+const BLOCKED_RELIGIOUS_KEYWORDS = [
   "امام جمعه",
   "امام‌جمعه",
-  "امامجمعه",
   "ائمه جمعه",
   "ائمه‌جمعه",
-  "ائمهجمعه",
   "خطیب جمعه",
-  "خطیب نماز جمعه",
-  "خطیب نمازجمعه",
   "نماز جمعه",
   "نمازجمعه",
   "خطبه جمعه",
-  "خطبه‌های جمعه",
-  "خطبه های جمعه",
-  "خطبه نماز جمعه",
   "خطبه‌های نماز جمعه",
-  "خطبه های نماز جمعه",
-  "خطبه نمازجمعه",
-  "خطبه‌های نمازجمعه",
   "سخنان امام جمعه",
-  "سخنان امام‌جمعه",
   "دیدار با امام جمعه",
-  "دیدار با امام‌جمعه",
+  "دیدار امام جمعه",
   "دفتر امام جمعه",
-  "دفتر امام‌جمعه",
   "ستاد نماز جمعه",
-  "ستاد نمازجمعه",
   "مصلای نماز جمعه",
-  "مصلای نمازجمعه",
+  "مصلی نماز جمعه",
 ];
 
-function isBlockedNews(title, summary) {
-  const text =
-    normalizeText(title) +
-    " " +
-    normalizeText(summary);
-
-  return containsKeyword(
-    text,
-    BLOCKED_RELIGIOUS_NEWS
-  );
-}
-
-/*
-|--------------------------------------------------------------------------
-| JOB Keywords
-|--------------------------------------------------------------------------
-*/
-
-const jobKeywords = [
+const JOB_KEYWORDS = [
   "استخدام",
   "استخدامی",
-  "استخدام نیرو",
   "جذب نیرو",
-  "جذب نیروی انسانی",
   "فرصت شغلی",
-  "فرصت‌های شغلی",
-  "فرصت های شغلی",
   "کاریابی",
-  "آگهی استخدام",
   "شغل",
-  "شغلی",
   "کارآفرینی",
   "آزمون استخدامی",
-  "آزمون استخدام",
   "ثبت نام استخدام",
-  "ثبت‌نام استخدام",
   "استخدام پتروشیمی",
   "استخدام عسلویه",
   "استخدام بوشهر",
@@ -410,89 +111,48 @@ const jobKeywords = [
   "recruitment",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| ECONOMIC Keywords
-|--------------------------------------------------------------------------
-*/
-
-const economicStrongKeywords = [
+const ECONOMIC_STRONG_KEYWORDS = [
   "بورس",
   "بازار سرمایه",
   "شاخص بورس",
-  "شاخص کل بورس",
   "فرابورس",
-  "عرضه اولیه",
-  "معاملات بورس",
   "سهام",
-  "سهامداران",
-  "سهام عدالت",
   "دلار",
-  "دلار آزاد",
-  "دلار نیمایی",
   "نرخ ارز",
   "ارز دیجیتال",
   "رمزارز",
-  "رمز ارز",
   "بیت کوین",
   "بیت‌کوین",
-  "بیتکوین",
   "اتریوم",
   "تتر",
-  "کریپتو",
-  "کریپتوکارنسی",
-  "دوج کوین",
-  "سولانا",
-  "ریپل",
-  "یورو",
-  "پوند",
-  "لیر",
-  "درهم",
-  "قیمت طلا",
-  "طلای ۱۸ عیار",
-  "طلای 24 عیار",
-  "طلای ۲۴ عیار",
-  "سکه امامی",
-  "قیمت سکه",
-  "نیم سکه",
-  "ربع سکه",
-  "سکه بهار آزادی",
-  "اونس طلا",
-  "انس طلا",
+  "طلا",
+  "سکه",
   "بانک مرکزی",
   "نرخ بهره",
-  "نرخ سود",
-  "سپرده بانکی",
-  "وام بانکی",
-  "تسهیلات بانکی",
-  "نقدینگی",
+  "وام",
   "تورم",
   "مالیات",
   "سرمایه گذاری",
   "سرمایه‌گذاری",
-  "سرمایه‌گذار",
-  "قیمت مسکن",
-  "بازار مسکن",
-  "اجاره بها",
-  "اجاره‌بها",
-  "قیمت خودرو",
-  "بازار خودرو",
+  "مسکن",
+  "خودرو",
   "رشد اقتصادی",
   "اقتصاد ایران",
   "وزارت اقتصاد",
-  "وزیر اقتصاد",
   "بودجه",
-  "کسری بودجه",
-  "درآمد نفتی",
-  "قیمت نفت",
-  "قیمت بنزین",
-  "تراز تجاری",
-  "صادرات غیرنفتی",
-  "تعرفه گمرکی",
+  "نفت",
+  "بنزین",
+  "صادرات",
+  "تعرفه",
   "تحریم",
+  "گمرک",
+  "تجارت",
+  "بازار ارز",
+  "قیمت دلار",
+  "قیمت طلا",
 ];
 
-const economicWeakKeywords = [
+const ECONOMIC_WEAK_KEYWORDS = [
   "قیمت",
   "نرخ",
   "بازار",
@@ -505,75 +165,39 @@ const economicWeakKeywords = [
   "ارزان",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| WORLD Keywords
-|--------------------------------------------------------------------------
-*/
-
-const worldKeywords = [
+const WORLD_KEYWORDS = [
   "آمریکا",
-  "امریکا",
-  "ایالات متحده",
   "ترامپ",
-  "کاخ سفید",
-  "واشنگتن",
-  "پنتاگون",
-  "بایدن",
-  "هریس",
   "اسرائیل",
   "غزه",
   "فلسطین",
   "حماس",
-  "تل آویو",
   "لبنان",
-  "بیروت",
-  "حزب الله",
   "اوکراین",
   "روسیه",
-  "مسکو",
-  "کی‌یف",
   "انگلیس",
-  "بریتانیا",
-  "لندن",
   "فرانسه",
-  "پاریس",
   "آلمان",
-  "برلین",
   "اروپا",
-  "اتحادیه اروپا",
   "ناتو",
   "چین",
-  "پکن",
   "ژاپن",
-  "توکیو",
-  "کره جنوبی",
-  "کره شمالی",
+  "کره",
   "هند",
   "ترکیه",
-  "آنکارا",
-  "اردوغان",
   "پاکستان",
   "افغانستان",
-  "طالبان",
   "عراق",
-  "بغداد",
   "سوریه",
-  "دمشق",
   "یمن",
-  "صنعا",
   "عربستان",
-  "ریاض",
   "امارات",
-  "ابوظبی",
   "قطر",
-  "دوحه",
   "بحرین",
-  "بین المللی",
   "بین‌المللی",
+  "بین المللی",
   "جهان",
   "سازمان ملل",
-  "شورای امنیت",
   "world",
   "international",
   "usa",
@@ -589,136 +213,39 @@ const worldKeywords = [
   "nato",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| کلمات سیاسی
-|--------------------------------------------------------------------------
-*/
-
-const politicalKeywords = [
-  "رهبر",
-  "رهبری",
-  "رهبر معظم",
-  "رئیس جمهور",
-  "رئیس‌جمهور",
-  "رئیس مجلس",
-  "نماینده مجلس",
-  "مجلس شورای اسلامی",
-  "دولت",
-  "وزیر",
-  "استاندار",
-  "فرماندار",
-  "انتخابات",
-  "سیاست",
-  "سیاسی",
-  "مذاکره",
-  "مقاومت",
-  "جنگ",
-  "صلح",
-  "دیپلماسی",
-  "امنیت ملی",
-  "دیدار",
-  "ملاقات",
-  "سفر",
-  "جلسه",
-  "نشست",
-  "همایش",
-  "کنفرانس",
-  "شهید",
-  "تشییع",
-  "خاکسپاری",
-  "جانشین فرمانده",
-  "سپاه",
-  "پدافند هوایی",
-  "ارتش",
-  "قوه قضائیه",
-  "انتظامی",
-];
-
-/*
-|--------------------------------------------------------------------------
-| JAM Keywords
-|--------------------------------------------------------------------------
-|
-| نکته:
-| کلمه مستقل «جم» عمداً وجود ندارد.
-| خبر فقط زمانی JAM می‌شود که واقعاً ارتباط منطقه‌ای داشته باشد.
-|--------------------------------------------------------------------------
-*/
-
-const jamStrongKeywords = [
-  "شهرستان جم",
+const JAM_KEYWORDS = [
+  "جم",
   "شهر جم",
+  "شهرستان جم",
   "فرمانداری جم",
   "فرماندار جم",
-  "شهردار جم",
   "شهرداری جم",
+  "شهردار جم",
   "شورای شهر جم",
   "شورای اسلامی شهر جم",
   "نماینده جم",
-  "نماینده شهرستان جم",
-
+  "ریز",
+  "بخش ریز",
+  "ریز شهرستان جم",
+  "انارستان",
+  "بخش انارستان",
+  "عسلویه",
+  "شهرستان عسلویه",
+  "کنگان",
+  "شهرستان کنگان",
+  "پارس جنوبی",
   "پتروشیمی جم",
   "مجتمع پتروشیمی جم",
   "پالایشگاه جم",
-
-  "انارستان جم",
-  "انارستان",
-  "ریز جم",
-  "شهرستان ریز",
-  "شهر ریز",
-
-  "عسلویه",
-  "شهرستان عسلویه",
-  "فرمانداری عسلویه",
-  "فرماندار عسلویه",
-  "پتروشیمی عسلویه",
-  "پالایشگاه عسلویه",
-  "منطقه ویژه عسلویه",
-  "منطقه ویژه اقتصادی عسلویه",
-  "پارس جنوبی عسلویه",
-
-  "کنگان",
-  "شهرستان کنگان",
-  "فرمانداری کنگان",
-  "فرماندار کنگان",
-  "پتروشیمی کنگان",
-  "پالایشگاه کنگان",
-
-  "پارس جنوبی",
-  "منطقه ویژه پارس",
-  "منطقه ویژه اقتصادی انرژی پارس",
-  "میدان گازی پارس جنوبی",
-  "فاز پارس جنوبی",
-
-  "نخل تقی",
-  "سیراف",
-  "دیر",
-  "شهرستان دیر",
-
-  "صنعت نفت",
-  "صنعت گاز",
-  "صنعت پتروشیمی",
   "نفت و گاز",
-  "صنعت نفت و گاز",
-  "صنعت پتروشیمی",
   "پتروشیمی",
-  "پالایشگاه",
   "تأسیسات نفتی",
+  "تاسیسات نفتی",
   "تأسیسات گازی",
-  "میعانات گازی",
-  "گاز طبیعی",
-  "تولید نفت",
-  "تولید گاز",
+  "تاسیسات گازی",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| کلمات ممنوع برای JAM
-|--------------------------------------------------------------------------
-*/
-
-const jamBlockedKeywords = [
+const JAM_BLOCKED_KEYWORDS = [
   "بوشهر",
   "بندر بوشهر",
   "برازجان",
@@ -727,13 +254,11 @@ const jamBlockedKeywords = [
   "دیلم",
   "تنگستان",
   "دشتی",
-  "بندر دیر",
   "اهرم",
   "خورموج",
   "خارک",
   "بندر خارک",
   "پتروشیمی خارک",
-
   "اصفهان",
   "شیراز",
   "تهران",
@@ -751,563 +276,741 @@ const jamBlockedKeywords = [
   "خلخال",
   "ساوه",
   "ورزقان",
-  "بهمئی",
-  "شوش",
-  "کرخه",
-  "خانلق",
-  "ساوجی",
-  "تنگ گر",
-  "ممبی",
 ];
 
-/*
-|--------------------------------------------------------------------------
-| تشخیص JAM
-|--------------------------------------------------------------------------
-*/
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function fetchUrl(url, retries = 2) {
+  return new Promise((resolve, reject) => {
+    const request = https.get(
+      url,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (compatible; JamCityNewsBot/5.0; +https://jamapp.ir)",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,application/rss+xml;q=0.9,*/*;q=0.8",
+        },
+        timeout: 30000,
+      },
+      (res) => {
+        const status = res.statusCode || 0;
+
+        if (
+          [301, 302, 303, 307, 308].includes(status) &&
+          res.headers.location
+        ) {
+          res.resume();
+
+          const nextUrl = new URL(res.headers.location, url).toString();
+
+          fetchUrl(nextUrl, retries)
+            .then(resolve)
+            .catch(reject);
+
+          return;
+        }
+
+        let data = "";
+
+        res.setEncoding("utf8");
+
+        res.on("data", (chunk) => {
+          data += chunk;
+        });
+
+        res.on("end", () => {
+          if (status >= 200 && status < 300) {
+            resolve(data);
+          } else {
+            reject(new Error(`HTTP ${status} for ${url}`));
+          }
+        });
+      }
+    );
+
+    request.on("timeout", () => {
+      request.destroy(new Error(`Timeout: ${url}`));
+    });
+
+    request.on("error", async (error) => {
+      if (retries > 0) {
+        console.log(`Retrying ${url}...`);
+        await sleep(1500);
+        fetchUrl(url, retries - 1)
+          .then(resolve)
+          .catch(reject);
+      } else {
+        reject(error);
+      }
+    });
+  });
+}
+
+function stripHtml(value = "") {
+  return String(value)
+    .replace(/<!\[CDATA\[/gi, "")
+    .replace(/\]\]>/gi, "")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#(\d+);/g, (_, n) => {
+      try {
+        return String.fromCodePoint(Number(n));
+      } catch {
+        return "";
+      }
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => {
+      try {
+        return String.fromCodePoint(parseInt(n, 16));
+      } catch {
+        return "";
+      }
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeText(value = "") {
+  return stripHtml(value)
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/ة/g, "ه")
+    .replace(/\u200c/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+function containsKeyword(text, keywords) {
+  const normalized = normalizeText(text);
+  return keywords.some((keyword) =>
+    normalized.includes(normalizeText(keyword))
+  );
+}
+
+function decodeHtmlEntities(value = "") {
+  return stripHtml(value);
+}
+
+function getTag(block, tagName) {
+  const escaped = tagName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const match = block.match(
+    new RegExp(
+      `<${escaped}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${escaped}>`,
+      "i"
+    )
+  );
+
+  if (!match) return "";
+
+  return decodeHtmlEntities(match[1]);
+}
+
+function getAttribute(tag, attribute) {
+  const escaped = attribute.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+  const match = tag.match(
+    new RegExp(`${escaped}\\s*=\\s*["']([^"']+)["']`, "i")
+  );
+
+  return match ? decodeHtmlEntities(match[1]) : "";
+}
+
+function parseRSS(xml) {
+  const items = [];
+
+  const matches = xml.match(/<item\b[\s\S]*?<\/item>/gi) || [];
+
+  for (const item of matches) {
+    const title = getTag(item, "title");
+    const link = getTag(item, "link");
+    const description =
+      getTag(item, "description") ||
+      getTag(item, "content:encoded") ||
+      getTag(item, "summary");
+
+    const pubDate =
+      getTag(item, "pubDate") ||
+      getTag(item, "published") ||
+      getTag(item, "updated");
+
+    if (!title || !link) continue;
+
+    items.push({
+      title: stripHtml(title),
+      link: stripHtml(link),
+      description: stripHtml(description),
+      pubDate: pubDate ? new Date(pubDate).toISOString() : null,
+    });
+  }
+
+  return items;
+}
+
+function extractMeta(html, names) {
+  for (const name of names) {
+    const regex = new RegExp(
+      `<meta[^>]+(?:name|property)=["']${name.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      )}["'][^>]+content=["']([^"']*)["'][^>]*>`,
+      "i"
+    );
+
+    const reverseRegex = new RegExp(
+      `<meta[^>]+content=["']([^"']*)["'][^>]+(?:name|property)=["']${name.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        "\\$&"
+      )}["'][^>]*>`,
+      "i"
+    );
+
+    const match = html.match(regex) || html.match(reverseRegex);
+
+    if (match && match[1]) {
+      return decodeHtmlEntities(match[1]);
+    }
+  }
+
+  return "";
+}
+
+function extractCanonical(html) {
+  const match = html.match(
+    /<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["'][^>]*>/i
+  );
+
+  if (match) return decodeHtmlEntities(match[1]);
+
+  const reverse = html.match(
+    /<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["'][^>]*>/i
+  );
+
+  return reverse ? decodeHtmlEntities(reverse[1]) : "";
+}
+
+function extractJsonLd(html) {
+  const scripts = html.match(
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi
+  ) || [];
+
+  for (const script of scripts) {
+    const jsonText = script
+      .replace(/<script[^>]*>/i, "")
+      .replace(/<\/script>/i, "")
+      .trim();
+
+    try {
+      const parsed = JSON.parse(jsonText);
+
+      const candidates = Array.isArray(parsed)
+        ? parsed
+        : parsed["@graph"]
+        ? parsed["@graph"]
+        : [parsed];
+
+      for (const item of candidates) {
+        if (!item || typeof item !== "object") continue;
+
+        if (
+          item["@type"] === "NewsArticle" ||
+          item["@type"] === "Article" ||
+          item.headline ||
+          item.datePublished
+        ) {
+          return item;
+        }
+      }
+    } catch {
+      // Ignore malformed JSON-LD
+    }
+  }
+
+  return null;
+}
+
+function parseArticlePage(html, fallbackTitle, fallbackUrl) {
+  const jsonLd = extractJsonLd(html);
+
+  const title =
+    (jsonLd && (jsonLd.headline || jsonLd.name)) ||
+    extractMeta(html, ["og:title", "twitter:title"]) ||
+    fallbackTitle;
+
+  const description =
+    (jsonLd && (jsonLd.description || jsonLd.articleBody)) ||
+    extractMeta(html, [
+      "description",
+      "og:description",
+      "twitter:description",
+    ]);
+
+  const image =
+    (jsonLd &&
+      jsonLd.image &&
+      (typeof jsonLd.image === "string"
+        ? jsonLd.image
+        : jsonLd.image.url)) ||
+    extractMeta(html, ["og:image", "twitter:image"]);
+
+  const published =
+    (jsonLd && (jsonLd.datePublished || jsonLd.dateCreated)) ||
+    extractMeta(html, [
+      "article:published_time",
+      "date",
+      "pubdate",
+    ]);
+
+  const canonical = extractCanonical(html) || fallbackUrl;
+
+  let publishedAt = null;
+
+  if (published) {
+    const date = new Date(published);
+
+    if (!Number.isNaN(date.getTime())) {
+      publishedAt = date.toISOString();
+    }
+  }
+
+  return {
+    title: stripHtml(title).trim(),
+    summary: stripHtml(description).slice(0, 1000),
+    content: stripHtml(description).slice(0, 5000),
+    imageUrl: image || null,
+    publishedAt,
+    sourceUrl: canonical,
+  };
+}
+
+function extractHtmlLinks(html, baseUrl) {
+  const results = [];
+  const seen = new Set();
+
+  const anchorRegex =
+    /<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+
+  let match;
+
+  while ((match = anchorRegex.exec(html)) !== null) {
+    const href = match[1];
+    const rawText = match[2];
+
+    const title = stripHtml(rawText);
+
+    if (!href || !title || title.length < 12) continue;
+
+    let absoluteUrl;
+
+    try {
+      absoluteUrl = new URL(href, baseUrl).toString();
+    } catch {
+      continue;
+    }
+
+    if (!absoluteUrl.startsWith("https://")) continue;
+
+    const lowerUrl = absoluteUrl.toLowerCase();
+
+    if (
+      lowerUrl.includes("/tag/") ||
+      lowerUrl.includes("/category/") ||
+      lowerUrl.includes("/search") ||
+      lowerUrl.includes("#")
+    ) {
+      continue;
+    }
+
+    const isMehrArticle =
+      absoluteUrl.includes("mehrnews.com/news/");
+
+    const isKhabarfarsiArticle =
+      absoluteUrl.includes("khabarfarsi.com/u/") ||
+      absoluteUrl.includes("khabarfarsi.com/ua/");
+
+    if (!isMehrArticle && !isKhabarfarsiArticle) continue;
+
+    if (seen.has(absoluteUrl)) continue;
+
+    seen.add(absoluteUrl);
+
+    results.push({
+      title,
+      link: absoluteUrl,
+    });
+
+    if (results.length >= 20) break;
+  }
+
+  return results;
+}
+
+async function fetchSpecialHtmlSource(source) {
+  console.log(`\nFetching special source: ${source.sourceName}`);
+  console.log(source.url);
+
+  try {
+    const html = await fetchUrl(source.url);
+
+    const links = extractHtmlLinks(html, source.url);
+
+    console.log(`Found ${links.length} candidate article links`);
+
+    const items = [];
+
+    for (const link of links.slice(0, 12)) {
+      try {
+        const articleHtml = await fetchUrl(link.link);
+
+        const article = parseArticlePage(
+          articleHtml,
+          link.title,
+          link.link
+        );
+
+        items.push({
+          ...article,
+          link: article.sourceUrl || link.link,
+        });
+
+        await sleep(300);
+      } catch (error) {
+        console.log(
+          `Article fetch failed: ${link.link} - ${error.message}`
+        );
+
+        items.push({
+          title: link.title,
+          summary: "",
+          content: "",
+          imageUrl: null,
+          publishedAt: null,
+          link: link.link,
+        });
+      }
+    }
+
+    return items;
+  } catch (error) {
+    console.error(
+      `Special source failed: ${source.sourceName} - ${error.message}`
+    );
+
+    return [];
+  }
+}
+
+function isBlockedReligious(title, summary) {
+  return containsKeyword(
+    `${title} ${summary}`,
+    BLOCKED_RELIGIOUS_KEYWORDS
+  );
+}
 
 function isJamNews(title, summary) {
-  const titleText = normalizeText(title);
-  const summaryText = normalizeText(summary);
+  const text = `${title} ${summary}`;
 
-  const fullText =
-    titleText +
-    " " +
-    summaryText;
-
-  if (
-    containsKeyword(
-      fullText,
-      jamBlockedKeywords
-    )
-  ) {
+  if (isBlockedReligious(title, summary)) {
     return false;
   }
 
-  if (
-    !containsKeyword(
-      fullText,
-      jamStrongKeywords
-    )
-  ) {
-    return false;
-  }
+  const normalized = normalizeText(text);
 
-  if (
-    containsKeyword(
-      fullText,
-      politicalKeywords
-    )
-  ) {
+  const hasJam = JAM_KEYWORDS.some((keyword) =>
+    normalized.includes(normalizeText(keyword))
+  );
+
+  if (!hasJam) return false;
+
+  const blockedOtherCity = JAM_BLOCKED_KEYWORDS.some((keyword) =>
+    normalized.includes(normalizeText(keyword))
+  );
+
+  if (blockedOtherCity && !normalized.includes("جم")) {
     return false;
   }
 
   return true;
 }
 
-/*
-|--------------------------------------------------------------------------
-| تشخیص دسته
-|--------------------------------------------------------------------------
-*/
-
-function detectSection(
-  title,
-  summary,
-  sourceType
-) {
-  const titleText = normalizeText(title);
-  const summaryText = normalizeText(summary);
-
-  const fullText =
-    titleText +
-    " " +
-    summaryText;
-
-  /*
-  |--------------------------------------------------------------------------
-  | 0. خبرهای ممنوع
-  |--------------------------------------------------------------------------
-  */
-
-  if (isBlockedNews(title, summary)) {
+function detectSection(title, summary, defaultSection, sourceType) {
+  if (isBlockedReligious(title, summary)) {
     return null;
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | 1. JOBS
-  |--------------------------------------------------------------------------
-  */
-
-  if (
-    containsKeyword(
-      fullText,
-      jobKeywords
-    )
-  ) {
+  if (containsKeyword(`${title} ${summary}`, JOB_KEYWORDS)) {
     return "jobs";
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | 2. WORLD
-  |--------------------------------------------------------------------------
-  */
-
-  if (sourceType === "world") {
-    return "world";
-  }
-
   if (
-    containsKeyword(
-      fullText,
-      worldKeywords
-    )
+    sourceType === "world" ||
+    containsKeyword(`${title} ${summary}`, WORLD_KEYWORDS)
   ) {
     return "world";
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | 3. JAM
-  |--------------------------------------------------------------------------
-  */
-
-  if (
-    isJamNews(
-      title,
-      summary
-    )
-  ) {
+  if (isJamNews(title, summary)) {
     return "jam";
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | 4. ECONOMIC
-  |--------------------------------------------------------------------------
-  */
-
   if (
     containsKeyword(
-      fullText,
-      economicStrongKeywords
+      `${title} ${summary}`,
+      ECONOMIC_STRONG_KEYWORDS
     )
   ) {
     return "economic";
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | 5. حذف خبرهای سیاسی
-  |--------------------------------------------------------------------------
-  */
-
   if (
+    defaultSection === "economic" &&
     containsKeyword(
-      fullText,
-      politicalKeywords
+      `${title} ${summary}`,
+      ECONOMIC_WEAK_KEYWORDS
     )
   ) {
     return null;
   }
-
-  /*
-  |--------------------------------------------------------------------------
-  | 6. حذف اخبار ضعیف اقتصادی
-  |--------------------------------------------------------------------------
-  */
-
-  if (
-    containsKeyword(
-      fullText,
-      economicWeakKeywords
-    )
-  ) {
-    return null;
-  }
-
-  /*
-  |--------------------------------------------------------------------------
-  | 7. سایر خبرها حذف شوند
-  |--------------------------------------------------------------------------
-  */
 
   return null;
 }
 
-/*
-|--------------------------------------------------------------------------
-| بررسی خبر تکراری
-|--------------------------------------------------------------------------
-*/
+async function newsExists(sourceUrl, title) {
+  const url =
+    `${SUPABASE_URL}/rest/v1/jamcity_content` +
+    `?select=id&or=(source_url.eq.${encodeURIComponent(
+      sourceUrl
+    )},title.eq.${encodeURIComponent(title)})&limit=1`;
 
-async function newsExists(
-  sourceUrl,
-  title
-) {
-  let url;
-
-  if (sourceUrl) {
-    const encodedUrl =
-      encodeURIComponent(sourceUrl);
-
-    url =
-      SUPABASE_URL +
-      "/rest/v1/jamcity_content" +
-      "?select=id" +
-      "&source_url=eq." +
-      encodedUrl +
-      "&limit=1";
-  } else {
-    const encodedTitle =
-      encodeURIComponent(title);
-
-    url =
-      SUPABASE_URL +
-      "/rest/v1/jamcity_content" +
-      "?select=id" +
-      "&title=eq." +
-      encodedTitle +
-      "&limit=1";
-  }
-
-  const response = await fetch(
-    url,
-    {
-      method: "GET",
-      headers: {
-        apikey:
-          SUPABASE_SERVICE_ROLE_KEY,
-        Authorization:
-          "Bearer " +
-          SUPABASE_SERVICE_ROLE_KEY,
-      },
-    }
-  );
+  const response = await fetch(url, {
+    headers: {
+      apikey: SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+    },
+  });
 
   if (!response.ok) {
-    const errorText =
-      await response.text();
-
     throw new Error(
-      "Supabase duplicate check failed: " +
-        response.status +
-        " " +
-        errorText
+      `Supabase duplicate check failed: ${response.status}`
     );
   }
 
-  const data =
-    await response.json();
+  const data = await response.json();
 
-  return (
-    Array.isArray(data) &&
-    data.length > 0
-  );
+  return Array.isArray(data) && data.length > 0;
 }
 
-/*
-|--------------------------------------------------------------------------
-| ذخیره خبر
-|--------------------------------------------------------------------------
-*/
+async function saveNews(item, source) {
+  const title = stripHtml(item.title);
+  const summary = stripHtml(item.summary || "");
+  const content = stripHtml(item.content || summary);
 
-async function saveNews(
-  item,
-  feed
-) {
-  if (
-    isBlockedNews(
-      item.title,
-      item.summary
-    )
-  ) {
-    console.log(
-      "SKIP blocked religious news: " +
-        item.title
-    );
-
+  if (!title) {
     return false;
   }
 
-  const section =
-    detectSection(
-      item.title,
-      item.summary,
-      feed.sourceType
-    );
-
-  if (!section) {
-    console.log(
-      "SKIP irrelevant: " +
-        item.title
-    );
-
+  if (isBlockedReligious(title, summary)) {
+    console.log(`BLOCKED RELIGIOUS: ${title}`);
     return false;
   }
 
-  if (
-    !VALID_SECTIONS.includes(
-      section
-    )
-  ) {
-    console.error(
-      "INVALID SECTION → " +
-        section +
-        " | " +
-        item.title
-    );
+  const section = detectSection(
+    title,
+    summary,
+    source.defaultSection || null,
+    source.sourceType
+  );
 
+  if (!section || !VALID_SECTIONS.includes(section)) {
+    console.log(`SKIPPED: ${title}`);
     return false;
   }
 
-  if (
-    section === "jam" &&
-    !isJamNews(
-      item.title,
-      item.summary
-    )
-  ) {
-    console.log(
-      "SKIP fake JAM: " +
-        item.title
-    );
-
+  if (section === "jam" && !isJamNews(title, summary)) {
+    console.log(`SKIPPED NON-JAM: ${title}`);
     return false;
   }
 
-  const exists =
-    await newsExists(
-      item.source_url,
-      item.title
-    );
+  const sourceUrl = item.link;
 
-  if (exists) {
-    console.log(
-      "SKIP duplicate: " +
-        item.title
-    );
-
+  if (!sourceUrl) {
     return false;
   }
+
+  try {
+    const exists = await newsExists(sourceUrl, title);
+
+    if (exists) {
+      console.log(`DUPLICATE: ${title}`);
+      return false;
+    }
+  } catch (error) {
+    console.error(`Duplicate check error: ${error.message}`);
+    return false;
+  }
+
+  const publishedAt =
+    item.publishedAt &&
+    !Number.isNaN(new Date(item.publishedAt).getTime())
+      ? new Date(item.publishedAt).toISOString()
+      : new Date().toISOString();
 
   const record = {
-    section: section,
-    title: item.title,
-    summary: item.summary,
-    content: item.summary,
-    source_name: feed.name,
-    source_url: item.source_url,
-    image_url: null,
+    section,
+    title: title.slice(0, 500),
+    summary: summary.slice(0, 1500),
+    content: content.slice(0, 8000),
+    source_name: source.sourceName,
+    source_url: sourceUrl,
+    image_url: item.imageUrl || null,
     symbol: null,
     sentiment: null,
     target_price: null,
     is_automatic: true,
     is_published: true,
-    published_at: item.published_at,
+    published_at: publishedAt,
   };
 
-  const response =
-    await fetch(
-      SUPABASE_URL +
-        "/rest/v1/jamcity_content",
-      {
-        method: "POST",
-        headers: {
-          apikey:
-            SUPABASE_SERVICE_ROLE_KEY,
-          Authorization:
-            "Bearer " +
-            SUPABASE_SERVICE_ROLE_KEY,
-          "Content-Type":
-            "application/json",
-          Prefer:
-            "return=minimal",
-        },
-        body: JSON.stringify(record),
-      }
-    );
+  const response = await fetch(
+    `${SUPABASE_URL}/rest/v1/jamcity_content`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(record),
+    }
+  );
 
   if (!response.ok) {
-    const errorText =
-      await response.text();
+    const errorText = await response.text();
 
     console.error(
-      'Supabase insert error for "' +
-        item.title +
-        '":',
-      errorText
+      `Supabase insert failed: ${response.status} - ${errorText}`
     );
 
     return false;
   }
 
-  console.log(
-    "ADDED [" +
-      section +
-      "] " +
-      feed.name +
-      " | " +
-      item.title
-  );
+  console.log(`SAVED [${section}] ${title}`);
 
   return true;
 }
 
-/*
-|--------------------------------------------------------------------------
-| اجرای اصلی
-|--------------------------------------------------------------------------
-*/
+async function processRSSFeed(feed) {
+  console.log(`\nFetching RSS: ${feed.sourceName}`);
 
-async function main() {
-  console.log("");
-  console.log(
-    "========================================"
-  );
-  console.log(
-    "       JAM CITY AUTOMATIC NEWS"
-  );
-  console.log(
-    "========================================"
-  );
-  console.log("");
+  try {
+    const xml = await fetchUrl(feed.url);
+    const items = parseRSS(xml);
 
-  console.log(
-    "Categories: JAM / JOBS / ECONOMIC / WORLD"
-  );
+    console.log(`Found ${items.length} RSS items`);
 
-  console.log(
-    "JAM: ONLY relevant South-region news"
-  );
+    let saved = 0;
 
-  console.log(
-    "🚫 Imam Jom'e / Friday Prayer news: BLOCKED"
-  );
+    for (const item of items.slice(0, 15)) {
+      const success = await saveNews(item, {
+        sourceName: feed.sourceName,
+        sourceType: feed.sourceType,
+      });
 
-  console.log(
-    "🚫 Generic political news: BLOCKED"
-  );
+      if (success) {
+        saved++;
+      }
+    }
 
-  console.log(
-    "🚫 Generic 'جم' keyword: DISABLED"
-  );
-
-  console.log(
-    "ECONOMIC: ONLY STRONG ECONOMIC KEYWORDS"
-  );
-
-  console.log("");
-
-  let total = 0;
-  let added = 0;
-  let skipped = 0;
-  let failedSources = 0;
-
-  for (const feed of FEEDS) {
-    console.log("");
-    console.log(
-      "SOURCE: " + feed.name
-    );
-    console.log(
-      "URL: " + feed.url
+    return saved;
+  } catch (error) {
+    console.error(
+      `RSS source failed: ${feed.sourceName} - ${error.message}`
     );
 
-    try {
-      const xml =
-        await fetchUrl(feed.url);
+    return 0;
+  }
+}
 
-      const items =
-        parseRSS(xml);
+async function processSpecialSource(source) {
+  const items = await fetchSpecialHtmlSource(source);
 
-      console.log(
-        "Found " +
-          items.length +
-          " items"
-      );
+  let saved = 0;
+
+  for (const item of items) {
+    let allowed = true;
+
+    if (source.sourceType === "jam") {
+      const text = `${item.title} ${item.summary}`;
 
       /*
-      |----------------------------------------------------------------------
-      | فقط ۱۰ خبر جدید اول هر منبع
-      |----------------------------------------------------------------------
-      */
-
-      for (
-        const item of items.slice(
-          0,
-          10
-        )
-      ) {
-        total++;
-
-        try {
-          const saved =
-            await saveNews(
-              item,
-              feed
-            );
-
-          if (saved) {
-            added++;
-          } else {
-            skipped++;
-          }
-        } catch (error) {
-          console.error(
-            "Error processing news: " +
-              item.title,
-            error.message
-          );
-        }
+       * خبر فارسی /city/71 صفحه اختصاصی شهرستان جم است.
+       * بنابراین تمام خبرهای آن صفحه به عنوان خبر جم بررسی می‌شوند.
+       */
+      if (source.sourceName.includes("خبر فارسی")) {
+        allowed = !isBlockedReligious(
+          item.title,
+          item.summary
+        );
+      } else {
+        allowed = isJamNews(
+          item.title,
+          item.summary
+        );
       }
-    } catch (error) {
-      failedSources++;
+    }
 
-      console.error(
-        "SOURCE FAILED: " +
-          feed.name +
-          " → " +
-          error.message
-      );
+    if (!allowed) {
+      console.log(`SPECIAL SKIPPED: ${item.title}`);
+      continue;
+    }
+
+    const success = await saveNews(item, {
+      sourceName: source.sourceName,
+      sourceType: source.sourceType,
+    });
+
+    if (success) {
+      saved++;
     }
   }
 
-  console.log("");
-  console.log(
-    "========================================"
-  );
-  console.log(
-    "TOTAL: " + total
-  );
-  console.log(
-    "ADDED: " + added
-  );
-  console.log(
-    "SKIPPED: " + skipped
-  );
-  console.log(
-    "FAILED SOURCES: " +
-      failedSources
-  );
-  console.log(
-    "========================================"
-  );
-  console.log("");
+  return saved;
 }
 
-/*
-|--------------------------------------------------------------------------
-| اجرا
-|--------------------------------------------------------------------------
-*/
+async function main() {
+  console.log("==========================================");
+  console.log("Jam City Automatic News Fetcher 5.0");
+  console.log("==========================================");
+  console.log(`Time: ${new Date().toISOString()}`);
+
+  let totalSaved = 0;
+
+  for (const feed of RSS_FEEDS) {
+    totalSaved += await processRSSFeed(feed);
+  }
+
+  for (const source of SPECIAL_HTML_SOURCES) {
+    totalSaved += await processSpecialSource(source);
+  }
+
+  console.log("==========================================");
+  console.log(`TOTAL NEW NEWS SAVED: ${totalSaved}`);
+  console.log("==========================================");
+}
 
 main().catch((error) => {
-  console.error(
-    "FATAL ERROR:",
-    error
-  );
-
+  console.error("FATAL ERROR:", error);
   process.exit(1);
 });
