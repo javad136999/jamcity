@@ -228,6 +228,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      vehicle_listings: {
+        Row: {
+          id: string;
+          business_id: string;
+          brand: string;
+          model: string;
+          year: number | null;
+          mileage_km: number | null;
+          price: number | null;
+          color: string | null;
+          image_url: string | null;
+          is_sold: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          brand: string;
+          model: string;
+          year?: number | null;
+          mileage_km?: number | null;
+          price?: number | null;
+          color?: string | null;
+          image_url?: string | null;
+          is_sold?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          brand?: string;
+          model?: string;
+          year?: number | null;
+          mileage_km?: number | null;
+          price?: number | null;
+          color?: string | null;
+          image_url?: string | null;
+          is_sold?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       site_visits: {
         Row: {
           id: string;

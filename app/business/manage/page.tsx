@@ -16,6 +16,8 @@ import {
 import { uploadImages, uploadSingleFile } from "@/lib/upload";
 import { Spinner, EmptyState, ErrorState } from "@/components/Feedback";
 
+const CAR_DEALER_CATEGORY = "car_dealer";
+
 type Business = {
   id: string;
   name: string;
@@ -34,6 +36,19 @@ type Product = {
   description: string | null;
   image_url: string | null;
   discount_percent: number | null;
+};
+
+type Vehicle = {
+  id: string;
+  business_id: string;
+  brand: string;
+  model: string;
+  year: number | null;
+  mileage_km: number | null;
+  price: number | null;
+  color: string | null;
+  image_url: string | null;
+  is_sold: boolean;
 };
 
 const STATUS_META: Record<string, { label: string; color: string }> = {
@@ -56,6 +71,18 @@ export default function BusinessManagePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // پنل تخصصی اتوگالری
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [vBrand, setVBrand] = useState("");
+  const [vModel, setVModel] = useState("");
+  const [vYear, setVYear] = useState("");
+  const [vMileage, setVMileage] = useState("");
+  const [vPrice, setVPrice] = useState("");
+  const [vColor, setVColor] = useState("");
+  const [vImage, setVImage] = useState<File | null>(null);
+  const [vSaving, setVSaving] = useState(false);
+  const [vError, setVError] = useState<string | null>(null);
+
   const [renewOpen, setRenewOpen] = useState(false);
   const [renewTier, setRenewTier] = useState<SubscriptionTierValue>("gold");
   const [renewReceipt, setRenewReceipt] = useState<File | null>(null);
@@ -75,18 +102,31 @@ export default function BusinessManagePage() {
   useEffect(() => {
     if (!activeId) {
       setProducts([]);
+      setVehicles([]);
       return;
     }
     setRenewOpen(false);
     setRenewReceipt(null);
     setRenewError(null);
-    supabase
-      .from("business_products")
-      .select("*")
-      .eq("business_id", activeId)
-      .order("created_at", { ascending: false })
-      .then(({ data }) => setProducts((data as Product[]) ?? []));
-  }, [activeId, supabase]);
+
+    const activeBusiness = businesses?.find((b) => b.id === activeId);
+
+    if (activeBusiness?.category === CAR_DEALER_CATEGORY) {
+      supabase
+        .from("vehicle_listings")
+        .select("*")
+        .eq("business_id", activeId)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => setVehicles((data as Vehicle[]) ?? []));
+    } else {
+      supabase
+        .from("business_products")
+        .select("*")
+        .eq("business_id", activeId)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => setProducts((data as Product[]) ?? []));
+    }
+  }, [activeId, supabase, businesses]);
 
   async function addProduct(e: React.FormEvent) {
     e.preventDefault();
@@ -130,6 +170,57 @@ export default function BusinessManagePage() {
 
   async function saveDiscount(id: string, discount_percent: number | null) {
     await supabase.from("business_products").update({ discount_percent }).eq("id", id);
+  }
+
+  async function addVehicle(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !activeId || !vBrand.trim() || !vModel.trim()) return;
+    setVSaving(true);
+    setVError(null);
+    try {
+      let image_url: string | null = null;
+      if (vImage) {
+        const [url] = await uploadImages([vImage], "product-images", user.id);
+        image_url = url;
+      }
+      const { data, error: insertError } = await supabase
+        .from("vehicle_listings")
+        .insert({
+          business_id: activeId,
+          brand: vBrand.trim(),
+          model: vModel.trim(),
+          year: vYear ? Number(vYear) : null,
+          mileage_km: vMileage ? Number(vMileage) : null,
+          price: vPrice ? Number(vPrice) : null,
+          color: vColor.trim() || null,
+          image_url,
+        })
+        .select("*")
+        .single();
+      if (insertError || !data) throw insertError;
+      setVehicles((prev) => [data as Vehicle, ...prev]);
+      setVBrand("");
+      setVModel("");
+      setVYear("");
+      setVMileage("");
+      setVPrice("");
+      setVColor("");
+      setVImage(null);
+    } catch {
+      setVError("افزودن ماشین با خطا مواجه شد.");
+    } finally {
+      setVSaving(false);
+    }
+  }
+
+  async function deleteVehicle(id: string) {
+    await supabase.from("vehicle_listings").delete().eq("id", id);
+    setVehicles((prev) => prev.filter((v) => v.id !== id));
+  }
+
+  async function toggleVehicleSold(id: string, is_sold: boolean) {
+    await supabase.from("vehicle_listings").update({ is_sold }).eq("id", id);
+    setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, is_sold } : v)));
   }
 
   async function submitRenewal() {
@@ -181,6 +272,7 @@ export default function BusinessManagePage() {
     );
 
   const active = businesses.find((b) => b.id === activeId);
+  const isCarDealer = active?.category === CAR_DEALER_CATEGORY;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-slate-50">
@@ -326,7 +418,167 @@ export default function BusinessManagePage() {
           </div>
         )}
 
-        {active && (
+        {/* ===================== پنل تخصصی اتوگالری ===================== */}
+        {active && isCarDealer && (
+          <div className="space-y-5 rounded-[26px] border border-[#E7D9B8] bg-gradient-to-b from-white to-[#FBF7EE] p-6 shadow-[0_10px_30px_-14px_rgba(184,114,30,0.35)]">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#2b2f36] to-[#3d434d] text-xl shadow-[0_0_16px_rgba(0,0,0,0.25)]">
+                🚗
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-[#1D2B1F]">نمایشگاه {active.name}</h2>
+                <p className="text-[11px] text-[#8A7150]">
+                  ماشین‌های نمایشگاه خود را با مشخصات کامل ثبت کنید
+                </p>
+              </div>
+            </div>
+
+            {vehicles.length === 0 && (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                هنوز ماشینی به نمایشگاه خود اضافه نکرده‌اید.
+              </p>
+            )}
+
+            <form
+              onSubmit={addVehicle}
+              className="grid gap-3 rounded-2xl border border-[#E3EBDE] bg-white p-4 sm:grid-cols-2"
+            >
+              {vError && (
+                <div className="sm:col-span-2">
+                  <ErrorState message={vError} />
+                </div>
+              )}
+
+              <input
+                required
+                value={vBrand}
+                onChange={(e) => setVBrand(e.target.value)}
+                placeholder="برند (مثلاً پژو، سمند، هیوندای)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#D98F2B] focus:bg-white"
+              />
+              <input
+                required
+                value={vModel}
+                onChange={(e) => setVModel(e.target.value)}
+                placeholder="مدل (مثلاً ۲۰۶ تیپ ۵)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#D98F2B] focus:bg-white"
+              />
+              <input
+                type="number"
+                value={vYear}
+                onChange={(e) => setVYear(e.target.value)}
+                placeholder="سال ساخت"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#D98F2B] focus:bg-white"
+              />
+              <input
+                type="number"
+                value={vMileage}
+                onChange={(e) => setVMileage(e.target.value)}
+                placeholder="کارکرد (کیلومتر)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#D98F2B] focus:bg-white"
+              />
+              <input
+                value={vColor}
+                onChange={(e) => setVColor(e.target.value)}
+                placeholder="رنگ"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#D98F2B] focus:bg-white"
+              />
+              <input
+                type="number"
+                value={vPrice}
+                onChange={(e) => setVPrice(e.target.value)}
+                placeholder="قیمت (تومان)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#D98F2B] focus:bg-white"
+              />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setVImage(e.target.files?.[0] ?? null)}
+                className="rounded-xl2 border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500 sm:col-span-2"
+              />
+              <button
+                type="submit"
+                disabled={vSaving}
+                className="rounded-xl2 bg-gradient-to-l from-[#D98F2B] to-[#B8721E] py-3 text-sm font-bold text-white shadow-[0_0_16px_rgba(255,183,77,.35)] transition hover:-translate-y-0.5 disabled:opacity-50 sm:col-span-2"
+              >
+                {vSaving ? "در حال افزودن..." : "+ افزودن ماشین"}
+              </button>
+            </form>
+
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {vehicles.map((v) => (
+                <div
+                  key={v.id}
+                  className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_4px_16px_-8px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(184,114,30,0.3)] ${
+                    v.is_sold ? "border-slate-200 opacity-60" : "border-[#E3EBDE]"
+                  }`}
+                >
+                  <div className="relative h-36 w-full bg-[#F3F6F1]">
+                    {v.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={v.image_url}
+                        alt={`${v.brand} ${v.model}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-4xl">
+                        🚗
+                      </div>
+                    )}
+                    {v.is_sold && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-sm font-black text-white">
+                        فروخته شد
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 p-3">
+                    <p className="text-[13px] font-black text-[#1D2B1F]">
+                      {v.brand} {v.model}
+                    </p>
+                    <div className="flex flex-wrap gap-1 text-[10px] text-[#66766A]">
+                      {v.year && <span className="rounded-full bg-[#F3F6F1] px-2 py-0.5">📅 {v.year}</span>}
+                      {v.mileage_km !== null && (
+                        <span className="rounded-full bg-[#F3F6F1] px-2 py-0.5">
+                          🛣️ {new Intl.NumberFormat("fa-IR").format(v.mileage_km)} کیلومتر
+                        </span>
+                      )}
+                      {v.color && <span className="rounded-full bg-[#F3F6F1] px-2 py-0.5">🎨 {v.color}</span>}
+                    </div>
+                    {v.price !== null && (
+                      <p className="text-[12px] font-black text-[#147A4B]">{formatPrice(v.price)}</p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => toggleVehicleSold(v.id, !v.is_sold)}
+                        className={`rounded-lg px-2 py-1 text-[10px] font-bold transition ${
+                          v.is_sold
+                            ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                            : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                        }`}
+                      >
+                        {v.is_sold ? "علامت‌گذاری به‌عنوان موجود" : "علامت‌گذاری به‌عنوان فروخته‌شده"}
+                      </button>
+                      <button
+                        onClick={() => deleteVehicle(v.id)}
+                        className="mr-auto text-[10px] font-bold text-red-500 transition hover:text-red-600"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===================== منوی عمومی محصولات (کسب‌وکارهای غیر اتوگالری) ===================== */}
+        {active && !isCarDealer && (
           <div className="space-y-4 rounded-2xl bg-white p-6 shadow-[0_8px_30px_-12px_rgba(16,185,129,0.2)] ring-1 ring-emerald-100">
             <h2 className="text-lg font-extrabold text-slate-800">منوی {active.name}</h2>
             {products.length === 0 && (

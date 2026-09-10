@@ -5,6 +5,8 @@ import BusinessRating from "@/components/BusinessRating";
 
 export const dynamic = "force-dynamic";
 
+const CAR_DEALER_CATEGORY = "car_dealer";
+
 export default async function BusinessDetailPage({
   params,
 }: {
@@ -19,11 +21,23 @@ export default async function BusinessDetailPage({
 
   if (!business) notFound();
 
-  const { data: products } = await supabase
-    .from("business_products")
-    .select("*")
-    .eq("business_id", params.id)
-    .order("created_at", { ascending: false });
+  const isCarDealer = business.category === CAR_DEALER_CATEGORY;
+
+  const { data: products } = isCarDealer
+    ? { data: null }
+    : await supabase
+        .from("business_products")
+        .select("*")
+        .eq("business_id", params.id)
+        .order("created_at", { ascending: false });
+
+  const { data: vehicles } = isCarDealer
+    ? await supabase
+        .from("vehicle_listings")
+        .select("*")
+        .eq("business_id", params.id)
+        .order("created_at", { ascending: false })
+    : { data: null };
 
   const mapsHref =
     business.lat && business.lng
@@ -139,58 +153,139 @@ export default async function BusinessDetailPage({
         </div>
       </div>
 
-      {/* PRODUCTS */}
-      <div className="space-y-4 rounded-[26px] border border-[#E3EBDE] bg-white p-5 shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:p-6">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FBEEDA] text-lg shadow-[0_0_14px_rgba(255,183,77,.3)]">
-            📋
-          </span>
-          <h2 className="text-[14px] font-black text-[#1D2B1F] sm:text-base">
-            منو و محصولات
-          </h2>
-        </div>
-
-        {!products || products.length === 0 ? (
-          <p className="rounded-2xl bg-[#F7F9F4] p-6 text-center text-[11px] text-[#8A968C]">
-            هنوز محصولی برای این کسب و کار ثبت نشده است.
-          </p>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {products.map((p) => (
-              <div
-                key={p.id}
-                className="overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white transition hover:-translate-y-0.5 hover:shadow-lg"
-              >
-                {p.image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={p.image_url}
-                    alt={p.name}
-                    className="h-36 w-full object-cover"
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <div className="flex h-36 w-full items-center justify-center bg-[#F3FAF5] text-4xl">
-                    {business.icon}
-                  </div>
-                )}
-                <div className="space-y-1 p-3.5">
-                  <p className="text-[12px] font-black text-[#1D2B1F]">{p.name}</p>
-                  {p.price !== null && (
-                    <p className="text-[11px] font-black text-[#147A4B]">
-                      {formatPrice(p.price)}
-                    </p>
-                  )}
-                  {p.description && (
-                    <p className="text-[10px] text-[#8A968C]">{p.description}</p>
-                  )}
-                </div>
-              </div>
-            ))}
+      {/* VEHICLE SHOWCASE (اتوگالری) */}
+      {isCarDealer ? (
+        <div className="space-y-4 rounded-[26px] border border-[#E7D9B8] bg-gradient-to-b from-white to-[#FBF7EE] p-5 shadow-[0_10px_28px_rgba(184,114,30,.12)] sm:p-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2b2f36] to-[#3d434d] text-lg shadow-[0_0_14px_rgba(0,0,0,.25)]">
+              🚗
+            </span>
+            <h2 className="text-[14px] font-black text-[#1D2B1F] sm:text-base">
+              ماشین‌های نمایشگاه
+            </h2>
           </div>
-        )}
-      </div>
+
+          {!vehicles || vehicles.length === 0 ? (
+            <p className="rounded-2xl bg-[#F7F9F4] p-6 text-center text-[11px] text-[#8A968C]">
+              هنوز ماشینی در این نمایشگاه ثبت نشده است.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {vehicles.map((v) => (
+                <div
+                  key={v.id}
+                  className={`overflow-hidden rounded-[20px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${
+                    v.is_sold ? "border-slate-200 opacity-60" : "border-[#E3EBDE]"
+                  }`}
+                >
+                  <div className="relative h-44 w-full bg-[#F3F6F1]">
+                    {v.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={v.image_url}
+                        alt={`${v.brand} ${v.model}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#2b2f36] to-[#3d434d] text-5xl">
+                        🚗
+                      </div>
+                    )}
+                    {v.is_sold && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[13px] font-black text-white">
+                        فروخته شد
+                      </span>
+                    )}
+                    {v.price !== null && !v.is_sold && (
+                      <span className="absolute left-2 top-2 rounded-full bg-[#0f9a56] px-3 py-1 text-[11px] font-black text-white shadow-md">
+                        {formatPrice(v.price)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 p-3.5">
+                    <p className="text-[13px] font-black text-[#1D2B1F]">
+                      {v.brand} {v.model}
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {v.year && (
+                        <span className="rounded-full bg-[#F3FAF5] px-2.5 py-1 text-[10px] font-bold text-[#147A4B]">
+                          📅 مدل {v.year}
+                        </span>
+                      )}
+                      {v.mileage_km !== null && (
+                        <span className="rounded-full bg-[#F3FAF5] px-2.5 py-1 text-[10px] font-bold text-[#147A4B]">
+                          🛣️ {new Intl.NumberFormat("fa-IR").format(v.mileage_km)} کیلومتر
+                        </span>
+                      )}
+                      {v.color && (
+                        <span className="rounded-full bg-[#F3FAF5] px-2.5 py-1 text-[10px] font-bold text-[#147A4B]">
+                          🎨 {v.color}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4 rounded-[26px] border border-[#E3EBDE] bg-white p-5 shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:p-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FBEEDA] text-lg shadow-[0_0_14px_rgba(255,183,77,.3)]">
+              📋
+            </span>
+            <h2 className="text-[14px] font-black text-[#1D2B1F] sm:text-base">
+              منو و محصولات
+            </h2>
+          </div>
+
+          {!products || products.length === 0 ? (
+            <p className="rounded-2xl bg-[#F7F9F4] p-6 text-center text-[11px] text-[#8A968C]">
+              هنوز محصولی برای این کسب و کار ثبت نشده است.
+            </p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {products.map((p) => (
+                <div
+                  key={p.id}
+                  className="overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white transition hover:-translate-y-0.5 hover:shadow-lg"
+                >
+                  {p.image_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={p.image_url}
+                      alt={p.name}
+                      className="h-36 w-full object-cover"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <div className="flex h-36 w-full items-center justify-center bg-[#F3FAF5] text-4xl">
+                      {business.icon}
+                    </div>
+                  )}
+                  <div className="space-y-1 p-3.5">
+                    <p className="text-[12px] font-black text-[#1D2B1F]">{p.name}</p>
+                    {p.price !== null && (
+                      <p className="text-[11px] font-black text-[#147A4B]">
+                        {formatPrice(p.price)}
+                      </p>
+                    )}
+                    {p.description && (
+                      <p className="text-[10px] text-[#8A968C]">{p.description}</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
