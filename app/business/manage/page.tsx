@@ -17,6 +17,7 @@ import { uploadImages, uploadSingleFile } from "@/lib/upload";
 import { Spinner, EmptyState, ErrorState } from "@/components/Feedback";
 
 const CAR_DEALER_CATEGORY = "car_dealer";
+const SHOES_BAGS_CATEGORY = "shoes";
 
 type Business = {
   id: string;
@@ -51,6 +52,19 @@ type Vehicle = {
   is_sold: boolean;
 };
 
+type FootwearBagItem = {
+  id: string;
+  business_id: string;
+  product_type: "کیف" | "کفش";
+  brand: string;
+  size: string | null;
+  color: string | null;
+  material: string | null;
+  price: number | null;
+  stock_quantity: number | null;
+  image_urls: string[];
+};
+
 const STATUS_META: Record<string, { label: string; color: string }> = {
   pending: { label: "در انتظار تایید", color: "bg-yellow-100 text-yellow-700" },
   approved: { label: "فعال", color: "bg-emerald-100 text-emerald-700" },
@@ -83,6 +97,19 @@ export default function BusinessManagePage() {
   const [vSaving, setVSaving] = useState(false);
   const [vError, setVError] = useState<string | null>(null);
 
+  // پنل تخصصی کیف و کفش
+  const [footwearItems, setFootwearItems] = useState<FootwearBagItem[]>([]);
+  const [fType, setFType] = useState<"کیف" | "کفش">("کفش");
+  const [fBrand, setFBrand] = useState("");
+  const [fSize, setFSize] = useState("");
+  const [fColor, setFColor] = useState("");
+  const [fMaterial, setFMaterial] = useState("");
+  const [fPrice, setFPrice] = useState("");
+  const [fStock, setFStock] = useState("");
+  const [fImages, setFImages] = useState<File[]>([]);
+  const [fSaving, setFSaving] = useState(false);
+  const [fError, setFError] = useState<string | null>(null);
+
   const [renewOpen, setRenewOpen] = useState(false);
   const [renewTier, setRenewTier] = useState<SubscriptionTierValue>("gold");
   const [renewReceipt, setRenewReceipt] = useState<File | null>(null);
@@ -103,6 +130,7 @@ export default function BusinessManagePage() {
     if (!activeId) {
       setProducts([]);
       setVehicles([]);
+      setFootwearItems([]);
       return;
     }
     setRenewOpen(false);
@@ -118,6 +146,13 @@ export default function BusinessManagePage() {
         .eq("business_id", activeId)
         .order("created_at", { ascending: false })
         .then(({ data }) => setVehicles((data as Vehicle[]) ?? []));
+    } else if (activeBusiness?.category === SHOES_BAGS_CATEGORY) {
+      supabase
+        .from("footwear_bag_listings")
+        .select("*")
+        .eq("business_id", activeId)
+        .order("created_at", { ascending: false })
+        .then(({ data }) => setFootwearItems((data as FootwearBagItem[]) ?? []));
     } else {
       supabase
         .from("business_products")
@@ -127,6 +162,7 @@ export default function BusinessManagePage() {
         .then(({ data }) => setProducts((data as Product[]) ?? []));
     }
   }, [activeId, supabase, businesses]);
+
 
   async function addProduct(e: React.FormEvent) {
     e.preventDefault();
@@ -223,6 +259,57 @@ export default function BusinessManagePage() {
     setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, is_sold } : v)));
   }
 
+  async function addFootwearItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !activeId || !fBrand.trim()) return;
+    setFSaving(true);
+    setFError(null);
+    try {
+      let image_urls: string[] = [];
+      if (fImages.length > 0) {
+        image_urls = await uploadImages(fImages, "product-images", user.id);
+      }
+      const { data, error: insertError } = await supabase
+        .from("footwear_bag_listings")
+        .insert({
+          business_id: activeId,
+          product_type: fType,
+          brand: fBrand.trim(),
+          size: fSize.trim() || null,
+          color: fColor.trim() || null,
+          material: fMaterial.trim() || null,
+          price: fPrice ? Number(fPrice) : null,
+          stock_quantity: fStock ? Number(fStock) : null,
+          image_urls,
+        })
+        .select("*")
+        .single();
+      if (insertError || !data) throw insertError;
+      setFootwearItems((prev) => [data as FootwearBagItem, ...prev]);
+      setFType("کفش");
+      setFBrand("");
+      setFSize("");
+      setFColor("");
+      setFMaterial("");
+      setFPrice("");
+      setFStock("");
+      setFImages([]);
+    } catch {
+      setFError("افزودن محصول با خطا مواجه شد.");
+    } finally {
+      setFSaving(false);
+    }
+  }
+
+  async function deleteFootwearItem(id: string) {
+    await supabase.from("footwear_bag_listings").delete().eq("id", id);
+    setFootwearItems((prev) => prev.filter((f) => f.id !== id));
+  }
+
+  async function updateFootwearStock(id: string, stock_quantity: number | null) {
+    await supabase.from("footwear_bag_listings").update({ stock_quantity }).eq("id", id);
+  }
+
   async function submitRenewal() {
     if (!user || !activeId) return;
     if (!renewReceipt) {
@@ -273,6 +360,7 @@ export default function BusinessManagePage() {
 
   const active = businesses.find((b) => b.id === activeId);
   const isCarDealer = active?.category === CAR_DEALER_CATEGORY;
+  const isShoeStore = active?.category === SHOES_BAGS_CATEGORY;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 via-white to-slate-50">
@@ -577,8 +665,204 @@ export default function BusinessManagePage() {
           </div>
         )}
 
-        {/* ===================== منوی عمومی محصولات (کسب‌وکارهای غیر اتوگالری) ===================== */}
-        {active && !isCarDealer && (
+        {/* ===================== پنل تخصصی کیف و کفش ===================== */}
+        {active && isShoeStore && (
+          <div className="space-y-5 rounded-[26px] border border-[#F0D9E8] bg-gradient-to-b from-white to-[#FDF4F8] p-6 shadow-[0_10px_30px_-14px_rgba(190,60,120,0.25)]">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C2447A] to-[#8A2F58] text-xl shadow-[0_0_16px_rgba(190,60,120,0.3)]">
+                👟
+              </span>
+              <div>
+                <h2 className="text-lg font-black text-[#1D2B1F]">فروشگاه {active.name}</h2>
+                <p className="text-[11px] text-[#8A5570]">
+                  محصولات کیف و کفش خود را با مشخصات کامل ثبت کنید
+                </p>
+              </div>
+            </div>
+
+            {footwearItems.length === 0 && (
+              <p className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                هنوز محصولی به فروشگاه خود اضافه نکرده‌اید.
+              </p>
+            )}
+
+            <form
+              onSubmit={addFootwearItem}
+              className="grid gap-3 rounded-2xl border border-[#E3EBDE] bg-white p-4 sm:grid-cols-2"
+            >
+              {fError && (
+                <div className="sm:col-span-2">
+                  <ErrorState message={fError} />
+                </div>
+              )}
+
+              <div className="flex gap-2 sm:col-span-2">
+                <button
+                  type="button"
+                  onClick={() => setFType("کفش")}
+                  className={`flex-1 rounded-xl2 py-3 text-sm font-bold transition ${
+                    fType === "کفش"
+                      ? "bg-gradient-to-l from-[#C2447A] to-[#8A2F58] text-white shadow-md"
+                      : "border border-slate-200 bg-slate-50 text-slate-600"
+                  }`}
+                >
+                  👟 کفش
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFType("کیف")}
+                  className={`flex-1 rounded-xl2 py-3 text-sm font-bold transition ${
+                    fType === "کیف"
+                      ? "bg-gradient-to-l from-[#C2447A] to-[#8A2F58] text-white shadow-md"
+                      : "border border-slate-200 bg-slate-50 text-slate-600"
+                  }`}
+                >
+                  👜 کیف
+                </button>
+              </div>
+
+              <input
+                required
+                value={fBrand}
+                onChange={(e) => setFBrand(e.target.value)}
+                placeholder="برند (مثلاً نایک، آدیداس)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#C2447A] focus:bg-white"
+              />
+              <input
+                value={fSize}
+                onChange={(e) => setFSize(e.target.value)}
+                placeholder="سایز (مثلاً ۴۰ یا ۳۸ تا ۴۲)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#C2447A] focus:bg-white"
+              />
+              <input
+                value={fColor}
+                onChange={(e) => setFColor(e.target.value)}
+                placeholder="رنگ"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#C2447A] focus:bg-white"
+              />
+              <input
+                value={fMaterial}
+                onChange={(e) => setFMaterial(e.target.value)}
+                placeholder="جنس (چرم، مصنوعی، پارچه‌ای...)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#C2447A] focus:bg-white"
+              />
+              <input
+                type="number"
+                value={fPrice}
+                onChange={(e) => setFPrice(e.target.value)}
+                placeholder="قیمت (تومان)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#C2447A] focus:bg-white"
+              />
+              <input
+                type="number"
+                value={fStock}
+                onChange={(e) => setFStock(e.target.value)}
+                placeholder="موجودی انبار (تعداد)"
+                className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-[#C2447A] focus:bg-white"
+              />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => setFImages(e.target.files ? Array.from(e.target.files) : [])}
+                className="rounded-xl2 border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500 sm:col-span-2"
+              />
+              <button
+                type="submit"
+                disabled={fSaving}
+                className="rounded-xl2 bg-gradient-to-l from-[#C2447A] to-[#8A2F58] py-3 text-sm font-bold text-white shadow-[0_0_16px_rgba(190,60,120,.35)] transition hover:-translate-y-0.5 disabled:opacity-50 sm:col-span-2"
+              >
+                {fSaving ? "در حال افزودن..." : "+ افزودن محصول"}
+              </button>
+            </form>
+
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              {footwearItems.map((f) => (
+                <div
+                  key={f.id}
+                  className={`overflow-hidden rounded-[20px] border bg-white shadow-[0_4px_16px_-8px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_-10px_rgba(190,60,120,0.3)] ${
+                    f.stock_quantity === 0 ? "border-slate-200 opacity-60" : "border-[#E3EBDE]"
+                  }`}
+                >
+                  <div className="relative h-32 w-full bg-[#F3F6F1]">
+                    {f.image_urls.length > 0 ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={f.image_urls[0]}
+                        alt={`${f.brand} ${f.product_type}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-3xl">
+                        {f.product_type === "کفش" ? "👟" : "👜"}
+                      </div>
+                    )}
+                    {f.image_urls.length > 1 && (
+                      <span className="absolute left-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[9px] font-bold text-white">
+                        +{f.image_urls.length - 1} عکس دیگر
+                      </span>
+                    )}
+                    {f.stock_quantity === 0 && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/40 text-[11px] font-black text-white">
+                        ناموجود
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 p-3">
+                    <p className="text-[12px] font-black text-[#1D2B1F]">
+                      {f.product_type === "کفش" ? "👟" : "👜"} {f.brand}
+                    </p>
+                    <div className="flex flex-wrap gap-1 text-[9px] text-[#66766A]">
+                      {f.size && <span className="rounded-full bg-[#F3F6F1] px-2 py-0.5">📏 {f.size}</span>}
+                      {f.color && <span className="rounded-full bg-[#F3F6F1] px-2 py-0.5">🎨 {f.color}</span>}
+                      {f.material && <span className="rounded-full bg-[#F3F6F1] px-2 py-0.5">🧵 {f.material}</span>}
+                    </div>
+                    {f.price !== null && (
+                      <p className="text-[11px] font-black text-[#147A4B]">{formatPrice(f.price)}</p>
+                    )}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        type="number"
+                        min={0}
+                        value={f.stock_quantity ?? ""}
+                        onChange={(e) =>
+                          setFootwearItems((prev) =>
+                            prev.map((x) =>
+                              x.id === f.id
+                                ? { ...x, stock_quantity: e.target.value === "" ? null : Number(e.target.value) }
+                                : x
+                            )
+                          )
+                        }
+                        placeholder="موجودی"
+                        className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1 text-[10px] text-slate-800 outline-none"
+                      />
+                      <button
+                        onClick={() => updateFootwearStock(f.id, f.stock_quantity)}
+                        className="rounded-lg bg-[#C2447A] px-2 py-1 text-[10px] font-bold text-white transition hover:bg-[#8A2F58]"
+                      >
+                        ذخیره
+                      </button>
+                      <button
+                        onClick={() => deleteFootwearItem(f.id)}
+                        className="mr-auto text-[10px] font-bold text-red-500 transition hover:text-red-600"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ===================== منوی عمومی محصولات (کسب‌وکارهای غیر اتوگالری/کیف‌وکفش) ===================== */}
+        {active && !isCarDealer && !isShoeStore && (
           <div className="space-y-4 rounded-2xl bg-white p-6 shadow-[0_8px_30px_-12px_rgba(16,185,129,0.2)] ring-1 ring-emerald-100">
             <h2 className="text-lg font-extrabold text-slate-800">منوی {active.name}</h2>
             {products.length === 0 && (

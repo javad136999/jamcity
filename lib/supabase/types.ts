@@ -270,6 +270,48 @@ export type Database = {
         };
         Relationships: [];
       };
+      footwear_bag_listings: {
+        Row: {
+          id: string;
+          business_id: string;
+          product_type: "کیف" | "کفش";
+          brand: string;
+          size: string | null;
+          color: string | null;
+          material: string | null;
+          price: number | null;
+          stock_quantity: number | null;
+          image_urls: string[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          product_type: "کیف" | "کفش";
+          brand: string;
+          size?: string | null;
+          color?: string | null;
+          material?: string | null;
+          price?: number | null;
+          stock_quantity?: number | null;
+          image_urls?: string[];
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          business_id?: string;
+          product_type?: "کیف" | "کفش";
+          brand?: string;
+          size?: string | null;
+          color?: string | null;
+          material?: string | null;
+          price?: number | null;
+          stock_quantity?: number | null;
+          image_urls?: string[];
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       site_visits: {
         Row: {
           id: string;

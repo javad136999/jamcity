@@ -6,6 +6,7 @@ import BusinessRating from "@/components/BusinessRating";
 export const dynamic = "force-dynamic";
 
 const CAR_DEALER_CATEGORY = "car_dealer";
+const SHOES_BAGS_CATEGORY = "shoes";
 
 export default async function BusinessDetailPage({
   params,
@@ -22,8 +23,9 @@ export default async function BusinessDetailPage({
   if (!business) notFound();
 
   const isCarDealer = business.category === CAR_DEALER_CATEGORY;
+  const isShoeStore = business.category === SHOES_BAGS_CATEGORY;
 
-  const { data: products } = isCarDealer
+  const { data: products } = isCarDealer || isShoeStore
     ? { data: null }
     : await supabase
         .from("business_products")
@@ -34,6 +36,14 @@ export default async function BusinessDetailPage({
   const { data: vehicles } = isCarDealer
     ? await supabase
         .from("vehicle_listings")
+        .select("*")
+        .eq("business_id", params.id)
+        .order("created_at", { ascending: false })
+    : { data: null };
+
+  const { data: footwearItems } = isShoeStore
+    ? await supabase
+        .from("footwear_bag_listings")
         .select("*")
         .eq("business_id", params.id)
         .order("created_at", { ascending: false })
@@ -154,7 +164,7 @@ export default async function BusinessDetailPage({
       </div>
 
       {/* VEHICLE SHOWCASE (اتوگالری) */}
-      {isCarDealer ? (
+      {isCarDealer && (
         <div className="space-y-4 rounded-[26px] border border-[#E7D9B8] bg-gradient-to-b from-white to-[#FBF7EE] p-5 shadow-[0_10px_28px_rgba(184,114,30,.12)] sm:p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2b2f36] to-[#3d434d] text-lg shadow-[0_0_14px_rgba(0,0,0,.25)]">
@@ -233,7 +243,97 @@ export default async function BusinessDetailPage({
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {/* FOOTWEAR & BAG SHOWCASE (کیف و کفش) */}
+      {isShoeStore && (
+        <div className="space-y-4 rounded-[26px] border border-[#F0D9E8] bg-gradient-to-b from-white to-[#FDF4F8] p-5 shadow-[0_10px_28px_rgba(190,60,120,.12)] sm:p-6">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#C2447A] to-[#8A2F58] text-lg shadow-[0_0_14px_rgba(190,60,120,.3)]">
+              👟
+            </span>
+            <h2 className="text-[14px] font-black text-[#1D2B1F] sm:text-base">
+              محصولات فروشگاه
+            </h2>
+          </div>
+
+          {!footwearItems || footwearItems.length === 0 ? (
+            <p className="rounded-2xl bg-[#F7F9F4] p-6 text-center text-[11px] text-[#8A968C]">
+              هنوز محصولی در این فروشگاه ثبت نشده است.
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {footwearItems.map((f) => (
+                <div
+                  key={f.id}
+                  className={`overflow-hidden rounded-[20px] border bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${
+                    f.stock_quantity === 0 ? "border-slate-200 opacity-60" : "border-[#E3EBDE]"
+                  }`}
+                >
+                  <div className="relative h-40 w-full bg-[#F3F6F1]">
+                    {f.image_urls && f.image_urls.length > 0 ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={f.image_urls[0]}
+                        alt={`${f.brand} ${f.product_type}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#C2447A] to-[#8A2F58] text-5xl">
+                        {f.product_type === "کفش" ? "👟" : "👜"}
+                      </div>
+                    )}
+                    {f.image_urls && f.image_urls.length > 1 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2.5 py-1 text-[10px] font-bold text-white">
+                        +{f.image_urls.length - 1} عکس دیگر
+                      </span>
+                    )}
+                    {f.stock_quantity === 0 && (
+                      <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-[13px] font-black text-white">
+                        ناموجود
+                      </span>
+                    )}
+                    {f.price !== null && f.stock_quantity !== 0 && (
+                      <span className="absolute left-2 top-2 rounded-full bg-[#0f9a56] px-3 py-1 text-[11px] font-black text-white shadow-md">
+                        {formatPrice(f.price)}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 p-3.5">
+                    <p className="text-[13px] font-black text-[#1D2B1F]">
+                      {f.product_type === "کفش" ? "👟" : "👜"} {f.brand}
+                    </p>
+
+                    <div className="flex flex-wrap gap-1.5">
+                      {f.size && (
+                        <span className="rounded-full bg-[#FDF4F8] px-2.5 py-1 text-[10px] font-bold text-[#8A2F58]">
+                          📏 سایز {f.size}
+                        </span>
+                      )}
+                      {f.color && (
+                        <span className="rounded-full bg-[#FDF4F8] px-2.5 py-1 text-[10px] font-bold text-[#8A2F58]">
+                          🎨 {f.color}
+                        </span>
+                      )}
+                      {f.material && (
+                        <span className="rounded-full bg-[#FDF4F8] px-2.5 py-1 text-[10px] font-bold text-[#8A2F58]">
+                          🧵 {f.material}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* GENERIC PRODUCTS (بقیه دسته‌ها) */}
+      {!isCarDealer && !isShoeStore && (
         <div className="space-y-4 rounded-[26px] border border-[#E3EBDE] bg-white p-5 shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:p-6">
           <div className="flex items-center gap-2.5">
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FBEEDA] text-lg shadow-[0_0_14px_rgba(255,183,77,.3)]">
@@ -288,4 +388,5 @@ export default async function BusinessDetailPage({
       )}
     </div>
   );
+
 }
