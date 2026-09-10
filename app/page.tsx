@@ -40,6 +40,69 @@ type Product = {
   discount_percent: number | null;
 };
 
+// دسته‌هایی که پنل اختصاصی و جدول محصول جدا از business_products دارن.
+// وقتی دسته‌ی جدیدی پنل اختصاصی گرفت، همینجا و توی افکت/useMemo مربوطه اضافه‌ش کن.
+const CAR_DEALER_CATEGORY = "car_dealer";
+const SHOES_BAGS_CATEGORY = "shoes";
+
+// اولویت نمایش کسب‌وکارهای طلایی روی صفحه اصلی (وقتی بیشتر از ۵ تا طلایی وجود داشته باشه):
+// ۱) اتوگالری  ۲) فروشگاه‌های خرده‌فروشی  ۳) املاک  ۴) بقیه‌ی دسته‌ها
+const GOLD_PRIORITY_GROUPS: string[][] = [
+  ["car_dealer"],
+  [
+    "clothing",
+    "shoes",
+    "cosmetics",
+    "jewelry",
+    "watch_glasses",
+    "mobile",
+    "computer",
+    "electronics",
+    "home_appliances",
+    "furniture",
+    "supermarket",
+    "fruit_store",
+    "butcher",
+    "bakery",
+    "shop",
+  ],
+  ["real_estate"],
+];
+
+function goldCategoryPriority(category: string) {
+  const idx = GOLD_PRIORITY_GROUPS.findIndex((group) => group.includes(category));
+  return idx === -1 ? GOLD_PRIORITY_GROUPS.length : idx;
+}
+
+type Vehicle = {
+  id: string;
+  business_id: string;
+  brand: string;
+  model: string;
+  price: number | null;
+  image_url: string | null;
+  is_sold: boolean;
+};
+
+type FootwearItem = {
+  id: string;
+  business_id: string;
+  brand: string;
+  product_type: string;
+  price: number | null;
+  image_urls: string[] | null;
+  stock_quantity: number | null;
+};
+
+// شکل یکسان‌شده‌ی محصول برای نمایش توی ردیف طلایی، صرف‌نظر از این‌که از کدوم جدول اومده
+type DisplayProduct = {
+  id: string;
+  name: string;
+  price: number | null;
+  image_url: string | null;
+  discount_percent: number | null;
+};
+
 const TOROB_RECENT_SEARCHES_KEY = "jamcity:torob-recent-searches";
 const TOROB_SUGGESTIONS = [
   "گوشی سامسونگ",
@@ -55,6 +118,10 @@ export default function HomePage() {
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+
+  // محصولات دسته‌های با پنل اختصاصی (فقط برای طلایی‌ها، برای ردیف ویترین طلایی)
+  const [goldVehicles, setGoldVehicles] = useState<Vehicle[]>([]);
+  const [goldFootwearItems, setGoldFootwearItems] = useState<FootwearItem[]>([]);
 
   const [torobModalOpen, setTorobModalOpen] = useState(false);
   const [torobQuery, setTorobQuery] = useState("");
@@ -189,10 +256,110 @@ export default function HomePage() {
 
   const goldBusinesses = useMemo(
     () =>
-      (businesses ?? [])
+      [...(businesses ?? [])]
         .filter((b) => b.subscription_tier === "gold")
+        .sort((a, b) => goldCategoryPriority(a.category) - goldCategoryPriority(b.category))
         .slice(0, 5),
     [businesses]
+  );
+
+  // برای کسب‌وکارهای طلایی‌ای که دسته‌شون پنل اختصاصی داره (اتوگالری، کیف‌وکفش)،
+  // محصولاتشون توی business_products نیست؛ باید از جدول اختصاصی خودشون بخونیم.
+  useEffect(() => {
+    async function loadGoldSpecialtyProducts() {
+      const goldCarDealerIds = goldBusinesses
+        .filter((b) => b.category === CAR_DEALER_CATEGORY)
+        .map((b) => b.id);
+
+      const goldShoeStoreIds = goldBusinesses
+        .filter((b) => b.category === SHOES_BAGS_CATEGORY)
+        .map((b) => b.id);
+
+      if (goldCarDealerIds.length > 0) {
+        const { data, error } = await supabase
+          .from("vehicle_listings")
+          .select("id,business_id,brand,model,price,image_url,is_sold")
+          .in("business_id", goldCarDealerIds)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Failed to load gold vehicle listings:", error.message);
+        }
+        setGoldVehicles((data ?? []) as Vehicle[]);
+      } else {
+        setGoldVehicles([]);
+      }
+
+      if (goldShoeStoreIds.length > 0) {
+        const { data, error } = await supabase
+          .from("footwear_bag_listings")
+          .select("id,business_id,brand,product_type,price,image_urls,stock_quantity")
+          .in("business_id", goldShoeStoreIds)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          console.error("Failed to load gold footwear/bag listings:", error.message);
+        }
+        setGoldFootwearItems((data ?? []) as FootwearItem[]);
+      } else {
+        setGoldFootwearItems([]);
+      }
+    }
+
+    if (goldBusinesses.length > 0) {
+      loadGoldSpecialtyProducts();
+    } else {
+      setGoldVehicles([]);
+      setGoldFootwearItems([]);
+    }
+  }, [supabase, goldBusinesses]);
+
+  // ردیف‌های «محصولات ویترین طلایی»: برای هر کسب‌وکار طلایی که محصول ثبت کرده،
+  // اسم کسب‌وکار + اسکرول افقی محصولاتش. فقط طلایی‌ها؛ کسب‌وکار طلایی بدون محصول نمایش داده نمی‌شود.
+  // هر دسته محصولاتش رو از جدول خودش می‌گیره (عمومی‌ها از business_products،
+  // اتوگالری از vehicle_listings، کیف‌وکفش از footwear_bag_listings).
+  const goldProductGroups = useMemo(
+    () =>
+      goldBusinesses
+        .map((business) => {
+          let items: DisplayProduct[];
+
+          if (business.category === CAR_DEALER_CATEGORY) {
+            items = goldVehicles
+              .filter((v) => v.business_id === business.id && !v.is_sold)
+              .map((v) => ({
+                id: v.id,
+                name: `${v.brand} ${v.model}`,
+                price: v.price,
+                image_url: v.image_url,
+                discount_percent: null,
+              }));
+          } else if (business.category === SHOES_BAGS_CATEGORY) {
+            items = goldFootwearItems
+              .filter((f) => f.business_id === business.id && f.stock_quantity !== 0)
+              .map((f) => ({
+                id: f.id,
+                name: `${f.brand} ${f.product_type}`,
+                price: f.price,
+                image_url: f.image_urls?.[0] ?? null,
+                discount_percent: null,
+              }));
+          } else {
+            items = products
+              .filter((p) => p.business_id === business.id)
+              .map((p) => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                image_url: p.image_url,
+                discount_percent: p.discount_percent,
+              }));
+          }
+
+          return { business, products: items };
+        })
+        .filter((group) => group.products.length > 0),
+    [goldBusinesses, products, goldVehicles, goldFootwearItems]
   );
 
   const discounts = useMemo(
@@ -480,80 +647,78 @@ export default function HomePage() {
               </Link>
             ))}
           </div>
-        </section>
-      )}
 
-      {/* HOT PRODUCTS */}
-      {products.length > 0 && (
-        <section className="mt-3">
-          <div className="mb-4 flex items-end justify-between">
-            <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">
-                🔥
-              </span>
-              <div>
-                <h2 className="text-lg font-black text-[#1D2B1F] sm:text-xl">
-                  الان توی جم چی هست؟
-                </h2>
-                <p className="text-[9px] text-[#8A968C]">
-                  آخرین محصولات و پیشنهادهای شهر
-                </p>
-              </div>
-            </div>
-
-            <Link href="/businesses" className="shrink-0 text-[9px] font-bold text-[#147A4B]">
-              بیشتر ←
-            </Link>
-          </div>
-
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {products.slice(0, 7).map((product) => {
-              const b = findBusiness(product.business_id);
-              if (!b) return null;
-
-              return (
-                <Link
-                  key={product.id}
-                  href={`/business/${b.id}`}
-                  className="group min-w-[130px] max-w-[130px] overflow-hidden rounded-[18px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="relative h-24 overflow-hidden bg-[#F3F6F1]">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-3xl">
-                        <span>{b.icon}</span>
-                      </div>
-                    )}
-
-                    {(product.discount_percent ?? 0) > 0 && (
-                      <span className="absolute left-1.5 top-1.5 rounded-full bg-[#E2574C] px-2 py-0.5 text-[7px] font-black text-white">
-                        {product.discount_percent}% تخفیف
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="p-2">
-                    <h3 className="truncate text-[10px] font-black text-[#1D2B1F]">
-                      {product.name}
-                    </h3>
-                    <p className="mt-0.5 truncate text-[7px] text-[#8A968C]">
-                      {b.name}
+          {/* محصولات هر کسب‌وکار طلایی: راست = اسم کسب‌وکار، چپ = اسکرول افقی محصولات */}
+          {goldProductGroups.length > 0 && (
+            <div className="mt-4 space-y-3 border-t border-[#F0DCB4] pt-3.5">
+              {goldProductGroups.map(({ business, products: businessProducts }) => (
+                <div key={business.id} className="flex items-stretch gap-3">
+                  <Link
+                    href={`/business/${business.id}`}
+                    className="flex w-[84px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#F0DCB4] bg-white/70 px-1.5 py-2 text-center"
+                  >
+                    <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA] shadow-sm">
+                      {business.image_url ? (
+                        <img
+                          src={business.image_url}
+                          alt={business.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center text-lg">
+                          {business.icon}
+                        </div>
+                      )}
+                    </div>
+                    <p className="line-clamp-2 text-[9px] font-black leading-tight text-[#1D2B1F]">
+                      {business.name}
                     </p>
-                    {product.price !== null && (
-                      <p className="mt-1.5 text-[8px] font-black text-[#147A4B]">
-                        {formatPrice(product.price)}
-                      </p>
-                    )}
+                  </Link>
+
+                  <div className="flex flex-1 gap-2.5 overflow-x-auto pb-1">
+                    {businessProducts.map((product) => (
+                      <Link
+                        key={product.id}
+                        href={`/business/${business.id}`}
+                        className="group min-w-[104px] max-w-[104px] shrink-0 overflow-hidden rounded-[16px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                      >
+                        <div className="relative h-20 overflow-hidden bg-[#F3F6F1]">
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt={product.name}
+                              className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-2xl">
+                              {business.icon}
+                            </div>
+                          )}
+
+                          {(product.discount_percent ?? 0) > 0 && (
+                            <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[6.5px] font-black text-white">
+                              {product.discount_percent}% تخفیف
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="p-1.5">
+                          <h3 className="truncate text-[9px] font-black text-[#1D2B1F]">
+                            {product.name}
+                          </h3>
+                          {product.price !== null && (
+                            <p className="mt-1 truncate text-[7.5px] font-black text-[#147A4B]">
+                              {formatPrice(product.price)}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
                   </div>
-                </Link>
-              );
-            })}
-          </div>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -574,7 +739,7 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          <div className="flex gap-3 overflow-x-auto pb-2">
             {discounts.map((product) => {
               const b = findBusiness(product.business_id);
               if (!b) return null;
@@ -590,9 +755,9 @@ export default function HomePage() {
                 <Link
                   key={product.id}
                   href={`/business/${b.id}`}
-                  className="group overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  className="group min-w-[140px] max-w-[140px] shrink-0 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="relative h-32 overflow-hidden bg-[#F3F6F1]">
+                  <div className="relative h-28 overflow-hidden bg-[#F3F6F1]">
                     {product.image_url ? (
                       <img
                         src={product.image_url}
@@ -600,7 +765,7 @@ export default function HomePage() {
                         className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-5xl">
+                      <div className="flex h-full w-full items-center justify-center text-4xl">
                         <span>{b.icon}</span>
                       </div>
                     )}
