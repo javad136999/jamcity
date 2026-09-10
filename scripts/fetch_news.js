@@ -1,280 +1,1313 @@
-﻿"use client";
+﻿const https = require("https");
 
-import { useEffect, useMemo, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { timeAgo } from "@/lib/constants";
+/*
+|--------------------------------------------------------------------------
+| Supabase
+|--------------------------------------------------------------------------
+*/
 
-type NewsSection = "jam" | "jobs" | "economic" | "world";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-type NewsItem = {
-  id: string;
-  section: NewsSection;
-  title: string;
-  summary: string | null;
-  content: string | null;
-  source_name: string | null;
-  source_url: string | null;
-  image_url: string | null;
-  published_at: string;
-};
-
-const SECTION_META: Record<
-  NewsSection,
-  { label: string; icon: string; tint: string; tintSoft: string; text: string }
-> = {
-  jam: { label: "جم", icon: "📍", tint: "#147A4B", tintSoft: "#E3F3E9", text: "#0f9a56" },
-  jobs: { label: "مشاغل", icon: "💼", tint: "#2563EB", tintSoft: "#EAF2FF", text: "#2563EB" },
-  economic: { label: "اقتصادی", icon: "💹", tint: "#D98F2B", tintSoft: "#FBEEDA", text: "#D98F2B" },
-  world: { label: "جهان", icon: "🌍", tint: "#7E22CE", tintSoft: "#F4EAFF", text: "#7E22CE" },
-};
-
-const SECTION_ORDER: NewsSection[] = ["jam", "jobs", "economic", "world"];
-
-function excerpt(text: string | null, max: number) {
-  if (!text) return null;
-  const clean = text.trim();
-  if (clean.length <= max) return clean;
-  return clean.slice(0, max).trim() + "…";
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("Missing Supabase environment variables.");
+  process.exit(1);
 }
 
-function NewsCardSkeleton() {
-  return (
-    <div className="flex animate-pulse gap-3 rounded-[20px] border border-[#E3EBDE] bg-white p-3">
-      <div className="h-20 w-20 shrink-0 rounded-2xl bg-[#F0F3EE]" />
-      <div className="flex-1 space-y-2 py-1">
-        <div className="h-3 w-3/4 rounded-full bg-[#F0F3EE]" />
-        <div className="h-2.5 w-full rounded-full bg-[#F0F3EE]" />
-        <div className="h-2.5 w-2/3 rounded-full bg-[#F0F3EE]" />
-      </div>
-    </div>
+/*
+|--------------------------------------------------------------------------
+| فقط همین ۴ دسته مجاز هستند
+|--------------------------------------------------------------------------
+*/
+
+const VALID_SECTIONS = ["jam", "jobs", "economic", "world"];
+
+/*
+|--------------------------------------------------------------------------
+| منابع خبری
+|--------------------------------------------------------------------------
+*/
+
+const FEEDS = [
+  {
+    name: "مهر",
+    url: "https://www.mehrnews.com/rss",
+    sourceType: "iran",
+  },
+  {
+    name: "ایسنا",
+    url: "https://www.isna.ir/rss",
+    sourceType: "iran",
+  },
+  {
+    name: "تسنیم",
+    url: "https://www.tasnimnews.com/fa/rss",
+    sourceType: "iran",
+  },
+  {
+    name: "ایرنا",
+    url: "https://www.irna.ir/rss",
+    sourceType: "iran",
+  },
+  {
+    name: "خبرآنلاین",
+    url: "https://www.khabaronline.ir/rss",
+    sourceType: "iran",
+  },
+  {
+    name: "شانا",
+    url: "https://www.shana.ir/rss",
+    sourceType: "iran",
+  },
+  {
+    name: "اتحاد خبر",
+    url: "https://www.ettehadkhabar.ir/fa/rss",
+    sourceType: "south",
+  },
+  {
+    name: "بامداد جنوب",
+    url: "https://bamdadjonoub.ir/feed/",
+    sourceType: "south",
+  },
+  {
+    name: "BBC World",
+    url: "https://feeds.bbci.co.uk/news/world/rss.xml",
+    sourceType: "world",
+  },
+];
+
+/*
+|--------------------------------------------------------------------------
+| دریافت URL با Retry
+|--------------------------------------------------------------------------
+*/
+
+function fetchUrl(url, retries = 2) {
+  return new Promise((resolve, reject) => {
+    function attempt(number) {
+      const request = https.get(
+        url,
+        {
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 JamCityNewsBot/4.0",
+            Accept:
+              "application/rss+xml, application/xml, text/xml, text/html, */*",
+          },
+        },
+        (response) => {
+          let data = "";
+
+          response.setEncoding("utf8");
+
+          response.on("data", (chunk) => {
+            data += chunk;
+          });
+
+          response.on("end", () => {
+            if (response.statusCode >= 200 && response.statusCode < 400) {
+              resolve(data);
+              return;
+            }
+
+            if (number < retries) {
+              console.log(
+                "Retry " +
+                  number +
+                  "/" +
+                  retries +
+                  " → " +
+                  url
+              );
+
+              setTimeout(() => attempt(number + 1), 1000);
+              return;
+            }
+
+            reject(
+              new Error(
+                "HTTP " + response.statusCode + " for " + url
+              )
+            );
+          });
+        }
+      );
+
+      request.on("error", (error) => {
+        if (number < retries) {
+          console.log(
+            "Retry " +
+              number +
+              "/" +
+              retries +
+              " → " +
+              url
+          );
+
+          setTimeout(() => attempt(number + 1), 1000);
+          return;
+        }
+
+        reject(error);
+      });
+
+      request.setTimeout(30000, () => {
+        request.destroy(new Error("Timeout: " + url));
+      });
+    }
+
+    attempt(1);
+  });
+}
+
+/*
+|--------------------------------------------------------------------------
+| پاکسازی HTML
+|--------------------------------------------------------------------------
+*/
+
+function stripHtml(text) {
+  if (!text) {
+    return "";
+  }
+
+  return String(text)
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<!\[CDATA\[/gi, "")
+    .replace(/\]\]>/gi, "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#x2F;/gi, "/")
+    .replace(/&#(\d+);/g, (_, code) => {
+      try {
+        return String.fromCharCode(Number(code));
+      } catch {
+        return "";
+      }
+    })
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/*
+|--------------------------------------------------------------------------
+| استخراج XML Tag
+|--------------------------------------------------------------------------
+*/
+
+function getTag(item, tag) {
+  const regex = new RegExp(
+    "<" +
+      tag +
+      "(?:\\s[^>]*)?>([\\s\\S]*?)<\\/" +
+      tag +
+      ">",
+    "i"
+  );
+
+  const match = item.match(regex);
+
+  if (!match) {
+    return "";
+  }
+
+  return stripHtml(match[1]);
+}
+
+/*
+|--------------------------------------------------------------------------
+| استخراج RSS
+|--------------------------------------------------------------------------
+*/
+
+function parseRSS(xml) {
+  const items = [];
+
+  const matches = xml.match(
+    /<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi
+  );
+
+  if (!matches) {
+    return items;
+  }
+
+  for (const item of matches) {
+    const title = getTag(item, "title");
+
+    const description =
+      getTag(item, "description") ||
+      getTag(item, "summary") ||
+      getTag(item, "content:encoded");
+
+    const link =
+      getTag(item, "link") ||
+      getTag(item, "guid");
+
+    const pubDate =
+      getTag(item, "pubDate") ||
+      getTag(item, "published") ||
+      getTag(item, "updated");
+
+    if (!title) {
+      continue;
+    }
+
+    let publishedAt = new Date().toISOString();
+
+    if (pubDate) {
+      const parsedDate = new Date(pubDate);
+
+      if (!isNaN(parsedDate.getTime())) {
+        publishedAt = parsedDate.toISOString();
+      }
+    }
+
+    items.push({
+      title: title.trim(),
+      summary: description ? description.trim() : null,
+      source_url: link ? link.trim() : null,
+      published_at: publishedAt,
+    });
+  }
+
+  return items;
+}
+
+/*
+|--------------------------------------------------------------------------
+| نرمال‌سازی فارسی
+|--------------------------------------------------------------------------
+*/
+
+function normalizeText(text) {
+  return String(text || "")
+    .toLowerCase()
+    .replace(/ي/g, "ی")
+    .replace(/ى/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/ۀ/g, "ه")
+    .replace(/ة/g, "ه")
+    .replace(/ؤ/g, "و")
+    .replace(/إ/g, "ا")
+    .replace(/أ/g, "ا")
+    .replace(/ئ/g, "ی")
+    .replace(/‌/g, " ")
+    .replace(/\u200c/g, " ")
+    .replace(/[ًٌٍَُِّْـ]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/*
+|--------------------------------------------------------------------------
+| بررسی Keyword
+|--------------------------------------------------------------------------
+*/
+
+function containsKeyword(text, keywords) {
+  const normalized = normalizeText(text);
+
+  for (const keyword of keywords) {
+    const key = normalizeText(keyword);
+
+    if (key && normalized.includes(key)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/*
+|--------------------------------------------------------------------------
+| 🚫 اخبار ممنوع امام جمعه / نماز جمعه
+|--------------------------------------------------------------------------
+*/
+
+const BLOCKED_RELIGIOUS_NEWS = [
+  "امام جمعه",
+  "امام‌جمعه",
+  "امامجمعه",
+  "ائمه جمعه",
+  "ائمه‌جمعه",
+  "ائمهجمعه",
+  "خطیب جمعه",
+  "خطیب نماز جمعه",
+  "خطیب نمازجمعه",
+  "نماز جمعه",
+  "نمازجمعه",
+  "خطبه جمعه",
+  "خطبه‌های جمعه",
+  "خطبه های جمعه",
+  "خطبه نماز جمعه",
+  "خطبه‌های نماز جمعه",
+  "خطبه های نماز جمعه",
+  "خطبه نمازجمعه",
+  "خطبه‌های نمازجمعه",
+  "سخنان امام جمعه",
+  "سخنان امام‌جمعه",
+  "دیدار با امام جمعه",
+  "دیدار با امام‌جمعه",
+  "دفتر امام جمعه",
+  "دفتر امام‌جمعه",
+  "ستاد نماز جمعه",
+  "ستاد نمازجمعه",
+  "مصلای نماز جمعه",
+  "مصلای نمازجمعه",
+];
+
+function isBlockedNews(title, summary) {
+  const text =
+    normalizeText(title) +
+    " " +
+    normalizeText(summary);
+
+  return containsKeyword(
+    text,
+    BLOCKED_RELIGIOUS_NEWS
   );
 }
 
-function NewsCard({ item, featured }: { item: NewsItem; featured?: boolean }) {
-  const meta = SECTION_META[item.section];
-  const desc = excerpt(item.summary || item.content, featured ? 180 : 100);
+/*
+|--------------------------------------------------------------------------
+| JOB Keywords
+|--------------------------------------------------------------------------
+*/
 
-  const Wrapper = item.source_url ? "a" : "div";
-  const wrapperProps = item.source_url
-    ? { href: item.source_url, target: "_blank", rel: "noopener noreferrer" }
-    : {};
+const jobKeywords = [
+  "استخدام",
+  "استخدامی",
+  "استخدام نیرو",
+  "جذب نیرو",
+  "جذب نیروی انسانی",
+  "فرصت شغلی",
+  "فرصت‌های شغلی",
+  "فرصت های شغلی",
+  "کاریابی",
+  "آگهی استخدام",
+  "شغل",
+  "شغلی",
+  "کارآفرینی",
+  "آزمون استخدامی",
+  "آزمون استخدام",
+  "ثبت نام استخدام",
+  "ثبت‌نام استخدام",
+  "استخدام پتروشیمی",
+  "استخدام عسلویه",
+  "استخدام بوشهر",
+  "استخدام جم",
+  "job",
+  "jobs",
+  "career",
+  "vacancy",
+  "recruitment",
+];
 
-  if (featured) {
-    return (
-      <Wrapper
-        {...wrapperProps}
-        className="group block overflow-hidden rounded-[24px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] transition hover:shadow-[0_14px_34px_rgba(20,60,40,.1)]"
-      >
-        <div className="relative h-40 w-full overflow-hidden bg-[#F3F6F1]">
-          {item.image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.image_url}
-              alt=""
-              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
-              loading="lazy"
-            />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center text-5xl"
-              style={{ backgroundColor: meta.tintSoft }}
-            >
-              {meta.icon}
-            </div>
-          )}
-          <span
-            className="absolute right-3 top-3 rounded-full px-2.5 py-1 text-[10px] font-black text-white shadow-sm"
-            style={{ backgroundColor: meta.tint }}
-          >
-            {meta.icon} {meta.label}
-          </span>
-        </div>
+/*
+|--------------------------------------------------------------------------
+| ECONOMIC Keywords
+|--------------------------------------------------------------------------
+*/
 
-        <div className="space-y-2 p-4">
-          <h3 className="line-clamp-2 text-[14px] font-black leading-6 text-[#1D2B1F]">
-            {item.title}
-          </h3>
-          {desc && (
-            <p className="line-clamp-3 text-[11.5px] leading-6 text-[#66766A]">{desc}</p>
-          )}
-          <div className="flex items-center justify-between pt-1">
-            <p className="text-[10px] font-bold text-[#8A968C]">
-              {item.source_name || "منبع نامشخص"}
-            </p>
-            <p className="text-[10px] text-[#B0BAB1]">{timeAgo(item.published_at)}</p>
-          </div>
-        </div>
-      </Wrapper>
+const economicStrongKeywords = [
+  "بورس",
+  "بازار سرمایه",
+  "شاخص بورس",
+  "شاخص کل بورس",
+  "فرابورس",
+  "عرضه اولیه",
+  "معاملات بورس",
+  "سهام",
+  "سهامداران",
+  "سهام عدالت",
+  "دلار",
+  "دلار آزاد",
+  "دلار نیمایی",
+  "نرخ ارز",
+  "ارز دیجیتال",
+  "رمزارز",
+  "رمز ارز",
+  "بیت کوین",
+  "بیت‌کوین",
+  "بیتکوین",
+  "اتریوم",
+  "تتر",
+  "کریپتو",
+  "کریپتوکارنسی",
+  "دوج کوین",
+  "سولانا",
+  "ریپل",
+  "یورو",
+  "پوند",
+  "لیر",
+  "درهم",
+  "قیمت طلا",
+  "طلای ۱۸ عیار",
+  "طلای 24 عیار",
+  "طلای ۲۴ عیار",
+  "سکه امامی",
+  "قیمت سکه",
+  "نیم سکه",
+  "ربع سکه",
+  "سکه بهار آزادی",
+  "اونس طلا",
+  "انس طلا",
+  "بانک مرکزی",
+  "نرخ بهره",
+  "نرخ سود",
+  "سپرده بانکی",
+  "وام بانکی",
+  "تسهیلات بانکی",
+  "نقدینگی",
+  "تورم",
+  "مالیات",
+  "سرمایه گذاری",
+  "سرمایه‌گذاری",
+  "سرمایه‌گذار",
+  "قیمت مسکن",
+  "بازار مسکن",
+  "اجاره بها",
+  "اجاره‌بها",
+  "قیمت خودرو",
+  "بازار خودرو",
+  "رشد اقتصادی",
+  "اقتصاد ایران",
+  "وزارت اقتصاد",
+  "وزیر اقتصاد",
+  "بودجه",
+  "کسری بودجه",
+  "درآمد نفتی",
+  "قیمت نفت",
+  "قیمت بنزین",
+  "تراز تجاری",
+  "صادرات غیرنفتی",
+  "تعرفه گمرکی",
+  "تحریم",
+];
+
+const economicWeakKeywords = [
+  "قیمت",
+  "نرخ",
+  "بازار",
+  "اقتصاد",
+  "اقتصادی",
+  "کالا",
+  "واردات",
+  "صادرات",
+  "گرانی",
+  "ارزان",
+];
+
+/*
+|--------------------------------------------------------------------------
+| WORLD Keywords
+|--------------------------------------------------------------------------
+*/
+
+const worldKeywords = [
+  "آمریکا",
+  "امریکا",
+  "ایالات متحده",
+  "ترامپ",
+  "کاخ سفید",
+  "واشنگتن",
+  "پنتاگون",
+  "بایدن",
+  "هریس",
+  "اسرائیل",
+  "غزه",
+  "فلسطین",
+  "حماس",
+  "تل آویو",
+  "لبنان",
+  "بیروت",
+  "حزب الله",
+  "اوکراین",
+  "روسیه",
+  "مسکو",
+  "کی‌یف",
+  "انگلیس",
+  "بریتانیا",
+  "لندن",
+  "فرانسه",
+  "پاریس",
+  "آلمان",
+  "برلین",
+  "اروپا",
+  "اتحادیه اروپا",
+  "ناتو",
+  "چین",
+  "پکن",
+  "ژاپن",
+  "توکیو",
+  "کره جنوبی",
+  "کره شمالی",
+  "هند",
+  "ترکیه",
+  "آنکارا",
+  "اردوغان",
+  "پاکستان",
+  "افغانستان",
+  "طالبان",
+  "عراق",
+  "بغداد",
+  "سوریه",
+  "دمشق",
+  "یمن",
+  "صنعا",
+  "عربستان",
+  "ریاض",
+  "امارات",
+  "ابوظبی",
+  "قطر",
+  "دوحه",
+  "بحرین",
+  "بین المللی",
+  "بین‌المللی",
+  "جهان",
+  "سازمان ملل",
+  "شورای امنیت",
+  "world",
+  "international",
+  "usa",
+  "america",
+  "trump",
+  "russia",
+  "ukraine",
+  "china",
+  "israel",
+  "gaza",
+  "palestine",
+  "europe",
+  "nato",
+];
+
+/*
+|--------------------------------------------------------------------------
+| کلمات سیاسی
+|--------------------------------------------------------------------------
+*/
+
+const politicalKeywords = [
+  "رهبر",
+  "رهبری",
+  "رهبر معظم",
+  "رئیس جمهور",
+  "رئیس‌جمهور",
+  "رئیس مجلس",
+  "نماینده مجلس",
+  "مجلس شورای اسلامی",
+  "دولت",
+  "وزیر",
+  "استاندار",
+  "فرماندار",
+  "انتخابات",
+  "سیاست",
+  "سیاسی",
+  "مذاکره",
+  "مقاومت",
+  "جنگ",
+  "صلح",
+  "دیپلماسی",
+  "امنیت ملی",
+  "دیدار",
+  "ملاقات",
+  "سفر",
+  "جلسه",
+  "نشست",
+  "همایش",
+  "کنفرانس",
+  "شهید",
+  "تشییع",
+  "خاکسپاری",
+  "جانشین فرمانده",
+  "سپاه",
+  "پدافند هوایی",
+  "ارتش",
+  "قوه قضائیه",
+  "انتظامی",
+];
+
+/*
+|--------------------------------------------------------------------------
+| JAM Keywords
+|--------------------------------------------------------------------------
+|
+| نکته:
+| کلمه مستقل «جم» عمداً وجود ندارد.
+| خبر فقط زمانی JAM می‌شود که واقعاً ارتباط منطقه‌ای داشته باشد.
+|--------------------------------------------------------------------------
+*/
+
+const jamStrongKeywords = [
+  "شهرستان جم",
+  "شهر جم",
+  "فرمانداری جم",
+  "فرماندار جم",
+  "شهردار جم",
+  "شهرداری جم",
+  "شورای شهر جم",
+  "شورای اسلامی شهر جم",
+  "نماینده جم",
+  "نماینده شهرستان جم",
+
+  "پتروشیمی جم",
+  "مجتمع پتروشیمی جم",
+  "پالایشگاه جم",
+
+  "انارستان جم",
+  "انارستان",
+  "ریز جم",
+  "شهرستان ریز",
+  "شهر ریز",
+
+  "عسلویه",
+  "شهرستان عسلویه",
+  "فرمانداری عسلویه",
+  "فرماندار عسلویه",
+  "پتروشیمی عسلویه",
+  "پالایشگاه عسلویه",
+  "منطقه ویژه عسلویه",
+  "منطقه ویژه اقتصادی عسلویه",
+  "پارس جنوبی عسلویه",
+
+  "کنگان",
+  "شهرستان کنگان",
+  "فرمانداری کنگان",
+  "فرماندار کنگان",
+  "پتروشیمی کنگان",
+  "پالایشگاه کنگان",
+
+  "پارس جنوبی",
+  "منطقه ویژه پارس",
+  "منطقه ویژه اقتصادی انرژی پارس",
+  "میدان گازی پارس جنوبی",
+  "فاز پارس جنوبی",
+
+  "نخل تقی",
+  "سیراف",
+  "دیر",
+  "شهرستان دیر",
+
+  "صنعت نفت",
+  "صنعت گاز",
+  "صنعت پتروشیمی",
+  "نفت و گاز",
+  "صنعت نفت و گاز",
+  "صنعت پتروشیمی",
+  "پتروشیمی",
+  "پالایشگاه",
+  "تأسیسات نفتی",
+  "تأسیسات گازی",
+  "میعانات گازی",
+  "گاز طبیعی",
+  "تولید نفت",
+  "تولید گاز",
+];
+
+/*
+|--------------------------------------------------------------------------
+| کلمات ممنوع برای JAM
+|--------------------------------------------------------------------------
+*/
+
+const jamBlockedKeywords = [
+  "بوشهر",
+  "بندر بوشهر",
+  "برازجان",
+  "دشتستان",
+  "گناوه",
+  "دیلم",
+  "تنگستان",
+  "دشتی",
+  "بندر دیر",
+  "اهرم",
+  "خورموج",
+  "خارک",
+  "بندر خارک",
+  "پتروشیمی خارک",
+
+  "اصفهان",
+  "شیراز",
+  "تهران",
+  "مشهد",
+  "تبریز",
+  "یزد",
+  "همدان",
+  "کرمانشاه",
+  "لرستان",
+  "گیلان",
+  "اردبیل",
+  "هرمزگان",
+  "فارس",
+  "ارومیه",
+  "خلخال",
+  "ساوه",
+  "ورزقان",
+  "بهمئی",
+  "شوش",
+  "کرخه",
+  "خانلق",
+  "ساوجی",
+  "تنگ گر",
+  "ممبی",
+];
+
+/*
+|--------------------------------------------------------------------------
+| تشخیص JAM
+|--------------------------------------------------------------------------
+*/
+
+function isJamNews(title, summary) {
+  const titleText = normalizeText(title);
+  const summaryText = normalizeText(summary);
+
+  const fullText =
+    titleText +
+    " " +
+    summaryText;
+
+  if (
+    containsKeyword(
+      fullText,
+      jamBlockedKeywords
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    !containsKeyword(
+      fullText,
+      jamStrongKeywords
+    )
+  ) {
+    return false;
+  }
+
+  if (
+    containsKeyword(
+      fullText,
+      politicalKeywords
+    )
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+/*
+|--------------------------------------------------------------------------
+| تشخیص دسته
+|--------------------------------------------------------------------------
+*/
+
+function detectSection(
+  title,
+  summary,
+  sourceType
+) {
+  const titleText = normalizeText(title);
+  const summaryText = normalizeText(summary);
+
+  const fullText =
+    titleText +
+    " " +
+    summaryText;
+
+  /*
+  |--------------------------------------------------------------------------
+  | 0. خبرهای ممنوع
+  |--------------------------------------------------------------------------
+  */
+
+  if (isBlockedNews(title, summary)) {
+    return null;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 1. JOBS
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    containsKeyword(
+      fullText,
+      jobKeywords
+    )
+  ) {
+    return "jobs";
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 2. WORLD
+  |--------------------------------------------------------------------------
+  */
+
+  if (sourceType === "world") {
+    return "world";
+  }
+
+  if (
+    containsKeyword(
+      fullText,
+      worldKeywords
+    )
+  ) {
+    return "world";
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 3. JAM
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    isJamNews(
+      title,
+      summary
+    )
+  ) {
+    return "jam";
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 4. ECONOMIC
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    containsKeyword(
+      fullText,
+      economicStrongKeywords
+    )
+  ) {
+    return "economic";
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 5. حذف خبرهای سیاسی
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    containsKeyword(
+      fullText,
+      politicalKeywords
+    )
+  ) {
+    return null;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 6. حذف اخبار ضعیف اقتصادی
+  |--------------------------------------------------------------------------
+  */
+
+  if (
+    containsKeyword(
+      fullText,
+      economicWeakKeywords
+    )
+  ) {
+    return null;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | 7. سایر خبرها حذف شوند
+  |--------------------------------------------------------------------------
+  */
+
+  return null;
+}
+
+/*
+|--------------------------------------------------------------------------
+| بررسی خبر تکراری
+|--------------------------------------------------------------------------
+*/
+
+async function newsExists(
+  sourceUrl,
+  title
+) {
+  let url;
+
+  if (sourceUrl) {
+    const encodedUrl =
+      encodeURIComponent(sourceUrl);
+
+    url =
+      SUPABASE_URL +
+      "/rest/v1/jamcity_content" +
+      "?select=id" +
+      "&source_url=eq." +
+      encodedUrl +
+      "&limit=1";
+  } else {
+    const encodedTitle =
+      encodeURIComponent(title);
+
+    url =
+      SUPABASE_URL +
+      "/rest/v1/jamcity_content" +
+      "?select=id" +
+      "&title=eq." +
+      encodedTitle +
+      "&limit=1";
+  }
+
+  const response = await fetch(
+    url,
+    {
+      method: "GET",
+      headers: {
+        apikey:
+          SUPABASE_SERVICE_ROLE_KEY,
+        Authorization:
+          "Bearer " +
+          SUPABASE_SERVICE_ROLE_KEY,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const errorText =
+      await response.text();
+
+    throw new Error(
+      "Supabase duplicate check failed: " +
+        response.status +
+        " " +
+        errorText
     );
   }
 
-  return (
-    <Wrapper
-      {...wrapperProps}
-      className="group flex gap-3 rounded-[20px] border border-[#E3EBDE] bg-white p-3 shadow-sm transition hover:border-[#CFE6D6] hover:bg-[#FAFCF9]"
-    >
-      <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-[#F3F6F1]">
-        {item.image_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.image_url}
-            alt=""
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        ) : (
-          <div
-            className="flex h-full w-full items-center justify-center text-2xl"
-            style={{ backgroundColor: meta.tintSoft }}
-          >
-            {meta.icon}
-          </div>
-        )}
-      </div>
+  const data =
+    await response.json();
 
-      <div className="min-w-0 flex-1 space-y-1">
-        <h3 className="line-clamp-2 text-[12.5px] font-black leading-5 text-[#1D2B1F]">
-          {item.title}
-        </h3>
-        {desc && (
-          <p className="line-clamp-2 text-[10.5px] leading-5 text-[#8A968C]">{desc}</p>
-        )}
-        <div className="flex items-center gap-1.5 pt-0.5 text-[9.5px] text-[#B0BAB1]">
-          <span className="font-bold" style={{ color: meta.text }}>
-            {item.source_name || "منبع نامشخص"}
-          </span>
-          <span>·</span>
-          <span>{timeAgo(item.published_at)}</span>
-        </div>
-      </div>
-    </Wrapper>
+  return (
+    Array.isArray(data) &&
+    data.length > 0
   );
 }
 
-export default function JamCityNews() {
-  const supabase = createClient();
-  const [items, setItems] = useState<NewsItem[] | null>(null);
-  const [activeSection, setActiveSection] = useState<NewsSection>("jam");
+/*
+|--------------------------------------------------------------------------
+| ذخیره خبر
+|--------------------------------------------------------------------------
+*/
 
-  useEffect(() => {
-    let cancelled = false;
+async function saveNews(
+  item,
+  feed
+) {
+  if (
+    isBlockedNews(
+      item.title,
+      item.summary
+    )
+  ) {
+    console.log(
+      "SKIP blocked religious news: " +
+        item.title
+    );
 
-    async function load() {
-      const { data, error } = await supabase
-        .from("jamcity_content")
-        .select(
-          "id,section,title,summary,content,source_name,source_url,image_url,published_at"
-        )
-        .eq("is_published", true)
-        .order("published_at", { ascending: false })
-        .limit(120);
+    return false;
+  }
 
-      if (error) {
-        console.error("news load error", error);
-        if (!cancelled) setItems([]);
-        return;
+  const section =
+    detectSection(
+      item.title,
+      item.summary,
+      feed.sourceType
+    );
+
+  if (!section) {
+    console.log(
+      "SKIP irrelevant: " +
+        item.title
+    );
+
+    return false;
+  }
+
+  if (
+    !VALID_SECTIONS.includes(
+      section
+    )
+  ) {
+    console.error(
+      "INVALID SECTION → " +
+        section +
+        " | " +
+        item.title
+    );
+
+    return false;
+  }
+
+  if (
+    section === "jam" &&
+    !isJamNews(
+      item.title,
+      item.summary
+    )
+  ) {
+    console.log(
+      "SKIP fake JAM: " +
+        item.title
+    );
+
+    return false;
+  }
+
+  const exists =
+    await newsExists(
+      item.source_url,
+      item.title
+    );
+
+  if (exists) {
+    console.log(
+      "SKIP duplicate: " +
+        item.title
+    );
+
+    return false;
+  }
+
+  const record = {
+    section: section,
+    title: item.title,
+    summary: item.summary,
+    content: item.summary,
+    source_name: feed.name,
+    source_url: item.source_url,
+    image_url: null,
+    symbol: null,
+    sentiment: null,
+    target_price: null,
+    is_automatic: true,
+    is_published: true,
+    published_at: item.published_at,
+  };
+
+  const response =
+    await fetch(
+      SUPABASE_URL +
+        "/rest/v1/jamcity_content",
+      {
+        method: "POST",
+        headers: {
+          apikey:
+            SUPABASE_SERVICE_ROLE_KEY,
+          Authorization:
+            "Bearer " +
+            SUPABASE_SERVICE_ROLE_KEY,
+          "Content-Type":
+            "application/json",
+          Prefer:
+            "return=minimal",
+        },
+        body: JSON.stringify(record),
       }
+    );
 
-      if (!cancelled) setItems((data as NewsItem[]) ?? []);
-    }
+  if (!response.ok) {
+    const errorText =
+      await response.text();
 
-    load();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    console.error(
+      'Supabase insert error for "' +
+        item.title +
+        '":',
+      errorText
+    );
 
-  const sectionCounts = useMemo(() => {
-    const counts: Record<NewsSection, number> = { jam: 0, jobs: 0, economic: 0, world: 0 };
-    (items ?? []).forEach((item) => {
-      counts[item.section] = (counts[item.section] ?? 0) + 1;
-    });
-    return counts;
-  }, [items]);
+    return false;
+  }
 
-  const sectionItems = useMemo(
-    () => (items ?? []).filter((item) => item.section === activeSection),
-    [items, activeSection]
+  console.log(
+    "ADDED [" +
+      section +
+      "] " +
+      feed.name +
+      " | " +
+      item.title
   );
 
-  const featuredItem = sectionItems[0];
-  const restItems = sectionItems.slice(1);
-  const activeMeta = SECTION_META[activeSection];
-
-  return (
-    <section className="rounded-[26px] border border-[#E3EBDE] bg-white p-3.5 shadow-sm sm:p-4">
-      {/* هدر بخش اخبار */}
-      <div className="mb-3.5 flex items-center gap-2.5">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-lg shadow-[0_0_12px_rgba(20,122,75,.18)]">
-          📰
-        </span>
-        <div className="min-w-0 flex-1">
-          <h2 className="text-[15px] font-black text-[#1D2B1F] sm:text-lg">اخبار امروز جم</h2>
-          <p className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#8A968C]">
-            <span className="flex items-center gap-1 text-[#147A4B]">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#147A4B]" />
-              زنده
-            </span>
-            · بروزرسانی روزانه از منابع خبری منطقه
-          </p>
-        </div>
-      </div>
-
-      {/* تب دسته‌بندی‌ها */}
-      <div className="mb-3.5 flex gap-1.5 overflow-x-auto pb-0.5">
-        {SECTION_ORDER.map((section) => {
-          const meta = SECTION_META[section];
-          const isActive = section === activeSection;
-          return (
-            <button
-              key={section}
-              type="button"
-              onClick={() => setActiveSection(section)}
-              className={`flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[11px] font-bold transition ${
-                isActive ? "text-white shadow-sm" : "border border-[#E3EBDE] bg-white text-[#66766A]"
-              }`}
-              style={isActive ? { backgroundColor: meta.tint } : undefined}
-            >
-              <span>{meta.icon}</span>
-              <span>{meta.label}</span>
-              {sectionCounts[section] > 0 && (
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[9px] ${
-                    isActive ? "bg-white/25 text-white" : "text-[#B0BAB1]"
-                  }`}
-                  style={!isActive ? { backgroundColor: meta.tintSoft, color: meta.text } : undefined}
-                >
-                  {sectionCounts[section].toLocaleString("fa-IR")}
-                </span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* بدنه: بارگذاری / خالی / لیست اخبار */}
-      {items === null ? (
-        <div className="space-y-2.5">
-          <NewsCardSkeleton />
-          <NewsCardSkeleton />
-          <NewsCardSkeleton />
-        </div>
-      ) : sectionItems.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-14 text-center">
-          <span className="text-3xl">{activeMeta.icon}</span>
-          <p className="text-[12px] text-[#8A968C]">
-            فعلاً خبری در دسته «{activeMeta.label}» ثبت نشده. بعداً دوباره سر بزنید.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2.5">
-          {featuredItem && <NewsCard item={featuredItem} featured />}
-          {restItems.map((item) => (
-            <NewsCard key={item.id} item={item} />
-          ))}
-        </div>
-      )}
-    </section>
-  );
+  return true;
 }
+
+/*
+|--------------------------------------------------------------------------
+| اجرای اصلی
+|--------------------------------------------------------------------------
+*/
+
+async function main() {
+  console.log("");
+  console.log(
+    "========================================"
+  );
+  console.log(
+    "       JAM CITY AUTOMATIC NEWS"
+  );
+  console.log(
+    "========================================"
+  );
+  console.log("");
+
+  console.log(
+    "Categories: JAM / JOBS / ECONOMIC / WORLD"
+  );
+
+  console.log(
+    "JAM: ONLY relevant South-region news"
+  );
+
+  console.log(
+    "🚫 Imam Jom'e / Friday Prayer news: BLOCKED"
+  );
+
+  console.log(
+    "🚫 Generic political news: BLOCKED"
+  );
+
+  console.log(
+    "🚫 Generic 'جم' keyword: DISABLED"
+  );
+
+  console.log(
+    "ECONOMIC: ONLY STRONG ECONOMIC KEYWORDS"
+  );
+
+  console.log("");
+
+  let total = 0;
+  let added = 0;
+  let skipped = 0;
+  let failedSources = 0;
+
+  for (const feed of FEEDS) {
+    console.log("");
+    console.log(
+      "SOURCE: " + feed.name
+    );
+    console.log(
+      "URL: " + feed.url
+    );
+
+    try {
+      const xml =
+        await fetchUrl(feed.url);
+
+      const items =
+        parseRSS(xml);
+
+      console.log(
+        "Found " +
+          items.length +
+          " items"
+      );
+
+      /*
+      |----------------------------------------------------------------------
+      | فقط ۱۰ خبر جدید اول هر منبع
+      |----------------------------------------------------------------------
+      */
+
+      for (
+        const item of items.slice(
+          0,
+          10
+        )
+      ) {
+        total++;
+
+        try {
+          const saved =
+            await saveNews(
+              item,
+              feed
+            );
+
+          if (saved) {
+            added++;
+          } else {
+            skipped++;
+          }
+        } catch (error) {
+          console.error(
+            "Error processing news: " +
+              item.title,
+            error.message
+          );
+        }
+      }
+    } catch (error) {
+      failedSources++;
+
+      console.error(
+        "SOURCE FAILED: " +
+          feed.name +
+          " → " +
+          error.message
+      );
+    }
+  }
+
+  console.log("");
+  console.log(
+    "========================================"
+  );
+  console.log(
+    "TOTAL: " + total
+  );
+  console.log(
+    "ADDED: " + added
+  );
+  console.log(
+    "SKIPPED: " + skipped
+  );
+  console.log(
+    "FAILED SOURCES: " +
+      failedSources
+  );
+  console.log(
+    "========================================"
+  );
+  console.log("");
+}
+
+/*
+|--------------------------------------------------------------------------
+| اجرا
+|--------------------------------------------------------------------------
+*/
+
+main().catch((error) => {
+  console.error(
+    "FATAL ERROR:",
+    error
+  );
+
+  process.exit(1);
+});
