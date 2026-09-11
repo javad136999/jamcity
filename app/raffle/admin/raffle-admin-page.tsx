@@ -5,10 +5,6 @@ import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Spinner } from "@/components/Feedback";
 
-// NOTE: this assumes `profile.role === "admin"` marks an admin user.
-// Adjust this check to match whatever field you actually use to flag
-// admins in your `profiles` table.
-
 type Winner = {
   id: string;
   phone: string;
@@ -23,15 +19,20 @@ export default function RaffleAdminPage() {
   // Supabase Database types yet, which otherwise makes TS infer `never` for
   // insert/update payloads and fails `next build`'s type-check step.
   const supabase = createClient() as any;
-  const { user, profile, loading: authLoading } = useAuth() as any;
+
+  /**
+   * تشخیص ادمین اصلاح شد: قبلاً از profile.role === "admin" استفاده می‌شد
+   * که چنین فیلدی اصلاً در جدول profiles وجود ندارد. فیلد درست is_admin
+   * است و useAuth() خودش مقدار آماده isAdmin (= profile.is_admin === true)
+   * را برمی‌گرداند - دقیقاً همانی که در app/admin/page.tsx استفاده می‌شود.
+   */
+  const { user, isAdmin, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [totalParticipants, setTotalParticipants] = useState(0);
   const [totalSpins, setTotalSpins] = useState(0);
   const [prizesLeft, setPrizesLeft] = useState(0);
   const [winners, setWinners] = useState<Winner[]>([]);
-
-  const isAdmin = !!profile && profile.role === "admin";
 
   async function loadStats() {
     setLoading(true);

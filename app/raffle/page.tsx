@@ -9,8 +9,9 @@ import {
 } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Spinner } from "@/components/Spinner";
-import { useAuth } from "@/components/AuthProvider";
+import { Spinner } from "@/components/Feedback";
+import { useAuth } from "@/lib/auth-context";
+import Link from "next/link";
 
 type Segment = {
   id: string;
@@ -38,15 +39,16 @@ type SpinHistoryItem = {
   created_at: string;
 };
 
-const FREE_SPINS = 2;
-const MAX_SPINS_PER_PHONE = 7;
+const FREE_SPINS = 3;
 
 /**
- * شانس برد:
- * 20 درصد = برد
- * 80 درصد = پوچ
+ * شانس برد دیگر یک درصد ثابت نیست.
+ * تصمیم برد/باخت هر چرخش با تابع دیتابیسی
+ * raffle_register_spin() گرفته می‌شود که یک
+ * شمارنده سراسری (بین همه کاربران) نگه می‌دارد
+ * و به‌طور تصادفی هر ۱۰ تا ۱۲ چرخش (و گاهی تا ۱۵ چرخش)
+ * یک برد تضمینی صادر می‌کند.
  */
-const WIN_PROBABILITY = 0.2;
 
 const PRIZE_COLOR = "#F4C542";
 const EMPTY_COLORS = ["#EAF3EC", "#DCEAE1"];
@@ -161,7 +163,11 @@ function maskPhone(phone: string) {
 }
 
 function RafflePageContent() {
-  const supabase = createClient();
+  // Cast to `any` here (same as raffle-admin-page.tsx) because the
+  // raffle_* tables and RPC functions aren't in the generated Supabase
+  // Database types, which otherwise makes TS infer `never` for
+  // insert/update payloads and fails `next build`'s type-check step.
+  const supabase = createClient() as any;
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user } = useAuth();
@@ -170,13 +176,11 @@ function RafflePageContent() {
   const [participant, setParticipant] =
     useState<Participant | null>(null);
 
-  const [phone, setPhone] = useState("");
   const [referralCode, setReferralCode] = useState("");
 
   const [history, setHistory] = useState<SpinHistoryItem[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [verifying, setVerifying] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [sharing, setSharing] = useState(false);
 
@@ -218,6 +222,19 @@ function RafflePageContent() {
       }
     };
   }, []);
+
+  /**
+   * چون اطلاعات کاربر (user) به‌صورت async از AuthProvider
+   * لود می‌شود، ممکن است در اولین اجرای loadData هنوز آماده نباشد.
+   * به‌محض این‌که کاربر لاگین مشخص شد و هنوز شرکت‌کننده‌ای
+   * ثبت نشده، خودکار ثبت‌نامش را انجام می‌دهیم - بدون فرم شماره موبایل.
+   */
+  useEffect(() => {
+    if (user?.id && !participant && !loading) {
+      ensureParticipant();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, loading]);
 
   async function loadData() {
     try {
@@ -263,7 +280,7 @@ function RafflePageContent() {
       );
 
       if (user?.id) {
-        await loadParticipant();
+        await ensureParticipant();
       }
     } catch (err: any) {
       console.error(err);
@@ -296,67 +313,26 @@ function RafflePageContent() {
 
       if (data) {
         setParticipant(data as Participant);
-        setPhone(data.phone || "");
       }
     } catch (err) {
       console.error(err);
     }
   }
 
-  async function verifyPhone() {
-    setError("");
-    setMessage("");
-    setResult(null);
-
-    if (!user?.id) {
-      setError(
-        "برای شرکت در قرعه‌کشی ابتدا وارد حساب کاربری شوید."
-      );
-      return;
-    }
-
-    const normalizedPhone = normalizePhone(phone);
-
-    if (!isValidIranianPhone(normalizedPhone)) {
-      setError(
-        "شماره موبایل را به‌صورت صحیح وارد کنید."
-      );
-      return;
-    }
+  /**
+   * قبلاً کاربر باید شماره موبایلش را دستی وارد می‌کرد.
+   * حالا چون ورود به سایت با شماره موبایل انجام می‌شود،
+   * شماره را خودکار از حساب کاربری (پروفایل) می‌خوانیم
+   * و نیازی به فرم/تایید جدا نیست.
+   */
+  async function ensureParticipant() {
+    if (!user?.id) return;
 
     try {
-      setVerifying(true);
+      setError("");
 
       /**
-       * بررسی شماره ثبت‌شده در پروفایل
-       */
-      const { data: profile, error: profileError } =
-        await supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", user.id)
-          .maybeSingle();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const profilePhone = normalizePhone(
-        profile?.username || ""
-      );
-
-      if (
-        profilePhone &&
-        profilePhone !== normalizedPhone
-      ) {
-        setError(
-          "شماره واردشده با شماره حساب کاربری شما مطابقت ندارد."
-        );
-        return;
-      }
-
-      /**
-       * اگر شرکت‌کننده قبلاً وجود دارد
+       * اگر شرکت‌کننده قبلاً وجود دارد، همان را نشان بده.
        */
       const { data: existing, error: existingError } =
         await supabase
@@ -373,67 +349,65 @@ function RafflePageContent() {
 
       if (existing) {
         setParticipant(existing as Participant);
-
-        setMessage(
-          `شما ${Math.max(
-            0,
-            existing.spins_allowed -
-              existing.spins_used
-          )} شانس باقی‌مانده دارید.`
-        );
-
         return;
       }
 
       /**
+       * شماره موبایل از پروفایل کاربر (نام کاربری ورود) گرفته می‌شود.
+       */
+      const { data: profileRow, error: profileError } =
+        await supabase
+          .from("profiles")
+          .select("username")
+          .eq("id", user.id)
+          .maybeSingle();
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const rawUsername = profileRow?.username || "";
+      const normalizedPhone = isValidIranianPhone(
+        rawUsername
+      )
+        ? normalizePhone(rawUsername)
+        : rawUsername;
+
+      /**
        * ساخت کد دعوت
        */
-      const newReferralCode =
-        generateReferralCode();
+      const newReferralCode = generateReferralCode();
 
       let referredBy: string | null = null;
 
       const urlReferral =
-        referralCode ||
-        searchParams.get("ref") ||
-        "";
+        referralCode || searchParams.get("ref") || "";
 
       if (urlReferral) {
-        const { data: referrer } =
-          await supabase
-            .from("raffle_participants")
-            .select("id,spins_allowed")
-            .eq(
-              "referral_code",
-              urlReferral.toUpperCase()
-            )
-            .maybeSingle();
+        const { data: referrer } = await supabase
+          .from("raffle_participants")
+          .select("id")
+          .eq(
+            "referral_code",
+            urlReferral.toUpperCase()
+          )
+          .maybeSingle();
 
-        if (referrer) {
+        if (referrer && referrer.id) {
           referredBy = referrer.id;
 
-          const currentAllowed =
-            Number(referrer.spins_allowed || 0);
-
-          if (
-            currentAllowed <
-            MAX_SPINS_PER_PHONE
-          ) {
-            await supabase
-              .from("raffle_participants")
-              .update({
-                spins_allowed: Math.min(
-                  MAX_SPINS_PER_PHONE,
-                  currentAllowed + 1
-                ),
-              })
-              .eq("id", referrer.id);
-          }
+          /**
+           * سقفی برای شانس‌های دریافتی از اشتراک‌گذاری وجود ندارد.
+           */
+          await supabase.rpc(
+            "raffle_increment_spins_allowed",
+            { p_participant_id: referrer.id, p_amount: 1 }
+          );
         }
       }
 
       /**
-       * ثبت شرکت‌کننده جدید
+       * ثبت شرکت‌کننده جدید - بدون فرم، خودکار
        */
       const { data: created, error: createError } =
         await supabase
@@ -458,24 +432,21 @@ function RafflePageContent() {
       setParticipant(created as Participant);
 
       setMessage(
-        `ثبت‌نام با موفقیت انجام شد. ${FREE_SPINS} شانس رایگان دریافت کردید.`
+        `${FREE_SPINS} شانس رایگان برای شما فعال شد.`
       );
     } catch (err: any) {
       console.error(err);
 
       setError(
-        err?.message ||
-          "ثبت اطلاعات انجام نشد."
+        err?.message || "ثبت اطلاعات انجام نشد."
       );
-    } finally {
-      setVerifying(false);
     }
   }
 
   async function shareWithFriends() {
     if (!participant) {
       setError(
-        "ابتدا شماره موبایل خود را تأیید کنید."
+        "ابتدا وارد حساب کاربری خود شوید."
       );
       return;
     }
@@ -506,76 +477,55 @@ function RafflePageContent() {
         });
 
         /**
-         * بعد از اشتراک موفق:
-         * یک شانس اضافه
+         * بعد از اشتراک موفق: یک شانس اضافه.
+         * سقفی برای تعداد اشتراک‌گذاری/شانس‌ها وجود ندارد؛
+         * هر بار اشتراک‌گذاری موفق، یک شانس جدید اضافه می‌شود.
          */
-        const newAllowed = Math.min(
-          MAX_SPINS_PER_PHONE,
-          participant.spins_allowed + 1
-        );
+        const newAllowed = participant.spins_allowed + 1;
 
-        if (
-          newAllowed >
-          participant.spins_allowed
-        ) {
-          const { data, error } =
-            await supabase
-              .from("raffle_participants")
-              .update({
-                spins_allowed: newAllowed,
-              })
-              .eq("id", participant.id)
-              .select(
-                "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-              )
-              .single();
+        const { data, error } = await supabase
+          .from("raffle_participants")
+          .update({
+            spins_allowed: newAllowed,
+          })
+          .eq("id", participant.id)
+          .select(
+            "id,phone,spins_used,spins_allowed,referral_code,referred_by"
+          )
+          .single();
 
-          if (error) {
-            throw error;
-          }
-
-          setParticipant(data as Participant);
-
-          setMessage(
-            "اشتراک‌گذاری موفق بود و یک شانس اضافه گرفتید 🎁"
-          );
-        } else {
-          setMessage(
-            `به سقف ${MAX_SPINS_PER_PHONE} شانس رسیده‌اید.`
-          );
+        if (error) {
+          throw error;
         }
+
+        setParticipant(data as Participant);
+
+        setMessage(
+          "اشتراک‌گذاری موفق بود و یک شانس اضافه گرفتید 🎁"
+        );
       } else {
         await navigator.clipboard.writeText(
           shareUrl
         );
 
-        const newAllowed = Math.min(
-          MAX_SPINS_PER_PHONE,
-          participant.spins_allowed + 1
-        );
+        const newAllowed = participant.spins_allowed + 1;
 
-        if (
-          newAllowed >
-          participant.spins_allowed
-        ) {
-          const { data, error } =
-            await supabase
-              .from("raffle_participants")
-              .update({
-                spins_allowed: newAllowed,
-              })
-              .eq("id", participant.id)
-              .select(
-                "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-              )
-              .single();
+        const { data, error } = await supabase
+          .from("raffle_participants")
+          .update({
+            spins_allowed: newAllowed,
+          })
+          .eq("id", participant.id)
+          .select(
+            "id,phone,spins_used,spins_allowed,referral_code,referred_by"
+          )
+          .single();
 
-          if (error) {
-            throw error;
-          }
-
-          setParticipant(data as Participant);
+        if (error) {
+          throw error;
         }
+
+        setParticipant(data as Participant);
 
         setMessage(
           "لینک قرعه‌کشی کپی شد و یک شانس اضافه گرفتید."
@@ -652,7 +602,7 @@ function RafflePageContent() {
 
     if (!participant) {
       setError(
-        "ابتدا شماره موبایل خود را تأیید کنید."
+        "ابتدا وارد حساب کاربری خود شوید."
       );
       return;
     }
@@ -714,17 +664,21 @@ function RafflePageContent() {
         emptyIndexes.length > 0
       ) {
         /**
-         * شانس دقیق طراحی‌شده:
-         *
-         * 0.00 تا کمتر از 0.20 => برد
-         * 0.20 تا کمتر از 1.00 => پوچ
-         *
-         * بنابراین احتمال هر چرخش:
-         * 20% برد
-         * 80% پوچ
+         * تصمیم برد/باخت اینجا دیگر با یک درصد ثابت
+         * روی مرورگر گرفته نمی‌شود (قابل دستکاری بود).
+         * به‌جایش تابع دیتابیسی raffle_register_spin()
+         * را صدا می‌زنیم که یک شمارنده سراسری (بین همه
+         * کاربران سایت) نگه می‌دارد و هر ۱۰ تا ۱۲ چرخش
+         * (و گاهی تا ۱۵ چرخش) یک برد تضمینی صادر می‌کند.
          */
-        shouldWin =
-          Math.random() < WIN_PROBABILITY;
+        const { data: winDecision, error: winError } =
+          await supabase.rpc("raffle_register_spin");
+
+        if (winError) {
+          console.error(winError);
+        } else {
+          shouldWin = Boolean(winDecision);
+        }
       }
 
       let targetIndex: number;
@@ -1062,14 +1016,14 @@ function RafflePageContent() {
           </div>
         </section>
 
-        {/* 20% Chance Banner */}
+        {/* Win Window Banner */}
         <section className="mt-4 rounded-2xl border border-[#F4C542]/40 bg-[#fffdf2] p-4 text-center shadow-sm">
           <div className="text-lg font-black text-[#876b00]">
-            🎯 شانس برد هر چرخش: ۲۰٪
+            🎯 هر ۱۰ تا ۱۲ چرخش، یک نفر برنده می‌شود
           </div>
 
           <div className="mt-1 text-sm text-gray-600">
-            در هر بار چرخاندن، ۲۰٪ احتمال برد و ۸۰٪ احتمال پوچ شدن وجود دارد.
+            بین همه شرکت‌کنندگان سایت، معمولاً هر ۱۰ تا ۱۲ چرخش (و گاهی تا ۱۵ چرخش) یک برد قطعی وجود دارد.
           </div>
         </section>
 
@@ -1087,71 +1041,34 @@ function RafflePageContent() {
           </div>
         )}
 
-        {/* Phone Verification */}
+        {/* Auto sign-up state - no phone form needed anymore */}
         {!participant && (
-          <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-            <h2 className="text-lg font-black text-gray-900">
-              شروع قرعه‌کشی
-            </h2>
+          <section className="mt-6 rounded-3xl bg-white p-5 text-center shadow-sm ring-1 ring-black/5">
+            {!user?.id ? (
+              <>
+                <h2 className="text-lg font-black text-gray-900">
+                  شروع قرعه‌کشی
+                </h2>
 
-            <p className="mt-2 text-sm leading-7 text-gray-500">
-              شماره موبایل خود را وارد کنید تا ۲ شانس رایگان دریافت کنید.
-            </p>
+                <p className="mt-2 text-sm leading-7 text-gray-500">
+                  برای شرکت در قرعه‌کشی و دریافت {FREE_SPINS} شانس رایگان، ابتدا وارد حساب کاربری خود شوید.
+                </p>
 
-            <div className="mt-5">
-              <label className="mb-2 block text-sm font-bold text-gray-700">
-                شماره موبایل
-              </label>
-
-              <input
-                value={phone}
-                onChange={(e) =>
-                  setPhone(e.target.value)
-                }
-                inputMode="tel"
-                placeholder="09123456789"
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-left outline-none transition focus:border-[#0b6e4f] focus:bg-white"
-                dir="ltr"
-              />
-            </div>
-
-            <div className="mt-4">
-              <label className="mb-2 block text-sm font-bold text-gray-700">
-                کد دعوت
-                <span className="mr-1 font-normal text-gray-400">
-                  (اختیاری)
-                </span>
-              </label>
-
-              <input
-                value={referralCode}
-                onChange={(e) =>
-                  setReferralCode(
-                    e.target.value.toUpperCase()
-                  )
-                }
-                placeholder="ABC123"
-                className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-center uppercase outline-none transition focus:border-[#0b6e4f] focus:bg-white"
-                dir="ltr"
-                maxLength={6}
-              />
-            </div>
-
-            <button
-              type="button"
-              onClick={verifyPhone}
-              disabled={verifying}
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0b6e4f] px-5 py-4 font-black text-white shadow-lg transition hover:bg-[#095c42] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {verifying ? (
-                <>
-                  <Spinner />
-                  در حال بررسی...
-                </>
-              ) : (
-                "شروع قرعه‌کشی 🎁"
-              )}
-            </button>
+                <Link
+                  href="/onboarding"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0b6e4f] px-5 py-4 font-black text-white shadow-lg transition hover:bg-[#095c42]"
+                >
+                  ورود / ثبت‌نام
+                </Link>
+              </>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-6">
+                <Spinner />
+                <p className="text-sm text-gray-500">
+                  در حال فعال‌سازی {FREE_SPINS} شانس رایگان شما...
+                </p>
+              </div>
+            )}
           </section>
         )}
 
@@ -1491,7 +1408,7 @@ function RafflePageContent() {
               </h2>
 
               <p className="mt-2 text-sm leading-7 text-gray-500">
-                لینک قرعه‌کشی را برای دوستانت بفرست و برای اشتراک‌گذاری موفق، یک شانس اضافه بگیر.
+                لینک قرعه‌کشی را برای دوستانت بفرست؛ به ازای هر اشتراک‌گذاری موفق یک شانس اضافه می‌گیری، بدون هیچ سقفی.
               </p>
 
               <div
@@ -1504,18 +1421,11 @@ function RafflePageContent() {
               <button
                 type="button"
                 onClick={shareWithFriends}
-                disabled={
-                  sharing ||
-                  participant.spins_allowed >=
-                    MAX_SPINS_PER_PHONE
-                }
+                disabled={sharing}
                 className="mt-4 w-full rounded-2xl bg-[#F4C542] px-5 py-4 font-black text-gray-900 shadow-md transition hover:bg-[#e9ba32] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {sharing
                   ? "در حال اشتراک‌گذاری..."
-                  : participant.spins_allowed >=
-                    MAX_SPINS_PER_PHONE
-                  ? `سقف ${MAX_SPINS_PER_PHONE} شانس تکمیل شده`
                   : "اشتراک‌گذاری و دریافت شانس 🎁"}
               </button>
             </div>
@@ -1592,20 +1502,19 @@ function RafflePageContent() {
 
           <ul className="mt-4 space-y-3 text-sm leading-7 text-white/90">
             <li>
-              • هر شرکت‌کننده در شروع ۲ شانس رایگان دارد.
+              • هر شرکت‌کننده در شروع {FREE_SPINS} شانس رایگان دارد.
             </li>
 
             <li>
-              • با اشتراک‌گذاری لینک قرعه‌کشی می‌توانید شانس اضافه دریافت کنید.
+              • بعد از اتمام شانس‌ها، با ارسال لینک قرعه‌کشی برای دوستان می‌توانید دوباره شانس بگیرید.
             </li>
 
             <li>
-              • سقف تعداد شانس هر شماره{" "}
-              {MAX_SPINS_PER_PHONE} بار است.
+              • سقفی برای تعداد ارسال لینک و دریافت شانس اضافه وجود ندارد.
             </li>
 
             <li>
-              • شانس برد هر چرخش ۲۰٪ است.
+              • به‌طور میانگین هر ۱۰ تا ۱۲ چرخش (و گاهی تا ۱۵ چرخش) یک نفر برنده می‌شود.
             </li>
 
             <li>

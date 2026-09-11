@@ -695,44 +695,62 @@ export default function AdminPage() {
     id: string,
     status: "rejected" | "suspended"
   ) {
+    if (busyId === id) return;
+
     setBusyId(id);
 
-    const { error } = await supabase
-      .from("businesses")
-      .update({
-        subscription_status: status,
-        reviewed_at:
-          new Date().toISOString(),
-      })
-      .eq("id", id);
+    try {
+      const { error } = await (supabase as any).rpc(
+        "admin_set_business_status",
+        {
+          p_business_id: id,
+          p_status: status,
+        }
+      );
 
-    if (error) {
+      if (error) {
+        console.error(
+          "SET BUSINESS STATUS ERROR:",
+          error
+        );
+
+        alert(
+          "❌ تغییر وضعیت انجام نشد:\n" +
+            error.message
+        );
+        return;
+      }
+
+      setBusinesses((prev) =>
+        (prev ?? []).map((b) =>
+          b.id === id
+            ? {
+                ...b,
+                subscription_status: status,
+                reviewed_at: new Date().toISOString(),
+              }
+            : b
+        )
+      );
+
+      alert(
+        status === "rejected"
+          ? "✅ درخواست کسب‌وکار رد شد."
+          : "✅ کسب‌وکار تعلیق شد."
+      );
+    } catch (error: any) {
       console.error(
-        "SET BUSINESS STATUS ERROR:",
+        "SET BUSINESS STATUS UNEXPECTED ERROR:",
         error
       );
 
       alert(
-        "❌ تغییر وضعیت انجام نشد:\n" +
-          error.message
+        "❌ خطای غیرمنتظره هنگام تغییر وضعیت:\n" +
+          (error?.message || "خطای نامشخص")
       );
-
+    } finally {
       setBusyId(null);
-      return;
     }
-
-    setBusinesses((prev) =>
-      (prev ?? []).map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              subscription_status: status,
-            }
-          : b
-      )
-    );
-
-    setBusyId(null);
   }
 
   // =========================
@@ -805,9 +823,11 @@ export default function AdminPage() {
   // =========================
 
   async function remove(id: string) {
+    if (busyId === id) return;
+
     if (
       !confirm(
-        "آیا از حذف کامل این کسب و کار مطمئن هستید؟"
+        "⚠️ آیا از حذف کامل این کسب‌وکار مطمئن هستید؟\n\nاین عملیات قابل بازگشت نیست."
       )
     ) {
       return;
@@ -816,10 +836,12 @@ export default function AdminPage() {
     setBusyId(id);
 
     try {
-      const { error } = await supabase
-        .from("businesses")
-        .delete()
-        .eq("id", id);
+      const { error } = await (supabase as any).rpc(
+        "admin_delete_business",
+        {
+          p_business_id: id,
+        }
+      );
 
       if (error) {
         console.error(
@@ -831,62 +853,23 @@ export default function AdminPage() {
           "❌ حذف انجام نشد:\n" +
             error.message
         );
-
-        return;
-      }
-
-      const {
-        data,
-        error: checkError,
-      } = await supabase
-        .from("businesses")
-        .select("id")
-        .eq("id", id)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error(
-          "DELETE CHECK ERROR:",
-          checkError
-        );
-
-        alert(
-          "⚠️ حذف انجام شد ولی بررسی نتیجه با خطا مواجه شد."
-        );
-
-        return;
-      }
-
-      if (data) {
-        console.error(
-          "DELETE FAILED: row still exists",
-          data
-        );
-
-        alert(
-          "❌ رکورد از دیتابیس حذف نشد."
-        );
-
         return;
       }
 
       setBusinesses((prev) =>
-        (prev ?? []).filter(
-          (b) => b.id !== id
-        )
+        (prev ?? []).filter((b) => b.id !== id)
       );
 
-      alert(
-        "✅ کسب‌وکار با موفقیت حذف شد."
-      );
-    } catch (error) {
+      alert("✅ کسب‌وکار با موفقیت حذف شد.");
+    } catch (error: any) {
       console.error(
         "DELETE BUSINESS UNEXPECTED ERROR:",
         error
       );
 
       alert(
-        "❌ خطای غیرمنتظره هنگام حذف."
+        "❌ خطای غیرمنتظره هنگام حذف:\n" +
+          (error?.message || "خطای نامشخص")
       );
     } finally {
       setBusyId(null);

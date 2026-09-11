@@ -18,6 +18,7 @@ export type Database = {
           onboarded: boolean;
           is_wall_account: boolean;
           banned: boolean;
+          is_admin: boolean;
           created_at: string;
         };
         Insert: {
@@ -28,6 +29,7 @@ export type Database = {
           onboarded?: boolean;
           is_wall_account?: boolean;
           banned?: boolean;
+          is_admin?: boolean;
           created_at?: string;
         };
         Update: {
@@ -38,6 +40,7 @@ export type Database = {
           onboarded?: boolean;
           is_wall_account?: boolean;
           banned?: boolean;
+          is_admin?: boolean;
           created_at?: string;
         };
         Relationships: [];
@@ -509,6 +512,99 @@ export type Database = {
           type?: string;
           payload?: Json;
           read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      raffle_participants: {
+        Row: {
+          id: string;
+          user_id: string;
+          phone: string;
+          spins_used: number;
+          spins_allowed: number;
+          referral_code: string;
+          referred_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          phone: string;
+          spins_used?: number;
+          spins_allowed?: number;
+          referral_code: string;
+          referred_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          phone?: string;
+          spins_used?: number;
+          spins_allowed?: number;
+          referral_code?: string;
+          referred_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      raffle_segments: {
+        Row: {
+          id: string;
+          position: number;
+          label: string;
+          type: "prize" | "empty";
+          amount: number | null;
+          is_available: boolean;
+        };
+        Insert: {
+          id?: string;
+          position: number;
+          label: string;
+          type: "prize" | "empty";
+          amount?: number | null;
+          is_available?: boolean;
+        };
+        Update: {
+          id?: string;
+          position?: number;
+          label?: string;
+          type?: "prize" | "empty";
+          amount?: number | null;
+          is_available?: boolean;
+        };
+        Relationships: [];
+      };
+      raffle_spins: {
+        Row: {
+          id: string;
+          participant_id: string;
+          phone: string;
+          label: string;
+          amount: number | null;
+          is_win: boolean;
+          given: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          participant_id: string;
+          phone: string;
+          label: string;
+          amount?: number | null;
+          is_win?: boolean;
+          given?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          participant_id?: string;
+          phone?: string;
+          label?: string;
+          amount?: number | null;
+          is_win?: boolean;
+          given?: boolean;
           created_at?: string;
         };
         Relationships: [];
