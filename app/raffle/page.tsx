@@ -1,17 +1,10 @@
 "use client";
 
-import {
-  Suspense,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Spinner } from "@/components/Feedback";
 import { useAuth } from "@/lib/auth-context";
-import Link from "next/link";
 
 type Segment = {
   id: string;
@@ -39,1063 +32,1215 @@ type SpinHistoryItem = {
   created_at: string;
 };
 
-const FREE_SPINS = 3;
-const WHEEL_SEGMENTS = 8;
-
+const FREE_SPINS = 2;
+const MAX_SPINS_PER_PHONE = 7;
 const PRIZE_COLOR = "#F4C542";
 const EMPTY_COLORS = ["#EAF3EC", "#DCEAE1"];
 
-function tomanLabel(amountRial: number | null) {
-  if (!amountRial) return "جایزه";
+/**
+ * از مبلغ ریالی جایزه، برچسب فارسی «کارت شارژ N هزارتومانی» می‌سازد.
+ */
+function tomanLabel(amountRial: number) {
+  const thousands = amountRial / 10000;
 
-  const toman = Math.round(amountRial / 10);
-  const thousand = Math.round(toman / 1000);
-
-  if (thousand >= 1) {
-    return `کارت شارژ ${thousand.toLocaleString("fa-IR")} هزارتومانی`;
-  }
-
-  return `کارت شارژ ${toman.toLocaleString("fa-IR")} تومانی`;
+  return `کارت شارژ ${new Intl.NumberFormat("fa-IR").format(
+    thousands
+  )} هزارتومانی`;
 }
 
-function normalizePhone(phone: string) {
-  let value = String(phone || "").trim();
+function normalizePhone(input: string) {
+  let p = (input || "").replace(/[^0-9]/g, "");
 
-  value = value.replace(/[^\d+]/g, "");
-
-  if (value.startsWith("+98")) {
-    value = "0" + value.slice(3);
+  if (p.startsWith("0098")) {
+    p = p.slice(4);
+  } else if (p.startsWith("98")) {
+    p = p.slice(2);
   }
 
-  if (value.startsWith("0098")) {
-    value = "0" + value.slice(4);
+  if (p.startsWith("9") && p.length === 10) {
+    p = "0" + p;
   }
 
-  if (value.startsWith("98") && value.length === 12) {
-    value = "0" + value.slice(2);
-  }
-
-  if (!value.startsWith("0") && value.length === 10) {
-    value = "0" + value;
-  }
-
-  return value;
+  return p;
 }
 
-function isValidIranianPhone(phone: string) {
-  return /^09\d{9}$/.test(normalizePhone(phone));
+function isValidPhone(p: string) {
+  return /^09\d{9}$/.test(p);
+}
+
+function maskPhone(p: string) {
+  return p.slice(0, 4) + "***" + p.slice(-3);
 }
 
 function generateReferralCode() {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-
-  let result = "";
+  let c = "";
 
   for (let i = 0; i < 6; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
+    c += chars[Math.floor(Math.random() * chars.length)];
   }
 
-  return result;
+  return c;
 }
 
-function prepareSegments(loaded: Segment[]): Segment[] {
-  const sorted = [...loaded].sort((a, b) => a.position - b.position);
-
-  const result: Segment[] = [];
-
-  for (let position = 0; position < WHEEL_SEGMENTS; position++) {
-    const existing = sorted.find((item) => item.position === position);
-
-    if (existing) {
-      result.push({
-        ...existing,
-        label:
-          existing.type === "prize"
-            ? existing.amount
-              ? tomanLabel(existing.amount)
-              : existing.label || "جایزه"
-            : "پوچ",
-      });
-    } else {
-      result.push({
-        id: `virtual-empty-${position}`,
-        position,
-        label: "پوچ",
-        type: "empty",
-        amount: null,
-        is_available: true,
-      });
+/**
+ * متن و ترتیب جوایز را برای نمایش چرخونه تنظیم می‌کند.
+ * دو جایزه هیچ‌وقت در دو خانه مجاور قرار نمی‌گیرند.
+ */
+function prepareSegments(loaded: Segment[]) {
+  const normalized = loaded.map((seg) => {
+    if (seg.type === "prize" && seg.amount) {
+      return {
+        ...seg,
+        label: tomanLabel(seg.amount),
+      };
     }
+
+    return seg;
+  });
+
+  const prizeIndexes = normalized
+    .map((seg, index) =>
+      seg.type === "prize" ? index : -1
+    )
+    .filter((index) => index !== -1);
+
+  if (
+    prizeIndexes.length === 2 &&
+    Math.abs(prizeIndexes[0] - prizeIndexes[1]) === 1
+  ) {
+    const firstPrizeIndex = prizeIndexes[0];
+    const secondPrizeIndex = prizeIndexes[1];
+
+    const reordered = [...normalized];
+    const prize = reordered.splice(secondPrizeIndex, 1)[0];
+
+    const possibleIndexes = reordered
+      .map((_, index) => index)
+      .filter(
+        (index) =>
+          index !== firstPrizeIndex &&
+          Math.abs(index - firstPrizeIndex) > 1
+      );
+
+    if (possibleIndexes.length > 0) {
+      const targetIndex = possibleIndexes[0];
+      reordered.splice(targetIndex, 0, prize);
+      return reordered;
+    }
+
+    reordered.push(prize);
+
+    return reordered;
   }
 
-  return result.slice(0, WHEEL_SEGMENTS);
+  return normalized;
 }
 
-function maskPhone(phone: string) {
-  const normalized = normalizePhone(phone);
-
-  if (normalized.length < 7) {
-    return "****";
-  }
-
-  return `${normalized.slice(0, 4)}****${normalized.slice(-3)}`;
+export default function RafflePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-screen items-center justify-center bg-[#F7F9F4]">
+          <Spinner label="در حال بارگذاری..." />
+        </div>
+      }
+    >
+      <RafflePageContent />
+    </Suspense>
+  );
 }
 
 function RafflePageContent() {
   const supabase = createClient() as any;
-
   const searchParams = useSearchParams();
+  const router = useRouter();
 
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
-  const [segments, setSegments] = useState<Segment[]>([]);
-
-  const [participant, setParticipant] = useState<Participant | null>(null);
-
+  const [segments, setSegments] = useState<Segment[] | null>(null);
   const [history, setHistory] = useState<SpinHistoryItem[]>([]);
+  const [phoneInput, setPhoneInput] = useState("");
+  const [participant, setParticipant] =
+    useState<Participant | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [verifying, setVerifying] = useState(false);
 
-  const [spinning, setSpinning] = useState(false);
-
-  const [sharing, setSharing] = useState(false);
-
-  const [message, setMessage] = useState("");
-
-  const [error, setError] = useState("");
-
-  const [result, setResult] = useState<{
-    label: string;
-    isWin: boolean;
+  const [phoneMsg, setPhoneMsg] = useState<{
+    text: string;
+    type: "err" | "ok" | "info";
+    register?: boolean;
   } | null>(null);
 
+  const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
 
-  const spinTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [result, setResult] = useState<{
+    text: string;
+    win: boolean;
+  } | null>(null);
+
+  const [shareMsg, setShareMsg] = useState("");
+  const [sharing, setSharing] = useState(false);
+
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  async function loadSegments() {
+    const { data, error } = await supabase
+      .from("raffle_segments")
+      .select(
+        "id,position,label,type,amount,is_available"
+      )
+      .order("position", {
+        ascending: true,
+      });
+
+    if (error) {
+      console.error(
+        "Failed to load raffle segments:",
+        error.message
+      );
+      return;
+    }
+
+    const prepared = prepareSegments(
+      (data ?? []) as Segment[]
+    );
+
+    setSegments(prepared);
+  }
+
+  async function loadHistory() {
+    const { data, error } = await supabase
+      .from("raffle_spins")
+      .select(
+        "id,phone,label,is_win,created_at"
+      )
+      .order("created_at", {
+        ascending: false,
+      })
+      .limit(30);
+
+    if (error) {
+      console.error(
+        "Failed to load raffle history:",
+        error.message
+      );
+      return;
+    }
+
+    setHistory(
+      (data ?? []) as SpinHistoryItem[]
+    );
+  }
+
+  useEffect(() => {
+    loadSegments();
+    loadHistory();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const remaining = useMemo(() => {
     if (!participant) return 0;
 
     return Math.max(
       0,
-      participant.spins_allowed - participant.spins_used
+      participant.spins_allowed -
+        participant.spins_used
     );
   }, [participant]);
 
-  useEffect(() => {
-    loadData();
+  async function verifyPhone() {
+    const phone = normalizePhone(phoneInput);
 
-    return () => {
-      if (spinTimerRef.current) {
-        clearTimeout(spinTimerRef.current);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+    if (!isValidPhone(phone)) {
+      setPhoneMsg({
+        text:
+          "شماره موبایل معتبر نیست (مثلاً 09123456789)",
+        type: "err",
+      });
 
-  async function loadData() {
-    try {
-      setLoading(true);
-      setError("");
-
-      const [segmentsResponse, historyResponse] = await Promise.all([
-        supabase
-          .from("raffle_segments")
-          .select("id,position,label,type,amount,is_available")
-          .order("position", { ascending: true }),
-
-        supabase
-          .from("raffle_spins")
-          .select("id,phone,label,is_win,created_at")
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
-
-      if (segmentsResponse.error) {
-        throw segmentsResponse.error;
-      }
-
-      if (historyResponse.error) {
-        throw historyResponse.error;
-      }
-
-      const prepared = prepareSegments(
-        (segmentsResponse.data || []) as Segment[]
-      );
-
-      setSegments(prepared);
-
-      setHistory((historyResponse.data || []) as SpinHistoryItem[]);
-
-      if (user?.id) {
-        await ensureParticipant();
-      }
-    } catch (err: any) {
-      console.error(err);
-
-      setError(err?.message || "خطا در دریافت اطلاعات قرعه‌کشی");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadParticipant() {
-    if (!user?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("raffle_participants")
-        .select(
-          "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (error) {
-        console.error(error);
-        return;
-      }
-
-      if (data) {
-        setParticipant(data as Participant);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  async function ensureParticipant() {
-    if (!user?.id) return;
-
-    try {
-      setError("");
-
-      const { data: existing, error: existingError } = await supabase
-        .from("raffle_participants")
-        .select(
-          "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-        )
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existingError) {
-        throw existingError;
-      }
-
-      if (existing) {
-        setParticipant(existing as Participant);
-        return;
-      }
-
-      const { data: profileRow, error: profileError } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        throw profileError;
-      }
-
-      const rawUsername = profileRow?.username || "";
-
-      const normalizedPhone = isValidIranianPhone(rawUsername)
-        ? normalizePhone(rawUsername)
-        : rawUsername;
-
-      const newReferralCode = generateReferralCode();
-
-      let referredBy: string | null = null;
-
-      const urlReferral = searchParams.get("ref")?.toUpperCase() || "";
-
-      if (urlReferral) {
-        const { data: referrer } = await supabase
-          .from("raffle_participants")
-          .select("id")
-          .eq("referral_code", urlReferral)
-          .maybeSingle();
-
-        if (referrer && referrer.id) {
-          referredBy = referrer.id;
-
-          await supabase.rpc("raffle_increment_spins_allowed", {
-            p_participant_id: referrer.id,
-            p_amount: 1,
-          });
-        }
-      }
-
-      const { data: created, error: createError } = await supabase
-        .from("raffle_participants")
-        .insert({
-          user_id: user.id,
-          phone: normalizedPhone,
-          spins_used: 0,
-          spins_allowed: FREE_SPINS,
-          referral_code: newReferralCode,
-          referred_by: referredBy,
-        })
-        .select(
-          "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-        )
-        .single();
-
-      if (createError) {
-        throw createError;
-      }
-
-      setParticipant(created as Participant);
-
-      setMessage(`${FREE_SPINS} شانس رایگان برای شما فعال شد.`);
-    } catch (err: any) {
-      console.error(err);
-
-      setError(err?.message || "ثبت اطلاعات انجام نشد.");
-    }
-  }
-
-  async function shareWithFriends() {
-    if (!participant) {
-      setError("ابتدا وارد حساب کاربری خود شوید.");
       return;
     }
 
-    if (sharing) return;
+    if (authLoading) {
+      setPhoneMsg({
+        text:
+          "در حال بررسی حساب کاربری...",
+        type: "info",
+      });
 
-    try {
-      setSharing(true);
-      setError("");
-      setMessage("");
+      return;
+    }
 
-      const shareUrl =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/raffle?ref=${participant.referral_code}`
-          : "";
+    if (!user) {
+      setPhoneMsg({
+        text:
+          "ابتدا با حساب کاربری خودت وارد جم‌سیتی شو.",
+        type: "err",
+      });
 
-      const shareText =
-        "در قرعه‌کشی شهر جم شرکت کن و شانس برنده شدن جایزه بگیر 🎁";
+      return;
+    }
 
-      let shared = false;
+    setVerifying(true);
+
+    setPhoneMsg({
+      text:
+        "در حال بررسی شماره حساب...",
+      type: "info",
+    });
+
+    const {
+      data: profile,
+      error: profileError,
+    } = await supabase
+      .from("profiles")
+      .select("id,username")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error(
+        "Failed to load user profile:",
+        profileError.message
+      );
+
+      setPhoneMsg({
+        text:
+          "خطا در بررسی حساب کاربری، دوباره امتحان کن.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    if (!profile?.username) {
+      setPhoneMsg({
+        text:
+          "شماره موبایل برای حساب شما ثبت نشده است.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    const accountPhone =
+      normalizePhone(profile.username);
+
+    if (phone !== accountPhone) {
+      setPhoneMsg({
+        text:
+          "این شماره با حساب کاربری شما مطابقت ندارد.",
+        type: "err",
+        register: true,
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    const {
+      data: existing,
+      error: fetchError,
+    } = await supabase
+      .from("raffle_participants")
+      .select("*")
+      .eq("phone", accountPhone)
+      .maybeSingle();
+
+    if (fetchError) {
+      console.error(
+        "Failed to load raffle participant:",
+        fetchError.message
+      );
+
+      setPhoneMsg({
+        text:
+          "مشکلی پیش اومد، دوباره امتحان کن.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    if (existing) {
+      setParticipant(
+        existing as Participant
+      );
+
+      setPhoneInput(accountPhone);
+
+      setPhoneMsg({
+        text: "خوش برگشتی!",
+        type: "ok",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    const refCode =
+      searchParams.get("ref");
+
+    const referralCode =
+      generateReferralCode();
+
+    const {
+      data: created,
+      error: insertError,
+    } = await supabase
+      .from("raffle_participants")
+      .insert({
+        phone: accountPhone,
+        spins_used: 0,
+        spins_allowed: FREE_SPINS,
+        referral_code: referralCode,
+        referred_by: refCode || null,
+      })
+      .select()
+      .single();
+
+    if (insertError || !created) {
+      console.error(
+        "Failed to create participant:",
+        insertError?.message
+      );
+
+      setPhoneMsg({
+        text:
+          "مشکلی در ثبت شماره پیش اومد، دوباره امتحان کن.",
+        type: "err",
+      });
+
+      setVerifying(false);
+      return;
+    }
+
+    if (refCode) {
+      const { data: referrer } =
+        await supabase
+          .from("raffle_participants")
+          .select("*")
+          .eq("referral_code", refCode)
+          .maybeSingle();
 
       if (
-        typeof navigator !== "undefined" &&
-        typeof navigator.share === "function"
+        referrer &&
+        referrer.phone !== accountPhone &&
+        referrer.spins_allowed < MAX_SPINS_PER_PHONE
       ) {
-        try {
-          await navigator.share({
-            title: "قرعه‌کشی شهر جم",
-            text: shareText,
-            url: shareUrl,
-          });
+        const newReferrerSpinsAllowed =
+          Math.min(
+            referrer.spins_allowed + 1,
+            MAX_SPINS_PER_PHONE
+          );
 
-          shared = true;
-        } catch (shareErr: any) {
-          if (shareErr?.name === "AbortError") {
-            return;
-          }
-          throw shareErr;
-        }
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        shared = true;
+        await supabase
+          .from("raffle_participants")
+          .update({
+            spins_allowed:
+              newReferrerSpinsAllowed,
+          })
+          .eq("id", referrer.id);
       }
+    }
 
-      if (!shared) return;
+    setParticipant(
+      created as Participant
+    );
 
-      const newAllowed = participant.spins_allowed + 1;
+    setPhoneInput(accountPhone);
 
-      const { data, error } = await supabase
-        .from("raffle_participants")
-        .update({ spins_allowed: newAllowed })
-        .eq("id", participant.id)
-        .select(
-          "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-        )
-        .single();
+    setPhoneMsg({
+      text:
+        "خوش اومدی! ۲ چرخش رایگان داری.",
+      type: "ok",
+    });
 
-      if (error) {
-        throw error;
-      }
+    setVerifying(false);
+  }
 
-      setParticipant(data as Participant);
+  /**
+   * ارسال لینک به دوستان از طریق Share خود گوشی
+   *
+   * بعد از Share موفق = ۱ شانس اضافه
+   * لغو Share = بدون شانس اضافه
+   */
+  async function shareWithFriends() {
+    if (!participant || sharing) return;
 
-      setMessage("اشتراک‌گذاری موفق بود و یک شانس اضافه گرفتید 🎁");
-    } catch (err: any) {
-      if (err?.name === "AbortError") {
+    if (
+      participant.spins_allowed >=
+      MAX_SPINS_PER_PHONE
+    ) {
+      setShareMsg(
+        "این شماره به سقف مجاز چرخش (۱۰ بار) رسیده."
+      );
+      return;
+    }
+
+    setSharing(true);
+    setShareMsg("");
+
+    try {
+      if (!navigator.share) {
+        setShareMsg(
+          "امکان ارسال مستقیم روی این دستگاه وجود ندارد."
+        );
         return;
       }
 
-      console.error(err);
+      await navigator.share({
+        title: "قرعه‌کشی جم‌سیتی 🎡",
+        text:
+          "🎁 در قرعه‌کشی جم‌سیتی شرکت کن و شانس بردن کارت شارژ داشته باش!\n\nبرای ورود:",
+        url: "https://jamapp.ir",
+      });
 
-      setError(err?.message || "اشتراک‌گذاری انجام نشد.");
+      const newSpinsAllowed = Math.min(
+        participant.spins_allowed + 1,
+        MAX_SPINS_PER_PHONE
+      );
+
+      const {
+        error: shareUpdateError,
+      } = await supabase
+        .from("raffle_participants")
+        .update({
+          spins_allowed: newSpinsAllowed,
+        })
+        .eq("id", participant.id);
+
+      if (shareUpdateError) {
+        console.error(
+          "Failed to add share spin:",
+          shareUpdateError.message
+        );
+
+        setShareMsg(
+          "ارسال انجام شد، اما ثبت شانس با خطا مواجه شد."
+        );
+
+        return;
+      }
+
+      setParticipant({
+        ...participant,
+        spins_allowed: newSpinsAllowed,
+      });
+
+      setShareMsg(
+        "🎉 ارسال موفق بود؛ ۱ شانس اضافه شد!"
+      );
+
+      setTimeout(() => {
+        setShareMsg("");
+      }, 4000);
+    } catch (error: any) {
+      // لغو Share نباید شانس اضافه کند
+      if (error?.name === "AbortError") {
+        return;
+      }
+
+      console.error(
+        "Share error:",
+        error
+      );
+
+      setShareMsg(
+        "ارسال انجام نشد. دوباره تلاش کن."
+      );
     } finally {
       setSharing(false);
     }
   }
 
-  async function refreshSegments() {
-    const { data, error } = await supabase
-      .from("raffle_segments")
-      .select("id,position,label,type,amount,is_available")
-      .order("position", { ascending: true });
-
-    if (error) {
-      throw error;
-    }
-
-    const prepared = prepareSegments((data || []) as Segment[]);
-
-    setSegments(prepared);
-
-    return prepared;
-  }
-
-  async function refreshHistory() {
-    const { data, error } = await supabase
-      .from("raffle_spins")
-      .select("id,phone,label,is_win,created_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
-
-    setHistory((data || []) as SpinHistoryItem[]);
-  }
-
   async function doSpin() {
-    if (spinning) return;
-
-    if (!participant) {
-      setError("ابتدا وارد حساب کاربری خود شوید.");
+    if (
+      spinning ||
+      !participant ||
+      !segments ||
+      remaining <= 0
+    ) {
       return;
     }
 
-    if (remaining <= 0) {
-      setError("شانس شما برای شرکت در قرعه‌کشی تمام شده است.");
-      return;
-    }
-
-    if (segments.length !== WHEEL_SEGMENTS) {
-      setError("چرخ قرعه‌کشی هنوز به‌درستی آماده نشده است.");
-      return;
-    }
-
-    setError("");
-    setMessage("");
-    setResult(null);
     setSpinning(true);
+    setResult(null);
 
-    try {
-      const currentSegments = await refreshSegments();
-
-      if (currentSegments.length !== WHEEL_SEGMENTS) {
-        throw new Error("چرخ قرعه‌کشی باید دقیقاً ۸ خانه داشته باشد.");
-      }
-
-      const availablePrizeIndexes = currentSegments
-        .map((segment, index) =>
-          segment.type === "prize" && segment.is_available ? index : -1
-        )
-        .filter((index) => index !== -1);
-
-      const emptyIndexes = currentSegments
-        .map((segment, index) =>
-          segment.type === "empty" ? index : -1
-        )
-        .filter((index) => index !== -1);
-
-      let shouldWin = false;
-
-      if (availablePrizeIndexes.length > 0 && emptyIndexes.length > 0) {
-        const { data: winDecision, error: winError } = await supabase.rpc(
-          "raffle_register_spin"
-        );
-
-        if (winError) {
-          console.error("raffle_register_spin error:", winError);
-
-          throw new Error(
-            "خطا در تعیین نتیجه قرعه‌کشی. لطفاً دوباره تلاش کنید."
-          );
-        }
-
-        shouldWin = Boolean(winDecision);
-      }
-
-      let targetIndex: number;
-
-      if (shouldWin && availablePrizeIndexes.length > 0) {
-        const randomPrizeIndex = Math.floor(
-          Math.random() * availablePrizeIndexes.length
-        );
-
-        targetIndex = availablePrizeIndexes[randomPrizeIndex];
-      } else {
-        if (emptyIndexes.length === 0) {
-          throw new Error("هیچ خانه پوچی برای چرخش وجود ندارد.");
-        }
-
-        const randomEmptyIndex = Math.floor(
-          Math.random() * emptyIndexes.length
-        );
-
-        targetIndex = emptyIndexes[randomEmptyIndex];
-      }
-
-      const selectedSegment = currentSegments[targetIndex];
-
-      const anglePerSegment = 360 / WHEEL_SEGMENTS;
-
-      const targetAngle =
-        (360 - (targetIndex * anglePerSegment + anglePerSegment / 2)) %
-        360;
-
-      const currentNormalized = ((rotation % 360) + 360) % 360;
-
-      let delta = targetAngle - currentNormalized;
-
-      if (delta < 0) {
-        delta += 360;
-      }
-
-      const extraTurns = 5 + Math.floor(Math.random() * 3);
-
-      const finalRotation = rotation + extraTurns * 360 + delta;
-
-      setRotation(finalRotation);
-
-      await new Promise<void>((resolve) => {
-        spinTimerRef.current = setTimeout(resolve, 4300);
+    const {
+      data: freshSegments,
+      error: freshSegmentsError,
+    } = await supabase
+      .from("raffle_segments")
+      .select(
+        "id,position,label,type,amount,is_available"
+      )
+      .order("position", {
+        ascending: true,
       });
 
-      let finalIsWin = false;
-      let finalLabel = "پوچ";
+    if (freshSegmentsError) {
+      console.error(
+        "Failed to refresh raffle segments:",
+        freshSegmentsError.message
+      );
 
-      if (
-        selectedSegment.type === "prize" &&
-        shouldWin &&
-        !selectedSegment.id.startsWith("virtual-")
-      ) {
-        const { data: reservedPrize, error: reserveError } = await supabase
-          .from("raffle_segments")
-          .update({ is_available: false })
-          .eq("id", selectedSegment.id)
-          .eq("type", "prize")
-          .eq("is_available", true)
-          .select("id,position,label,type,amount,is_available")
-          .maybeSingle();
+      setSpinning(false);
+      return;
+    }
 
-        if (reserveError) {
-          console.error("Prize reservation error:", reserveError);
-        }
+    const currentSegments =
+      prepareSegments(
+        (freshSegments ??
+          segments) as Segment[]
+      );
 
-        if (reservedPrize) {
-          finalIsWin = true;
+    setSegments(currentSegments);
 
-          finalLabel = reservedPrize.amount
-            ? tomanLabel(reservedPrize.amount)
-            : reservedPrize.label || "جایزه";
-        } else {
-          finalIsWin = false;
-          finalLabel = "پوچ";
-        }
-      } else {
-        finalIsWin = false;
-        finalLabel = "پوچ";
-      }
+    const n = currentSegments.length;
 
-      const { error: historyError } = await supabase
-        .from("raffle_spins")
-        .insert({
-          participant_id: participant.id,
-          phone: participant.phone,
-          label: finalLabel,
-          is_win: finalIsWin,
-          segment_id: selectedSegment.id.startsWith("virtual-")
-            ? null
-            : selectedSegment.id,
-        });
+    if (n === 0) {
+      setSpinning(false);
+      return;
+    }
 
-      if (historyError) {
-        console.error(
-          "History insert with segment_id failed:",
-          historyError
+    const eligibleIndexes =
+      currentSegments
+        .map((seg, index) => {
+          const canSelect =
+            seg.type === "empty" ||
+            (
+              seg.type === "prize" &&
+              seg.is_available
+            );
+
+          return canSelect
+            ? index
+            : -1;
+        })
+        .filter(
+          (index) => index !== -1
         );
 
-        const { error: fallbackHistoryError } = await supabase
-          .from("raffle_spins")
-          .insert({
-            participant_id: participant.id,
-            phone: participant.phone,
-            label: finalLabel,
-            is_win: finalIsWin,
-          });
+    if (eligibleIndexes.length === 0) {
+      setResult({
+        text: "پوچ",
+        win: false,
+      });
 
-        if (fallbackHistoryError) {
-          console.error(
-            "Fallback history insert failed:",
-            fallbackHistoryError
-          );
-        }
-      }
+      setSpinning(false);
+      return;
+    }
 
-      const newUsed = participant.spins_used + 1;
+    const randomPosition =
+      Math.floor(
+        Math.random() *
+          eligibleIndexes.length
+      );
 
-      const { data: updatedParticipant, error: participantError } =
-        await supabase
-          .from("raffle_participants")
-          .update({ spins_used: newUsed })
-          .eq("id", participant.id)
-          .eq("spins_used", participant.spins_used)
+    const targetIndex =
+      eligibleIndexes[randomPosition];
+
+    const seg =
+      currentSegments[targetIndex];
+
+    const step = 360 / n;
+
+    const targetAngleInWheel =
+      targetIndex * step +
+      step / 2;
+
+    const extraSpins =
+      5 +
+      Math.floor(Math.random() * 3);
+
+    const finalRotation =
+      rotation +
+      extraSpins * 360 +
+      (360 -
+        targetAngleInWheel) -
+      (rotation % 360);
+
+    setRotation(finalRotation);
+
+    setTimeout(async () => {
+      let isWin = false;
+
+      let label =
+        seg.type === "prize"
+          ? seg.label
+          : "پوچ";
+
+      if (
+        seg.type === "prize" &&
+        seg.is_available
+      ) {
+        const {
+          data: updated,
+          error: updatePrizeError,
+        } = await supabase
+          .from("raffle_segments")
+          .update({
+            is_available: false,
+          })
+          .eq("id", seg.id)
+          .eq("type", "prize")
+          .eq("is_available", true)
           .select(
-            "id,phone,spins_used,spins_allowed,referral_code,referred_by"
-          )
-          .maybeSingle();
+            "id,position,label,type,amount,is_available"
+          );
 
-      if (participantError) {
-        console.error("Participant update error:", participantError);
-      }
+        if (
+          !updatePrizeError &&
+          updated &&
+          updated.length > 0
+        ) {
+          isWin = true;
 
-      if (updatedParticipant) {
-        setParticipant(updatedParticipant as Participant);
-      } else {
-        await loadParticipant();
+          label = seg.amount
+            ? tomanLabel(seg.amount)
+            : seg.label;
+        } else {
+          isWin = false;
+          label = "پوچ";
+
+          if (updatePrizeError) {
+            console.error(
+              "Failed to reserve prize:",
+              updatePrizeError.message
+            );
+          }
+        }
       }
 
       setResult({
-        label: finalLabel,
-        isWin: finalIsWin,
+        text: label,
+        win: isWin,
       });
 
-      if (finalIsWin) {
-        setMessage(`🎉 تبریک! شما برنده ${finalLabel} شدید.`);
-      } else {
-        setMessage(
-          "این بار پوچ شد؛ برای دفعه بعد دوباره شانس خود را امتحان کنید."
+      const {
+        error: spinInsertError,
+      } = await supabase
+        .from("raffle_spins")
+        .insert({
+          participant_id:
+            participant.id,
+          phone: participant.phone,
+          segment_id: seg.id,
+          label,
+          is_win: isWin,
+          amount:
+            isWin
+              ? seg.amount
+              : null,
+          given: false,
+        });
+
+      if (spinInsertError) {
+        console.error(
+          "Failed to save spin:",
+          spinInsertError.message
         );
       }
 
-      await refreshSegments();
-      await refreshHistory();
-    } catch (err: any) {
-      console.error(err);
+      const newSpinsUsed =
+        participant.spins_used + 1;
 
-      setError(err?.message || "در اجرای قرعه‌کشی خطایی رخ داد.");
-    } finally {
+      const {
+        error:
+          participantUpdateError,
+      } = await supabase
+        .from("raffle_participants")
+        .update({
+          spins_used:
+            newSpinsUsed,
+        })
+        .eq("id", participant.id);
+
+      if (participantUpdateError) {
+        console.error(
+          "Failed to update spins used:",
+          participantUpdateError.message
+        );
+      }
+
+      setParticipant({
+        ...participant,
+        spins_used:
+          newSpinsUsed,
+      });
+
+      await loadSegments();
+      await loadHistory();
+
       setSpinning(false);
-    }
+    }, 4300);
   }
 
-  if (loading) {
-    return (
-      <main
-        dir="rtl"
-        className="min-h-screen bg-[#f5faf7] flex items-center justify-center"
-      >
-        <div className="flex flex-col items-center gap-4">
-          <Spinner />
+  function polar(
+    cx: number,
+    cy: number,
+    r: number,
+    angleDeg: number
+  ) {
+    const a =
+      ((angleDeg - 90) *
+        Math.PI) /
+      180;
 
-          <p className="text-gray-600">در حال آماده‌سازی قرعه‌کشی...</p>
-        </div>
-      </main>
+    return {
+      x:
+        cx +
+        r * Math.cos(a),
+      y:
+        cy +
+        r * Math.sin(a),
+    };
+  }
+
+  const R = 150;
+  const CX = 160;
+  const CY = 160;
+
+  if (authLoading) {
+    return (
+      <div
+        dir="rtl"
+        className="flex min-h-screen items-center justify-center bg-[#F7F9F4]"
+      >
+        <Spinner label="در حال بررسی حساب کاربری..." />
+      </div>
     );
   }
 
   return (
-    <main dir="rtl" className="min-h-screen bg-[#f5faf7] pb-16">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6">
-        <section className="rounded-3xl bg-gradient-to-l from-[#0b6e4f] to-[#15966b] p-6 text-white shadow-lg">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div>
-              <div className="mb-2 text-sm opacity-80">جم‌سیتی</div>
+    <div
+      dir="rtl"
+      className="mx-auto max-w-md space-y-4 bg-[#F7F9F4] px-4 pb-16 pt-6"
+    >
+      <div className="text-center">
+        <h1 className="text-xl font-black text-[#1D2B1F]">
+          🎡 چرخ گردون قرعه‌کشی جم
+        </h1>
 
-              <h1 className="text-2xl font-black md:text-3xl">
-                قرعه‌کشی شهر جم 🎁
-              </h1>
+        <p className="mt-1 text-[11px] text-[#8A968C]">
+          ۲ چرخش رایگان برای هر شماره + چرخش اضافه با دعوت دوستان
+        </p>
+      </div>
 
-              <p className="mt-2 text-sm leading-7 opacity-90">
-                شانس خودت را امتحان کن و برنده جایزه شو!
-              </p>
-            </div>
-
-            <div className="rounded-2xl bg-white/15 px-5 py-4 text-center backdrop-blur">
-              <div className="text-xs opacity-80">شانس باقی‌مانده</div>
-
-              <div className="mt-1 text-3xl font-black">{remaining}</div>
-            </div>
-          </div>
-        </section>
-
-        <section className="mt-4 rounded-2xl border border-[#F4C542]/40 bg-[#fffdf2] p-4 text-center shadow-sm">
-          <div className="text-lg font-black text-[#876b00]">
-            🎯 هر ۱۰ تا ۱۲ چرخش، یک نفر برنده می‌شود
+      {!user && (
+        <div className="rounded-[20px] border border-[#F0DCB4] bg-white p-5 text-center shadow-sm">
+          <div className="text-3xl">
+            🔐
           </div>
 
-          <div className="mt-1 text-sm text-gray-600">
-            بین همه شرکت‌کنندگان سایت، معمولاً هر ۱۰ تا ۱۲ چرخش و گاهی تا ۱۵
-            چرخش یک برد قطعی وجود دارد.
-          </div>
-        </section>
+          <h2 className="mt-2 text-sm font-black text-[#1D2B1F]">
+            ابتدا وارد حساب جم‌سیتی شو
+          </h2>
 
-        {error && (
-          <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-            {error}
-          </div>
-        )}
+          <p className="mt-2 text-[11px] leading-6 text-[#8A968C]">
+            برای شرکت در قرعه‌کشی باید با حساب کاربری خودت وارد شده باشی.
+            شماره شخص دیگری قابل استفاده نیست.
+          </p>
+        </div>
+      )}
 
-        {message && (
-          <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
-            {message}
-          </div>
-        )}
+      {user && !participant && (
+        <div className="rounded-[20px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
+          <label className="mb-2 block text-[12px] font-bold text-[#3A4A3D]">
+            شماره موبایلت رو وارد کن
+          </label>
 
-        {!participant && (
-          <section className="mt-6 rounded-3xl bg-white p-5 text-center shadow-sm ring-1 ring-black/5">
-            {!user?.id ? (
-              <>
-                <h2 className="text-lg font-black text-gray-900">
-                  شروع قرعه‌کشی
-                </h2>
-
-                <p className="mt-2 text-sm leading-7 text-gray-500">
-                  برای شرکت در قرعه‌کشی و دریافت {FREE_SPINS} شانس رایگان،
-                  ابتدا وارد حساب کاربری خود شوید.
-                </p>
-
-                <Link
-                  href="/onboarding"
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0b6e4f] px-5 py-4 font-black text-white shadow-lg transition hover:bg-[#095c42]"
-                >
-                  ورود / ثبت‌نام
-                </Link>
-              </>
-            ) : (
-              <div className="flex flex-col items-center gap-3 py-6">
-                <Spinner />
-
-                <p className="text-sm text-gray-500">
-                  در حال فعال‌سازی {FREE_SPINS} شانس رایگان شما...
-                </p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {participant && (
-          <section className="mt-6 grid gap-4 md:grid-cols-3">
-            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-              <div className="text-xs text-gray-400">شماره شرکت‌کننده</div>
-
-              <div dir="ltr" className="mt-2 text-lg font-black text-gray-900">
-                {maskPhone(participant.phone)}
-              </div>
-            </div>
-
-            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-              <div className="text-xs text-gray-400">شانس باقی‌مانده</div>
-
-              <div className="mt-2 text-2xl font-black text-[#0b6e4f]">
-                {remaining}
-              </div>
-            </div>
-
-            <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-              <div className="text-xs text-gray-400">کد دعوت شما</div>
-
-              <div
-                dir="ltr"
-                className="mt-2 text-xl font-black tracking-widest text-[#876b00]"
-              >
-                {participant.referral_code}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {participant && (
-          <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-7">
-            <div className="mb-6 text-center">
-              <h2 className="text-xl font-black text-gray-900">
-                چرخ را بچرخان 🎡
-              </h2>
-
-              <p className="mt-2 text-sm text-gray-500">
-                هر بار چرخش یک شانس مصرف می‌کند.
-              </p>
-            </div>
-
-            <div className="relative mx-auto w-full max-w-[430px]">
-              <div className="absolute left-1/2 top-[-8px] z-20 -translate-x-1/2">
-                <div
-                  className="h-0 w-0"
-                  style={{
-                    borderLeft: "16px solid transparent",
-                    borderRight: "16px solid transparent",
-                    borderTop: "30px solid #111827",
-                  }}
-                />
-              </div>
-
-              <div
-                className="relative aspect-square w-full overflow-hidden rounded-full"
-                style={{
-                  transform: `rotate(${rotation}deg)`,
-                  transition: spinning
-                    ? "transform 4.3s cubic-bezier(0.12, 0.72, 0.15, 1)"
-                    : "none",
-                }}
-              >
-                <svg
-                  viewBox="0 0 100 100"
-                  className="h-full w-full drop-shadow-xl"
-                >
-                  {segments.slice(0, WHEEL_SEGMENTS).map((segment, index) => {
-                    const count = WHEEL_SEGMENTS;
-                    const angle = 360 / count;
-                    const startAngle = index * angle - 90;
-                    const endAngle = startAngle + angle;
-                    const radius = 49;
-
-                    const x1 =
-                      50 + radius * Math.cos((startAngle * Math.PI) / 180);
-
-                    const y1 =
-                      50 + radius * Math.sin((startAngle * Math.PI) / 180);
-
-                    const x2 =
-                      50 + radius * Math.cos((endAngle * Math.PI) / 180);
-
-                    const y2 =
-                      50 + radius * Math.sin((endAngle * Math.PI) / 180);
-
-                    const largeArcFlag = angle > 180 ? 1 : 0;
-
-                    const path = `M 50 50 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-
-                    const fill =
-                      segment.type === "prize"
-                        ? PRIZE_COLOR
-                        : EMPTY_COLORS[index % EMPTY_COLORS.length];
-
-                    const midAngle = startAngle + angle / 2;
-
-                    const textRadius = 31;
-
-                    const textX =
-                      50 + textRadius * Math.cos((midAngle * Math.PI) / 180);
-
-                    const textY =
-                      50 + textRadius * Math.sin((midAngle * Math.PI) / 180);
-
-                    return (
-                      <g key={segment.id}>
-                        <path
-                          d={path}
-                          fill={fill}
-                          stroke="#ffffff"
-                          strokeWidth="0.8"
-                        />
-
-                        <text
-                          x={textX}
-                          y={textY}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fontSize="3.5"
-                          fontWeight="800"
-                          fill="#1f2937"
-                          transform={`rotate(${midAngle + 90} ${textX} ${textY})`}
-                        >
-                          {segment.type === "prize" ? "🎁" : "پوچ"}
-                        </text>
-                      </g>
-                    );
-                  })}
-
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="12"
-                    fill="#ffffff"
-                    stroke="#0b6e4f"
-                    strokeWidth="1.5"
-                  />
-
-                  <circle cx="50" cy="50" r="9" fill="#0b6e4f" />
-
-                  <text
-                    x="50"
-                    y="50"
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize="3.4"
-                    fontWeight="900"
-                    fill="#ffffff"
-                  >
-                    {spinning ? "..." : "بچرخان"}
-                  </text>
-                </svg>
-              </div>
-
-              <button
-                type="button"
-                onClick={doSpin}
-                disabled={spinning || remaining <= 0}
-                className="mx-auto mt-6 flex min-w-[220px] items-center justify-center gap-2 rounded-2xl bg-[#0b6e4f] px-7 py-4 text-lg font-black text-white shadow-xl transition hover:bg-[#095c42] active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300"
-              >
-                {spinning ? (
-                  <>
-                    <Spinner />
-                    در حال چرخش...
-                  </>
-                ) : remaining > 0 ? (
-                  <>🎡 چرخاندن</>
-                ) : (
-                  "شانس شما تمام شده"
-                )}
-              </button>
-            </div>
-          </section>
-        )}
-
-        {result && (
-          <section
-            className={`mt-6 rounded-3xl p-6 text-center shadow-sm ${
-              result.isWin
-                ? "border border-[#F4C542]/50 bg-[#fffbea]"
-                : "border border-gray-200 bg-white"
-            }`}
+          <div
+            className="flex gap-2"
+            dir="ltr"
           >
-            {result.isWin ? (
-              <>
-                <div className="text-5xl">🎉</div>
+            <input
+              type="tel"
+              inputMode="numeric"
+              maxLength={14}
+              value={phoneInput}
+              onChange={(e) =>
+                setPhoneInput(
+                  e.target.value
+                )
+              }
+              placeholder="09xxxxxxxxx"
+              className="flex-1 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2.5 text-center text-sm font-bold text-[#1D2B1F] caret-[#147A4B] outline-none focus:border-[#147A4B] placeholder:text-[#A8B2AA]"
+            />
 
-                <h2 className="mt-3 text-2xl font-black text-[#8a6b00]">
-                  تبریک!
-                </h2>
-
-                <p className="mt-2 text-gray-700">شما برنده شدید</p>
-
-                <div className="mt-4 rounded-2xl bg-[#F4C542]/20 px-5 py-4 text-xl font-black text-[#715800]">
-                  {result.label}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-5xl">😅</div>
-
-                <h2 className="mt-3 text-xl font-black text-gray-800">
-                  این بار پوچ شد
-                </h2>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  دفعه بعد دوباره شانس خودت را امتحان کن.
-                </p>
-              </>
-            )}
-          </section>
-        )}
-
-        {participant && (
-          <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-            <div className="text-center">
-              <div className="text-3xl">👥</div>
-
-              <h2 className="mt-2 text-lg font-black">
-                شانس بیشتری می‌خواهی؟
-              </h2>
-
-              <p className="mt-2 text-sm leading-7 text-gray-500">
-                لینک قرعه‌کشی را برای دوستانت بفرست؛ به ازای هر اشتراک‌گذاری
-                موفق یک شانس اضافه می‌گیری.
-              </p>
-
-              <div
-                dir="ltr"
-                className="mt-4 rounded-2xl bg-gray-50 px-4 py-3 text-center font-bold tracking-widest text-[#0b6e4f]"
-              >
-                {participant.referral_code}
-              </div>
-
-              <button
-                type="button"
-                onClick={shareWithFriends}
-                disabled={sharing}
-                className="mt-4 w-full rounded-2xl bg-[#F4C542] px-5 py-4 font-black text-gray-900 shadow-md transition hover:bg-[#e9ba32] disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {sharing
-                  ? "در حال اشتراک‌گذاری..."
-                  : "اشتراک‌گذاری و دریافت شانس 🎁"}
-              </button>
-            </div>
-          </section>
-        )}
-
-        <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-gray-900">
-              نتایج قرعه‌کشی
-            </h2>
-
-            <span className="text-xs text-gray-400">آخرین نتایج</span>
+            <button
+              onClick={verifyPhone}
+              disabled={verifying}
+              className="shrink-0 rounded-xl bg-[#147A4B] px-5 py-2.5 text-xs font-black text-white disabled:opacity-50"
+            >
+              {verifying
+                ? "بررسی..."
+                : "ورود"}
+            </button>
           </div>
 
-          {history.length === 0 ? (
-            <div className="py-10 text-center text-sm text-gray-400">
-              هنوز نتیجه‌ای ثبت نشده است.
-            </div>
-          ) : (
-            <div className="mt-4 divide-y divide-gray-100">
-              {history.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between gap-3 py-4"
+          {phoneMsg && (
+            <div
+              className={`mt-2 flex items-center justify-center gap-2 text-[11px] ${
+                phoneMsg.type === "err"
+                  ? "text-[#E2574C]"
+                  : phoneMsg.type === "ok"
+                  ? "text-[#147A4B]"
+                  : "text-[#8A968C]"
+              }`}
+            >
+              <span>{phoneMsg.text}</span>
+
+              {phoneMsg.register && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    router.push("/register");
+                  }}
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#147A4B] px-2.5 py-1 text-[10px] font-black text-white shadow-sm active:scale-95"
                 >
-                  <div className="min-w-0">
-                    <div className="font-bold text-gray-800">
-                      {item.is_win ? "🎁 برنده شد" : "😅 پوچ"}
-                    </div>
-
-                    <div className="mt-1 text-xs text-gray-400">
-                      {maskPhone(item.phone)}
-                    </div>
-                  </div>
-
-                  <div className="text-left">
-                    <div
-                      className={`text-sm font-black ${
-                        item.is_win ? "text-[#8a6b00]" : "text-gray-500"
-                      }`}
-                    >
-                      {item.label}
-                    </div>
-
-                    <div className="mt-1 text-xs text-gray-400">
-                      {new Date(item.created_at).toLocaleDateString("fa-IR")}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                  <span>👤</span>
+                  ثبت‌نام
+                </button>
+              )}
             </div>
           )}
-        </section>
+        </div>
+      )}
 
-        <section className="mt-6 rounded-3xl bg-[#0b6e4f] p-5 text-white">
-          <h2 className="text-lg font-black">قوانین قرعه‌کشی</h2>
+      {participant && (
+        <div className="rounded-[20px] border border-[#F0DCB4] bg-gradient-to-l from-[#FBEEDA] to-white p-4 shadow-sm">
+          <div className="flex justify-between border-b border-[#F0DCB4] py-1.5 text-[12px]">
+            <span className="text-[#8A7150]">
+              شماره شما
+            </span>
 
-          <ul className="mt-4 space-y-3 text-sm leading-7 text-white/90">
-            <li>• هر شرکت‌کننده در شروع {FREE_SPINS} شانس رایگان دارد.</li>
+            <b
+              className="text-[#1D2B1F]"
+              dir="ltr"
+            >
+              {participant.phone}
+            </b>
+          </div>
 
-            <li>
-              • بعد از اتمام شانس‌ها، با ارسال لینک قرعه‌کشی برای دوستان
-              می‌توانید دوباره شانس بگیرید.
+          <div className="flex justify-between border-b border-[#F0DCB4] py-1.5 text-[12px]">
+            <span className="text-[#8A7150]">
+              چرخش باقی‌مانده
+            </span>
+
+            <b className="text-[#D98F2B]">
+              {remaining}
+            </b>
+          </div>
+
+          <div className="mt-2">
+            <p className="mb-2 text-center text-[10px] text-[#B08B4F]">
+              سقف مجاز هر شماره: {MAX_SPINS_PER_PHONE} چرخش
+              {" "}
+              (فعلاً {participant.spins_allowed} چرخش)
+            </p>
+
+            {participant.spins_allowed >=
+            MAX_SPINS_PER_PHONE ? (
+              <p className="rounded-xl bg-[#FBEEDA] px-3 py-2.5 text-center text-[11px] font-bold text-[#8A7150]">
+                این شماره به سقف مجاز چرخش رسیده. برای ادامه باید با شماره‌ی دیگه‌ای وارد بشی.
+              </p>
+            ) : (
+              <>
+                <label className="mb-1 block text-[11px] text-[#8A7150]">
+                  دوستاتو دعوت کن؛ با هر ارسال موفق ۱ چرخش اضافه بگیر 🎁
+                </label>
+
+                <button
+                  onClick={shareWithFriends}
+                  disabled={sharing}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#D98F2B] px-4 py-3 text-[12px] font-black text-white shadow-sm active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <span className="text-base">
+                    📤
+                  </span>
+
+                  {sharing
+                    ? "در حال ارسال..."
+                    : "ارسال به دوستان"}
+                </button>
+              </>
+            )}
+
+            {shareMsg && (
+              <p className="mt-2 text-center text-[11px] font-bold text-[#147A4B]">
+                {shareMsg}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!segments ? (
+        <div className="flex h-72 items-center justify-center">
+          <Spinner label="در حال بارگذاری چرخ..." />
+        </div>
+      ) : (
+        <>
+          <div className="relative mx-auto h-[290px] w-[290px]">
+            <div
+              className="absolute -top-3 left-1/2 z-10 h-0 w-0 -translate-x-1/2"
+              style={{
+                borderLeft:
+                  "16px solid transparent",
+                borderRight:
+                  "16px solid transparent",
+                borderTop:
+                  "24px solid #147A4B",
+                filter:
+                  "drop-shadow(0 2px 4px rgba(0,0,0,.25))",
+              }}
+            />
+
+            <svg
+              ref={svgRef}
+              viewBox="0 0 320 320"
+              className="h-full w-full"
+              style={{
+                transform:
+                  `rotate(${rotation}deg)`,
+                transition: spinning
+                  ? "transform 4.2s cubic-bezier(0.17,0.67,0.12,0.99)"
+                  : "none",
+                filter:
+                  "drop-shadow(0 6px 16px rgba(20,60,40,.18))",
+              }}
+            >
+              {segments.map(
+                (seg, i) => {
+                  const n =
+                    segments.length;
+
+                  const step =
+                    360 / n;
+
+                  const startAngle =
+                    i * step;
+
+                  const endAngle =
+                    startAngle + step;
+
+                  const p1 = polar(
+                    CX,
+                    CY,
+                    R,
+                    startAngle
+                  );
+
+                  const p2 = polar(
+                    CX,
+                    CY,
+                    R,
+                    endAngle
+                  );
+
+                  const largeArc =
+                    step > 180
+                      ? 1
+                      : 0;
+
+                  const isPrize =
+                    seg.type ===
+                    "prize";
+
+                  const showAsPrize =
+                    isPrize &&
+                    seg.is_available;
+
+                  const fill =
+                    showAsPrize
+                      ? PRIZE_COLOR
+                      : EMPTY_COLORS[
+                          i % 2
+                        ];
+
+                  const midAngle =
+                    startAngle +
+                    step / 2;
+
+                  const labelPos =
+                    polar(
+                      CX,
+                      CY,
+                      R * 0.6,
+                      midAngle
+                    );
+
+                  const lines =
+                    showAsPrize
+                      ? seg.label.split(
+                          " "
+                        )
+                      : ["پوچ"];
+
+                  return (
+                    <g key={seg.id}>
+                      <path
+                        d={`M${CX},${CY} L${p1.x},${p1.y} A${R},${R} 0 ${largeArc} 1 ${p2.x},${p2.y} Z`}
+                        fill={fill}
+                        stroke="#F7F9F4"
+                        strokeWidth={2}
+                      />
+
+                      <text
+                        x={labelPos.x}
+                        y={labelPos.y}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fontSize={
+                          showAsPrize
+                            ? 10
+                            : 12
+                        }
+                        fontWeight={
+                          showAsPrize
+                            ? 700
+                            : 500
+                        }
+                        fill={
+                          showAsPrize
+                            ? "#5c4200"
+                            : "#8A968C"
+                        }
+                        transform={`rotate(${midAngle}, ${labelPos.x}, ${labelPos.y})`}
+                      >
+                        {lines.map(
+                          (
+                            line,
+                            li
+                          ) => (
+                            <tspan
+                              key={li}
+                              x={
+                                labelPos.x
+                              }
+                              dy={
+                                li ===
+                                0
+                                  ? 0
+                                  : "1.1em"
+                              }
+                            >
+                              {line}
+                            </tspan>
+                          )
+                        )}
+                      </text>
+                    </g>
+                  );
+                }
+              )}
+            </svg>
+
+            <div
+              className="absolute left-1/2 top-1/2 h-12 w-12 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              style={{
+                background:
+                  "radial-gradient(circle at 35% 30%, #fff, #F4C542 60%, #D98F2B)",
+                boxShadow:
+                  "0 0 0 4px #F7F9F4, 0 4px 10px rgba(0,0,0,.25)",
+              }}
+            />
+          </div>
+
+          <button
+            onClick={doSpin}
+            disabled={
+              !participant ||
+              spinning ||
+              remaining <= 0
+            }
+            className="w-full rounded-full bg-gradient-to-l from-[#147A4B] to-[#0f9a56] py-3 text-sm font-black text-white shadow-[0_0_20px_rgba(57,255,143,.35)] disabled:opacity-40"
+          >
+            {!participant
+              ? !user
+                ? "ابتدا وارد حساب جم‌سیتی شو"
+                : "ابتدا شماره‌ات رو وارد کن"
+              : spinning
+              ? "در حال چرخش..."
+              : remaining <= 0
+              ? "چرخش‌هات تموم شده — دوستاتو دعوت کن!"
+              : `بچرخون 🎉 (${remaining} چرخش باقی‌مانده)`}
+          </button>
+
+          {result && (
+            <p
+              className={`text-center text-sm font-black ${
+                result.win
+                  ? "text-[#147A4B]"
+                  : "text-[#8A968C]"
+              }`}
+            >
+              {result.win
+                ? `🎊 تبریک! برنده ${result.text} شدی`
+                : "پوچ! شانس این دور همین بود 🙂"}
+            </p>
+          )}
+        </>
+      )}
+
+      <div className="rounded-[18px] border border-[#E3EBDE] bg-white p-4">
+        <h3 className="mb-2 text-[12px] font-black text-[#1D2B1F]">
+          تاریخچه چرخش‌ها (همه)
+        </h3>
+
+        <ul className="max-h-44 space-y-1 overflow-y-auto">
+          {history.length === 0 && (
+            <li className="text-center text-[11px] text-[#8A968C]">
+              هنوز چرخشی ثبت نشده
             </li>
+          )}
 
-            <li>• برای دریافت شانس اضافه محدودیتی تعیین نشده است.</li>
+          {history.map((h) => (
+            <li
+              key={h.id}
+              className="flex items-center justify-between border-b border-[#F3F6F1] py-1.5 text-[11px]"
+            >
+              <span className="text-[#3A4A3D]">
+                {h.label}
+              </span>
 
-            <li>
-              • به‌طور میانگین هر ۱۰ تا ۱۲ چرخش و گاهی
+              <span className="flex items-center gap-2">
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                    h.is_win
+                      ? "bg-[#E3F3E9] text-[#147A4B]"
+                      : "bg-[#F3F6F1] text-[#8A968C]"
+                  }`}
+                >
+                  {h.is_win
+                    ? "برنده"
+                    : "پوچ"}
+                </span>
+
+                <span
+                  className="text-[#B0BAB1]"
+                  dir="ltr"
+                >
+                  {maskPhone(h.phone)}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <p className="text-center text-[10px] leading-6 text-[#B0BAB1]">
+        توجه: شماره موبایل و نتیجه‌ی چرخش‌ها روی سرور مشترک ذخیره می‌شه تا از چرخش بیشتر از حد مجاز
+        هر شماره جلوگیری بشه. تاریخچه با شماره‌ی نصفه‌مخفی به همه نمایش داده می‌شه.
+      </p>
+    </div>
+  );
+}
