@@ -233,9 +233,7 @@ function RafflePageContent() {
     } catch (err: any) {
       console.error(err);
 
-      setError(
-        err?.message || "خطا در دریافت اطلاعات قرعه‌کشی"
-      );
+      setError(err?.message || "خطا در دریافت اطلاعات قرعه‌کشی");
     } finally {
       setLoading(false);
     }
@@ -309,8 +307,7 @@ function RafflePageContent() {
 
       let referredBy: string | null = null;
 
-      const urlReferral =
-        searchParams.get("ref")?.toUpperCase() || "";
+      const urlReferral = searchParams.get("ref")?.toUpperCase() || "";
 
       if (urlReferral) {
         const { data: referrer } = await supabase
@@ -423,9 +420,7 @@ function RafflePageContent() {
 
       setParticipant(data as Participant);
 
-      setMessage(
-        "اشتراک‌گذاری موفق بود و یک شانس اضافه گرفتید 🎁"
-      );
+      setMessage("اشتراک‌گذاری موفق بود و یک شانس اضافه گرفتید 🎁");
     } catch (err: any) {
       if (err?.name === "AbortError") {
         return;
@@ -515,10 +510,7 @@ function RafflePageContent() {
 
       let shouldWin = false;
 
-      if (
-        availablePrizeIndexes.length > 0 &&
-        emptyIndexes.length > 0
-      ) {
+      if (availablePrizeIndexes.length > 0 && emptyIndexes.length > 0) {
         const { data: winDecision, error: winError } = await supabase.rpc(
           "raffle_register_spin"
         );
@@ -559,8 +551,7 @@ function RafflePageContent() {
       const anglePerSegment = 360 / WHEEL_SEGMENTS;
 
       const targetAngle =
-        (360 -
-          (targetIndex * anglePerSegment + anglePerSegment / 2)) %
+        (360 - (targetIndex * anglePerSegment + anglePerSegment / 2)) %
         360;
 
       const currentNormalized = ((rotation % 360) + 360) % 360;
@@ -717,7 +708,6 @@ function RafflePageContent() {
   return (
     <main dir="rtl" className="min-h-screen bg-[#f5faf7] pb-16">
       <div className="mx-auto w-full max-w-5xl px-4 py-6">
-        {/* Header */}
         <section className="rounded-3xl bg-gradient-to-l from-[#0b6e4f] to-[#15966b] p-6 text-white shadow-lg">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
@@ -740,7 +730,6 @@ function RafflePageContent() {
           </div>
         </section>
 
-        {/* Win Window */}
         <section className="mt-4 rounded-2xl border border-[#F4C542]/40 bg-[#fffdf2] p-4 text-center shadow-sm">
           <div className="text-lg font-black text-[#876b00]">
             🎯 هر ۱۰ تا ۱۲ چرخش، یک نفر برنده می‌شود
@@ -752,21 +741,18 @@ function RafflePageContent() {
           </div>
         </section>
 
-        {/* Error */}
         {error && (
           <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
             {error}
           </div>
         )}
 
-        {/* Message */}
         {message && (
           <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
             {message}
           </div>
         )}
 
-        {/* Login / Auto Registration */}
         {!participant && (
           <section className="mt-6 rounded-3xl bg-white p-5 text-center shadow-sm ring-1 ring-black/5">
             {!user?.id ? (
@@ -799,16 +785,12 @@ function RafflePageContent() {
           </section>
         )}
 
-        {/* Participant Info */}
         {participant && (
           <section className="mt-6 grid gap-4 md:grid-cols-3">
             <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
               <div className="text-xs text-gray-400">شماره شرکت‌کننده</div>
 
-              <div
-                dir="ltr"
-                className="mt-2 text-lg font-black text-gray-900"
-              >
+              <div dir="ltr" className="mt-2 text-lg font-black text-gray-900">
                 {maskPhone(participant.phone)}
               </div>
             </div>
@@ -834,7 +816,6 @@ function RafflePageContent() {
           </section>
         )}
 
-        {/* Wheel */}
         {participant && (
           <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-7">
             <div className="mb-6 text-center">
@@ -848,7 +829,6 @@ function RafflePageContent() {
             </div>
 
             <div className="relative mx-auto w-full max-w-[430px]">
-              {/* Pointer */}
               <div className="absolute left-1/2 top-[-8px] z-20 -translate-x-1/2">
                 <div
                   className="h-0 w-0"
@@ -860,7 +840,6 @@ function RafflePageContent() {
                 />
               </div>
 
-              {/* Wheel */}
               <div
                 className="relative aspect-square w-full overflow-hidden rounded-full"
                 style={{
@@ -882,33 +861,20 @@ function RafflePageContent() {
                     const radius = 49;
 
                     const x1 =
-                      50 +
-                      radius *
-                        Math.cos((startAngle * Math.PI) / 180);
+                      50 + radius * Math.cos((startAngle * Math.PI) / 180);
 
                     const y1 =
-                      50 +
-                      radius *
-                        Math.sin((startAngle * Math.PI) / 180);
+                      50 + radius * Math.sin((startAngle * Math.PI) / 180);
 
                     const x2 =
-                      50 +
-                      radius *
-                        Math.cos((endAngle * Math.PI) / 180);
+                      50 + radius * Math.cos((endAngle * Math.PI) / 180);
 
                     const y2 =
-                      50 +
-                      radius *
-                        Math.sin((endAngle * Math.PI) / 180);
+                      50 + radius * Math.sin((endAngle * Math.PI) / 180);
 
                     const largeArcFlag = angle > 180 ? 1 : 0;
 
-                    const path = `
-                      M 50 50
-                      L ${x1} ${y1}
-                      A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}
-                      Z
-                    `;
+                    const path = `M 50 50 L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
 
                     const fill =
                       segment.type === "prize"
@@ -920,12 +886,10 @@ function RafflePageContent() {
                     const textRadius = 31;
 
                     const textX =
-                      50 +
-                      textRadius * Math.cos((midAngle * Math.PI) / 180);
+                      50 + textRadius * Math.cos((midAngle * Math.PI) / 180);
 
                     const textY =
-                      50 +
-                      textRadius * Math.sin((midAngle * Math.PI) / 180);
+                      50 + textRadius * Math.sin((midAngle * Math.PI) / 180);
 
                     return (
                       <g key={segment.id}>
@@ -952,7 +916,6 @@ function RafflePageContent() {
                     );
                   })}
 
-                  {/* Center */}
                   <circle
                     cx="50"
                     cy="50"
@@ -978,7 +941,6 @@ function RafflePageContent() {
                 </svg>
               </div>
 
-              {/* Spin Button */}
               <button
                 type="button"
                 onClick={doSpin}
@@ -1000,7 +962,6 @@ function RafflePageContent() {
           </section>
         )}
 
-        {/* Result */}
         {result && (
           <section
             className={`mt-6 rounded-3xl p-6 text-center shadow-sm ${
@@ -1039,7 +1000,6 @@ function RafflePageContent() {
           </section>
         )}
 
-        {/* Share */}
         {participant && (
           <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
             <div className="text-center">
@@ -1075,7 +1035,6 @@ function RafflePageContent() {
           </section>
         )}
 
-        {/* History */}
         <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black text-gray-900">
@@ -1109,9 +1068,7 @@ function RafflePageContent() {
                   <div className="text-left">
                     <div
                       className={`text-sm font-black ${
-                        item.is_win
-                          ? "text-[#8a6b00]"
-                          : "text-gray-500"
+                        item.is_win ? "text-[#8a6b00]" : "text-gray-500"
                       }`}
                     >
                       {item.label}
@@ -1127,7 +1084,6 @@ function RafflePageContent() {
           )}
         </section>
 
-        {/* Rules */}
         <section className="mt-6 rounded-3xl bg-[#0b6e4f] p-5 text-white">
           <h2 className="text-lg font-black">قوانین قرعه‌کشی</h2>
 
@@ -1142,16 +1098,4 @@ function RafflePageContent() {
             <li>• برای دریافت شانس اضافه محدودیتی تعیین نشده است.</li>
 
             <li>
-              • به‌طور میانگین هر ۱۰ تا ۱۲ چرخش و گاهی تا ۱۵ چرخش یک نفر
-              برنده می‌شود.
-            </li>
-
-            <li>
-              • چرخ قرعه‌کشی دارای ۸ خانه مساوی است؛ ۷ خانه پوچ و ۱ خانه
-              جایزه.
-            </li>
-
-            <li>• هر جایزه فقط یک بار قابل برنده شدن است.</li>
-
-            <li>
-              • پس از برنده شدن جایزه، آن جایزه از
+              • به‌طور میانگین هر ۱۰ تا ۱۲ چرخش و گاهی
