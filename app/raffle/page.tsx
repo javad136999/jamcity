@@ -98,26 +98,16 @@ result += chars[Math.floor(Math.random() * chars.length)];
 return result;
 }
 
-/**
-
-* چرخ همیشه دقیقاً ۸ خانه دارد.
-*
-* از دیتابیس فقط یک جایزه و خانه‌های پوچ را می‌خوانیم.
-* اگر positionهای 0 تا 7 موجود باشند، همان ترتیب حفظ می‌شود.
-*
-* نکته:
-* is_available برای جایزه فقط مشخص می‌کند که جایزه هنوز موجود است.
-* خانه‌های پوچ همیشه قابل نمایش هستند.
-  */
-  function prepareSegments(loaded: Segment[]) {
-  const sorted = [...loaded]
-  .sort((a, b) => a.position - b.position);
+function prepareSegments(loaded: Segment[]) {
+const sorted = loaded
+.filter((segment) => segment.position >= 0 && segment.position < WHEEL_SEGMENTS)
+.sort((a, b) => a.position - b.position);
 
 const result: Segment[] = [];
 
 for (let position = 0; position < WHEEL_SEGMENTS; position++) {
 const existing = sorted.find(
-(item) => item.position === position
+(segment) => segment.position === position
 );
 
 ```
@@ -131,36 +121,22 @@ if (existing) {
           : existing.label || "جایزه"
         : "پوچ",
   });
+} else {
+  result.push({
+    id: `virtual-empty-${position}`,
+    position,
+    label: "پوچ",
+    type: "empty",
+    amount: null,
+    is_available: true,
+  });
 }
 ```
 
 }
 
-/**
-
-* اگر به هر دلیل دیتابیس کمتر از ۸ رکورد برگرداند،
-* خانه‌های ناقص را به‌صورت پوچ می‌سازیم.
-*
-* این fallback فقط برای نمایش است و رکوردی در دیتابیس ایجاد نمی‌کند.
-  */
-  while (result.length < WHEEL_SEGMENTS) {
-  result.push({
-  id: `virtual-empty-${result.length}`,
-  position: result.length,
-  label: "پوچ",
-  type: "empty",
-  amount: null,
-  is_available: true,
-  });
-  }
-
-/**
-
-* اگر به هر دلیل بیشتر از ۸ رکورد وجود داشت،
-* فقط ۸ خانه اول نمایش داده می‌شود.
-  */
-  return result.slice(0, WHEEL_SEGMENTS);
-  }
+return result;
+}
 
 function maskPhone(phone: string) {
 const normalized = normalizePhone(phone);
@@ -174,48 +150,31 @@ return `${normalized.slice(0, 4)}****${normalized.slice(-3)}`;
 
 function RafflePageContent() {
 const supabase = createClient() as any;
-
 const searchParams = useSearchParams();
-
 const { user } = useAuth();
 
 const [segments, setSegments] = useState<Segment[]>([]);
-
 const [participant, setParticipant] =
 useState<Participant | null>(null);
 
-const [referralCode, setReferralCode] =
-useState("");
+const [referralCode, setReferralCode] = useState("");
+const [history, setHistory] = useState<SpinHistoryItem[]>([]);
 
-const [history, setHistory] =
-useState<SpinHistoryItem[]>([]);
+const [loading, setLoading] = useState(true);
+const [spinning, setSpinning] = useState(false);
+const [sharing, setSharing] = useState(false);
 
-const [loading, setLoading] =
-useState(true);
+const [message, setMessage] = useState("");
+const [error, setError] = useState("");
 
-const [spinning, setSpinning] =
-useState(false);
-
-const [sharing, setSharing] =
-useState(false);
-
-const [message, setMessage] =
-useState("");
-
-const [error, setError] =
-useState("");
-
-const [result, setResult] =
-useState<{
+const [result, setResult] = useState<{
 label: string;
 isWin: boolean;
 } | null>(null);
 
-const [rotation, setRotation] =
-useState(0);
+const [rotation, setRotation] = useState(0);
 
-const spinTimerRef =
-useRef<NodeJS.Timeout | null>(null);
+const spinTimerRef = useRef<NodeJS.Timeout | null>(null);
 
 const remaining = useMemo(() => {
 if (!participant) return 0;
@@ -223,8 +182,7 @@ if (!participant) return 0;
 ```
 return Math.max(
   0,
-  participant.spins_allowed -
-    participant.spins_used
+  participant.spins_allowed - participant.spins_used
 );
 ```
 
@@ -235,9 +193,7 @@ const ref = searchParams.get("ref");
 
 ```
 if (ref) {
-  setReferralCode(
-    ref.toUpperCase()
-  );
+  setReferralCode(ref.toUpperCase());
 }
 ```
 
@@ -249,9 +205,7 @@ loadData();
 ```
 return () => {
   if (spinTimerRef.current) {
-    clearTimeout(
-      spinTimerRef.current
-    );
+    clearTimeout(spinTimerRef.current);
   }
 };
 ```
@@ -259,18 +213,9 @@ return () => {
 }, []);
 
 useEffect(() => {
-if (
-user?.id &&
-!participant &&
-!loading
-) {
+if (user?.id && !participant && !loading) {
 ensureParticipant();
 }
-
-```
-// eslint-disable-next-line react-hooks/exhaustive-deps
-```
-
 }, [user?.id, loading]);
 
 async function loadData() {
@@ -288,18 +233,14 @@ setError("");
       .select(
         "id,position,label,type,amount,is_available"
       )
-      .order("position", {
-        ascending: true,
-      }),
+      .order("position", { ascending: true }),
 
     supabase
       .from("raffle_spins")
       .select(
         "id,phone,label,is_win,created_at"
       )
-      .order("created_at", {
-        ascending: false,
-      })
+      .order("created_at", { ascending: false })
       .limit(50),
   ]);
 
@@ -311,17 +252,14 @@ setError("");
     throw historyResponse.error;
   }
 
-  const prepared =
-    prepareSegments(
-      (segmentsResponse.data ||
-        []) as Segment[]
-    );
+  const prepared = prepareSegments(
+    (segmentsResponse.data || []) as Segment[]
+  );
 
   setSegments(prepared);
 
   setHistory(
-    (historyResponse.data ||
-      []) as SpinHistoryItem[]
+    (historyResponse.data || []) as SpinHistoryItem[]
   );
 
   if (user?.id) {
@@ -346,10 +284,7 @@ if (!user?.id) return;
 
 ```
 try {
-  const {
-    data,
-    error,
-  } = await supabase
+  const { data, error } = await supabase
     .from("raffle_participants")
     .select(
       "id,phone,spins_used,spins_allowed,referral_code,referred_by"
@@ -363,9 +298,7 @@ try {
   }
 
   if (data) {
-    setParticipant(
-      data as Participant
-    );
+    setParticipant(data as Participant);
   }
 } catch (err) {
   console.error(err);
@@ -397,9 +330,7 @@ try {
   }
 
   if (existing) {
-    setParticipant(
-      existing as Participant
-    );
+    setParticipant(existing as Participant);
     return;
   }
 
@@ -420,20 +351,14 @@ try {
     profileRow?.username || "";
 
   const normalizedPhone =
-    isValidIranianPhone(
-      rawUsername
-    )
-      ? normalizePhone(
-          rawUsername
-        )
+    isValidIranianPhone(rawUsername)
+      ? normalizePhone(rawUsername)
       : rawUsername;
 
   const newReferralCode =
     generateReferralCode();
 
-  let referredBy:
-    | string
-    | null = null;
+  let referredBy: string | null = null;
 
   const urlReferral =
     referralCode ||
@@ -441,29 +366,23 @@ try {
     "";
 
   if (urlReferral) {
-    const {
-      data: referrer,
-    } = await supabase
-      .from("raffle_participants")
-      .select("id")
-      .eq(
-        "referral_code",
-        urlReferral.toUpperCase()
-      )
-      .maybeSingle();
+    const { data: referrer } =
+      await supabase
+        .from("raffle_participants")
+        .select("id")
+        .eq(
+          "referral_code",
+          urlReferral.toUpperCase()
+        )
+        .maybeSingle();
 
-    if (
-      referrer &&
-      referrer.id
-    ) {
-      referredBy =
-        referrer.id;
+    if (referrer && referrer.id) {
+      referredBy = referrer.id;
 
       await supabase.rpc(
         "raffle_increment_spins_allowed",
         {
-          p_participant_id:
-            referrer.id,
+          p_participant_id: referrer.id,
           p_amount: 1,
         }
       );
@@ -479,12 +398,9 @@ try {
       user_id: user.id,
       phone: normalizedPhone,
       spins_used: 0,
-      spins_allowed:
-        FREE_SPINS,
-      referral_code:
-        newReferralCode,
-      referred_by:
-        referredBy,
+      spins_allowed: FREE_SPINS,
+      referral_code: newReferralCode,
+      referred_by: referredBy,
     })
     .select(
       "id,phone,spins_used,spins_allowed,referral_code,referred_by"
@@ -495,9 +411,7 @@ try {
     throw createError;
   }
 
-  setParticipant(
-    created as Participant
-  );
+  setParticipant(created as Participant);
 
   setMessage(
     `${FREE_SPINS} شانس رایگان برای شما فعال شد.`
@@ -531,8 +445,7 @@ try {
   setMessage("");
 
   const shareUrl =
-    typeof window !==
-    "undefined"
+    typeof window !== "undefined"
       ? `${window.location.origin}/raffle?ref=${participant.referral_code}`
       : "";
 
@@ -540,36 +453,27 @@ try {
     "در قرعه‌کشی شهر جم شرکت کن و شانس برنده شدن جایزه بگیر 🎁";
 
   if (
-    typeof navigator !==
-      "undefined" &&
+    typeof navigator !== "undefined" &&
     navigator.share
   ) {
     await navigator.share({
-      title:
-        "قرعه‌کشی شهر جم",
+      title: "قرعه‌کشی شهر جم",
       text: shareText,
       url: shareUrl,
     });
 
     const newAllowed =
-      participant.spins_allowed +
-      1;
+      participant.spins_allowed + 1;
 
     const {
       data,
       error,
     } = await supabase
-      .from(
-        "raffle_participants"
-      )
+      .from("raffle_participants")
       .update({
-        spins_allowed:
-          newAllowed,
+        spins_allowed: newAllowed,
       })
-      .eq(
-        "id",
-        participant.id
-      )
+      .eq("id", participant.id)
       .select(
         "id,phone,spins_used,spins_allowed,referral_code,referred_by"
       )
@@ -579,9 +483,7 @@ try {
       throw error;
     }
 
-    setParticipant(
-      data as Participant
-    );
+    setParticipant(data as Participant);
 
     setMessage(
       "اشتراک‌گذاری موفق بود و یک شانس اضافه گرفتید 🎁"
@@ -592,24 +494,17 @@ try {
     );
 
     const newAllowed =
-      participant.spins_allowed +
-      1;
+      participant.spins_allowed + 1;
 
     const {
       data,
       error,
     } = await supabase
-      .from(
-        "raffle_participants"
-      )
+      .from("raffle_participants")
       .update({
-        spins_allowed:
-          newAllowed,
+        spins_allowed: newAllowed,
       })
-      .eq(
-        "id",
-        participant.id
-      )
+      .eq("id", participant.id)
       .select(
         "id,phone,spins_used,spins_allowed,referral_code,referred_by"
       )
@@ -619,19 +514,14 @@ try {
       throw error;
     }
 
-    setParticipant(
-      data as Participant
-    );
+    setParticipant(data as Participant);
 
     setMessage(
       "لینک قرعه‌کشی کپی شد و یک شانس اضافه گرفتید."
     );
   }
 } catch (err: any) {
-  if (
-    err?.name ===
-    "AbortError"
-  ) {
+  if (err?.name === "AbortError") {
     return;
   }
 
@@ -666,10 +556,9 @@ if (error) {
   throw error;
 }
 
-const prepared =
-  prepareSegments(
-    (data || []) as Segment[]
-  );
+const prepared = prepareSegments(
+  (data || []) as Segment[]
+);
 
 setSegments(prepared);
 
@@ -723,12 +612,9 @@ if (remaining <= 0) {
   return;
 }
 
-if (
-  segments.length !==
-  WHEEL_SEGMENTS
-) {
+if (segments.length !== WHEEL_SEGMENTS) {
   setError(
-    "چرخ قرعه‌کشی هنوز به‌درستی آماده نشده است."
+    "چرخ قرعه‌کشی هنوز آماده نشده است."
   );
   return;
 }
@@ -739,72 +625,45 @@ setResult(null);
 setSpinning(true);
 
 try {
-  /**
-   * آخرین وضعیت چرخ را می‌گیریم.
-   */
   const currentSegments =
     await refreshSegments();
 
-  /**
-   * اطمینان از وجود دقیقاً ۸ خانه نمایشی.
-   */
   if (
     currentSegments.length !==
     WHEEL_SEGMENTS
   ) {
     throw new Error(
-      "چرخ قرعه‌کشی باید دقیقاً ۸ خانه داشته باشد."
+      "چرخ قرعه‌کشی باید دقیقاً ۸ بخش داشته باشد."
     );
   }
 
-  /**
-   * فقط جایزه‌ای که هنوز موجود است
-   * قابلیت برد دارد.
-   */
   const availablePrizeIndexes =
     currentSegments
-      .map(
-        (segment, index) =>
-          segment.type ===
-            "prize" &&
-          segment.is_available
-            ? index
-            : -1
+      .map((segment, index) =>
+        segment.type === "prize" &&
+        segment.is_available
+          ? index
+          : -1
       )
       .filter(
-        (index) =>
-          index !== -1
+        (index) => index !== -1
       );
 
-  /**
-   * ۷ خانه پوچ.
-   */
   const emptyIndexes =
     currentSegments
-      .map(
-        (segment, index) =>
-          segment.type ===
-            "empty"
-            ? index
-            : -1
+      .map((segment, index) =>
+        segment.type === "empty"
+          ? index
+          : -1
       )
       .filter(
-        (index) =>
-          index !== -1
+        (index) => index !== -1
       );
 
   let shouldWin = false;
 
-  /**
-   * اگر جایزه هنوز موجود است،
-   * تصمیم برد/باخت از دیتابیس گرفته می‌شود.
-   *
-   * این همان raffle_register_spin()
-   * است که قبلاً در SQL ساختی.
-   */
   if (
-    availablePrizeIndexes.length >
-      0 &&
+    availablePrizeIndexes.length > 0 &&
     emptyIndexes.length > 0
   ) {
     const {
@@ -816,34 +675,19 @@ try {
 
     if (winError) {
       console.error(
-        "raffle_register_spin error:",
         winError
       );
-
-      throw new Error(
-        "خطا در تعیین نتیجه قرعه‌کشی. لطفاً دوباره تلاش کنید."
-      );
+    } else {
+      shouldWin =
+        Boolean(winDecision);
     }
-
-    shouldWin =
-      Boolean(winDecision);
   }
 
-  /**
-   * انتخاب خانه مقصد.
-   *
-   * برد:
-   * یکی از خانه‌های جایزه.
-   *
-   * باخت:
-   * یکی از ۷ خانه پوچ.
-   */
   let targetIndex: number;
 
   if (
     shouldWin &&
-    availablePrizeIndexes.length >
-      0
+    availablePrizeIndexes.length > 0
   ) {
     const randomPrizeIndex =
       Math.floor(
@@ -855,19 +699,9 @@ try {
       availablePrizeIndexes[
         randomPrizeIndex
       ];
-  } else {
-    /**
-     * اگر برد نباشد، همیشه روی پوچ می‌ایستیم.
-     */
-    if (
-      emptyIndexes.length ===
-      0
-    ) {
-      throw new Error(
-        "هیچ خانه پوچی برای چرخش وجود ندارد."
-      );
-    }
-
+  } else if (
+    emptyIndexes.length > 0
+  ) {
     const randomEmptyIndex =
       Math.floor(
         Math.random() *
@@ -878,39 +712,39 @@ try {
       emptyIndexes[
         randomEmptyIndex
       ];
+  } else if (
+    availablePrizeIndexes.length > 0
+  ) {
+    const randomPrizeIndex =
+      Math.floor(
+        Math.random() *
+          availablePrizeIndexes.length
+      );
+
+    targetIndex =
+      availablePrizeIndexes[
+        randomPrizeIndex
+      ];
+
+    shouldWin = true;
+  } else {
+    throw new Error(
+      "هیچ بخش قابل انتخابی برای قرعه‌کشی وجود ندارد."
+    );
   }
 
   const selectedSegment =
-    currentSegments[
-      targetIndex
-    ];
-
-  /**
-   * محاسبه زاویه.
-   *
-   * چون چرخ ۸ خانه دارد،
-   * هر خانه دقیقاً ۴۵ درجه است.
-   */
-  const segmentCount =
-    WHEEL_SEGMENTS;
+    currentSegments[targetIndex];
 
   const anglePerSegment =
-    360 /
-    segmentCount;
+    360 / WHEEL_SEGMENTS;
 
-  /**
-   * ۵ تا ۷ دور کامل.
-   */
   const extraTurns =
     5 +
     Math.floor(
       Math.random() * 3
     );
 
-  /**
-   * زاویه مرکز خانه انتخاب‌شده
-   * نسبت به فلش بالای چرخ.
-   */
   const targetAngle =
     360 -
     targetIndex *
@@ -918,8 +752,7 @@ try {
     anglePerSegment / 2;
 
   const currentNormalized =
-    ((rotation % 360) +
-      360) %
+    ((rotation % 360) + 360) %
     360;
 
   let delta =
@@ -935,13 +768,8 @@ try {
     extraTurns * 360 +
     delta;
 
-  setRotation(
-    finalRotation
-  );
+  setRotation(finalRotation);
 
-  /**
-   * مدت انیمیشن.
-   */
   await new Promise<void>(
     (resolve) => {
       spinTimerRef.current =
@@ -952,24 +780,14 @@ try {
     }
   );
 
-  /**
-   * نتیجه نهایی.
-   *
-   * اگر سرور گفته برد است،
-   * جایزه را به شکل اتمیک رزرو می‌کنیم.
-   *
-   * شرط is_available=true باعث می‌شود
-   * یک جایزه دوبار داده نشود.
-   */
   let finalIsWin = false;
   let finalLabel = "پوچ";
 
   if (
-    selectedSegment.type ===
-      "prize" &&
+    selectedSegment.type === "prize" &&
     shouldWin &&
     !selectedSegment.id.startsWith(
-      "virtual-"
+      "virtual-empty-"
     )
   ) {
     const {
@@ -978,8 +796,7 @@ try {
     } = await supabase
       .from("raffle_segments")
       .update({
-        is_available:
-          false,
+        is_available: false,
       })
       .eq(
         "id",
@@ -1000,7 +817,6 @@ try {
 
     if (reserveError) {
       console.error(
-        "Prize reservation error:",
         reserveError
       );
     }
@@ -1015,23 +831,9 @@ try {
             )
           : reservedPrize.label ||
             "جایزه";
-    } else {
-      /**
-       * اگر همزمان کاربر دیگری
-       * جایزه را برده باشد،
-       * این چرخش برنده محسوب نمی‌شود.
-       */
-      finalIsWin = false;
-      finalLabel = "پوچ";
     }
-  } else {
-    finalIsWin = false;
-    finalLabel = "پوچ";
   }
 
-  /**
-   * ثبت نتیجه در تاریخچه.
-   */
   const {
     error: historyError,
   } = await supabase
@@ -1047,26 +849,15 @@ try {
         finalIsWin,
       segment_id:
         selectedSegment.id.startsWith(
-          "virtual-"
+          "virtual-empty-"
         )
           ? null
           : selectedSegment.id,
     });
 
   if (historyError) {
-    /**
-     * اگر segment_id در جدول فعلی
-     * وجود نداشته باشد یا constraint متفاوت باشد،
-     * برای جلوگیری از خراب شدن کل چرخ،
-     * یک بار بدون segment_id تلاش می‌کنیم.
-     */
-    console.error(
-      "History insert with segment_id failed:",
-      historyError
-    );
-
     const {
-      error: fallbackHistoryError,
+      error: fallbackError,
     } = await supabase
       .from("raffle_spins")
       .insert({
@@ -1080,36 +871,23 @@ try {
           finalIsWin,
       });
 
-    if (
-      fallbackHistoryError
-    ) {
+    if (fallbackError) {
       console.error(
-        "Fallback history insert failed:",
-        fallbackHistoryError
+        fallbackError
       );
     }
   }
 
-  /**
-   * مصرف یک شانس.
-   *
-   * شرط spins_used فعلی برای جلوگیری
-   * از مصرف دوباره در درخواست همزمان است.
-   */
   const newUsed =
-    participant.spins_used +
-    1;
+    participant.spins_used + 1;
 
   const {
     data: updatedParticipant,
     error: participantError,
   } = await supabase
-    .from(
-      "raffle_participants"
-    )
+    .from("raffle_participants")
     .update({
-      spins_used:
-        newUsed,
+      spins_used: newUsed,
     })
     .eq(
       "id",
@@ -1126,7 +904,6 @@ try {
 
   if (participantError) {
     console.error(
-      "Participant update error:",
       participantError
     );
   }
@@ -1139,13 +916,9 @@ try {
     await loadParticipant();
   }
 
-  /**
-   * نمایش نتیجه.
-   */
   setResult({
     label: finalLabel,
-    isWin:
-      finalIsWin,
+    isWin: finalIsWin,
   });
 
   if (finalIsWin) {
@@ -1178,34 +951,18 @@ if (loading) {
 return ( <main
      dir="rtl"
      className="min-h-screen bg-[#f5faf7] flex items-center justify-center"
-   > <div className="flex flex-col items-center gap-4"> <Spinner />
-
-```
-      <p className="text-gray-600">
-        در حال آماده‌سازی قرعه‌کشی...
-      </p>
-    </div>
-  </main>
+   > <div className="flex flex-col items-center gap-4"> <Spinner /> <p className="text-gray-600">
+در حال آماده‌سازی قرعه‌کشی... </p> </div> </main>
 );
-```
-
 }
 
 return ( <main
    dir="rtl"
    className="min-h-screen bg-[#f5faf7] pb-16"
- > <div className="mx-auto w-full max-w-5xl px-4 py-6">
+ > <div className="mx-auto w-full max-w-5xl px-4 py-6"> <section className="rounded-3xl bg-gradient-to-l from-[#0b6e4f] to-[#15966b] p-6 text-white shadow-lg"> <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"> <div> <div className="mb-2 text-sm opacity-80">
+جم‌سیتی </div>
 
 ```
-    {/* Header */}
-    <section className="rounded-3xl bg-gradient-to-l from-[#0b6e4f] to-[#15966b] p-6 text-white shadow-lg">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-
-        <div>
-          <div className="mb-2 text-sm opacity-80">
-            جم‌سیتی
-          </div>
-
           <h1 className="text-2xl font-black md:text-3xl">
             قرعه‌کشی شهر جم 🎁
           </h1>
@@ -1216,7 +973,6 @@ return ( <main
         </div>
 
         <div className="rounded-2xl bg-white/15 px-5 py-4 text-center backdrop-blur">
-
           <div className="text-xs opacity-80">
             شانس باقی‌مانده
           </div>
@@ -1224,43 +980,34 @@ return ( <main
           <div className="mt-1 text-3xl font-black">
             {remaining}
           </div>
-
         </div>
-
       </div>
     </section>
 
-    {/* Win Window */}
     <section className="mt-4 rounded-2xl border border-[#F4C542]/40 bg-[#fffdf2] p-4 text-center shadow-sm">
-
       <div className="text-lg font-black text-[#876b00]">
         🎯 هر ۱۰ تا ۱۲ چرخش، یک نفر برنده می‌شود
       </div>
 
       <div className="mt-1 text-sm text-gray-600">
-        بین همه شرکت‌کنندگان سایت، معمولاً هر ۱۰ تا ۱۲ چرخش و گاهی تا ۱۵ چرخش یک برد قطعی وجود دارد.
+        بین همه شرکت‌کنندگان سایت، معمولاً هر ۱۰ تا ۱۲ چرخش (و گاهی تا ۱۵ چرخش) یک برد قطعی وجود دارد.
       </div>
-
     </section>
 
-    {/* Error */}
     {error && (
       <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
         {error}
       </div>
     )}
 
-    {/* Message */}
     {message && (
       <div className="mt-4 rounded-2xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">
         {message}
       </div>
     )}
 
-    {/* Login / Auto Registration */}
     {!participant && (
       <section className="mt-6 rounded-3xl bg-white p-5 text-center shadow-sm ring-1 ring-black/5">
-
         {!user?.id ? (
           <>
             <h2 className="text-lg font-black text-gray-900">
@@ -1281,20 +1028,16 @@ return ( <main
         ) : (
           <div className="flex flex-col items-center gap-3 py-6">
             <Spinner />
-
             <p className="text-sm text-gray-500">
               در حال فعال‌سازی {FREE_SPINS} شانس رایگان شما...
             </p>
           </div>
         )}
-
       </section>
     )}
 
-    {/* Participant Info */}
     {participant && (
       <section className="mt-6 grid gap-4 md:grid-cols-3">
-
         <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
           <div className="text-xs text-gray-400">
             شماره شرکت‌کننده
@@ -1332,16 +1075,12 @@ return ( <main
             {participant.referral_code}
           </div>
         </div>
-
       </section>
     )}
 
-    {/* Wheel */}
     {participant && (
       <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-black/5 md:p-7">
-
         <div className="mb-6 text-center">
-
           <h2 className="text-xl font-black text-gray-900">
             چرخ را بچرخان 🎡
           </h2>
@@ -1349,14 +1088,10 @@ return ( <main
           <p className="mt-2 text-sm text-gray-500">
             هر بار چرخش یک شانس مصرف می‌کند.
           </p>
-
         </div>
 
         <div className="relative mx-auto w-full max-w-[430px]">
-
-          {/* Pointer */}
           <div className="absolute left-1/2 top-[-8px] z-20 -translate-x-1/2">
-
             <div
               className="h-0 w-0"
               style={{
@@ -1368,178 +1103,143 @@ return ( <main
                   "30px solid #111827",
               }}
             />
-
           </div>
 
-          {/* Wheel */}
           <div
             className="relative aspect-square w-full overflow-hidden rounded-full"
             style={{
-              transform:
-                `rotate(${rotation}deg)`,
-
-              transition:
-                spinning
-                  ? "transform 4.3s cubic-bezier(0.12, 0.72, 0.15, 1)"
-                  : "none",
+              transform: `rotate(${rotation}deg)`,
+              transition: spinning
+                ? "transform 4.3s cubic-bezier(0.12, 0.72, 0.15, 1)"
+                : "none",
             }}
           >
-
             <svg
               viewBox="0 0 100 100"
               className="h-full w-full drop-shadow-xl"
             >
+              {segments.map(
+                (segment, index) => {
+                  const angle =
+                    360 /
+                    WHEEL_SEGMENTS;
 
-              {segments
-                .slice(
-                  0,
-                  WHEEL_SEGMENTS
-                )
-                .map(
-                  (
-                    segment,
-                    index
-                  ) => {
+                  const startAngle =
+                    index * angle - 90;
 
-                    const count =
-                      WHEEL_SEGMENTS;
+                  const endAngle =
+                    startAngle + angle;
 
-                    const angle =
-                      360 /
-                      count;
+                  const radius = 49;
 
-                    const startAngle =
-                      index *
-                        angle -
-                      90;
+                  const x1 =
+                    50 +
+                    radius *
+                      Math.cos(
+                        (startAngle *
+                          Math.PI) /
+                          180
+                      );
 
-                    const endAngle =
-                      startAngle +
-                      angle;
+                  const y1 =
+                    50 +
+                    radius *
+                      Math.sin(
+                        (startAngle *
+                          Math.PI) /
+                          180
+                      );
 
-                    const radius =
-                      49;
+                  const x2 =
+                    50 +
+                    radius *
+                      Math.cos(
+                        (endAngle *
+                          Math.PI) /
+                          180
+                      );
 
-                    const x1 =
-                      50 +
-                      radius *
-                        Math.cos(
-                          (startAngle *
-                            Math.PI) /
-                            180
-                        );
+                  const y2 =
+                    50 +
+                    radius *
+                      Math.sin(
+                        (endAngle *
+                          Math.PI) /
+                          180
+                      );
 
-                    const y1 =
-                      50 +
-                      radius *
-                        Math.sin(
-                          (startAngle *
-                            Math.PI) /
-                            180
-                        );
+                  const path = `
+                    M 50 50
+                    L ${x1} ${y1}
+                    A ${radius} ${radius} 0 0 1 ${x2} ${y2}
+                    Z
+                  `;
 
-                    const x2 =
-                      50 +
-                      radius *
-                        Math.cos(
-                          (endAngle *
-                            Math.PI) /
-                            180
-                        );
+                  const fill =
+                    segment.type ===
+                    "prize"
+                      ? PRIZE_COLOR
+                      : EMPTY_COLORS[
+                          index %
+                            EMPTY_COLORS.length
+                        ];
 
-                    const y2 =
-                      50 +
-                      radius *
-                        Math.sin(
-                          (endAngle *
-                            Math.PI) /
-                            180
-                        );
+                  const midAngle =
+                    startAngle +
+                    angle / 2;
 
-                    const largeArcFlag =
-                      angle >
-                      180
-                        ? 1
-                        : 0;
+                  const textRadius =
+                    31;
 
-                    const path = `
-                      M 50 50
-                      L ${x1} ${y1}
-                      A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}
-                      Z
-                    `;
+                  const textX =
+                    50 +
+                    textRadius *
+                      Math.cos(
+                        (midAngle *
+                          Math.PI) /
+                          180
+                      );
 
-                    const fill =
-                      segment.type ===
-                      "prize"
-                        ? PRIZE_COLOR
-                        : EMPTY_COLORS[
-                            index %
-                              EMPTY_COLORS.length
-                          ];
+                  const textY =
+                    50 +
+                    textRadius *
+                      Math.sin(
+                        (midAngle *
+                          Math.PI) /
+                          180
+                      );
 
-                    const midAngle =
-                      startAngle +
-                      angle /
-                        2;
+                  return (
+                    <g
+                      key={segment.id}
+                    >
+                      <path
+                        d={path}
+                        fill={fill}
+                        stroke="#ffffff"
+                        strokeWidth="0.8"
+                      />
 
-                    const textRadius =
-                      31;
-
-                    const textX =
-                      50 +
-                      textRadius *
-                        Math.cos(
-                          (midAngle *
-                            Math.PI) /
-                            180
-                        );
-
-                    const textY =
-                      50 +
-                      textRadius *
-                        Math.sin(
-                          (midAngle *
-                            Math.PI) /
-                            180
-                        );
-
-                    return (
-                      <g
-                        key={
-                          segment.id
-                        }
+                      <text
+                        x={textX}
+                        y={textY}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fontSize="3.2"
+                        fontWeight="800"
+                        fill="#1f2937"
+                        transform={`rotate(${midAngle + 90} ${textX} ${textY})`}
                       >
+                        {segment.type ===
+                        "prize"
+                          ? "🎁"
+                          : "پوچ"}
+                      </text>
+                    </g>
+                  );
+                }
+              )}
 
-                        <path
-                          d={path}
-                          fill={fill}
-                          stroke="#ffffff"
-                          strokeWidth="0.8"
-                        />
-
-                        <text
-                          x={textX}
-                          y={textY}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          fontSize="3.5"
-                          fontWeight="800"
-                          fill="#1f2937"
-                          transform={`rotate(${midAngle + 90} ${textX} ${textY})`}
-                        >
-                          {segment.type ===
-                          "prize"
-                            ? "🎁"
-                            : "پوچ"}
-                        </text>
-
-                      </g>
-                    );
-                  }
-                )}
-
-              {/* Center */}
               <circle
                 cx="50"
                 cy="50"
@@ -1569,12 +1269,9 @@ return ( <main
                   ? "..."
                   : "بچرخان"}
               </text>
-
             </svg>
-
           </div>
 
-          {/* Spin Button */}
           <button
             type="button"
             onClick={doSpin}
@@ -1584,7 +1281,6 @@ return ( <main
             }
             className="mx-auto mt-6 flex min-w-[220px] items-center justify-center gap-2 rounded-2xl bg-[#0b6e4f] px-7 py-4 text-lg font-black text-white shadow-xl transition hover:bg-[#095c42] active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-
             {spinning ? (
               <>
                 <Spinner />
@@ -1597,15 +1293,11 @@ return ( <main
             ) : (
               "شانس شما تمام شده"
             )}
-
           </button>
-
         </div>
-
       </section>
     )}
 
-    {/* Result */}
     {result && (
       <section
         className={`mt-6 rounded-3xl p-6 text-center shadow-sm ${
@@ -1614,7 +1306,6 @@ return ( <main
             : "border border-gray-200 bg-white"
         }`}
       >
-
         {result.isWin ? (
           <>
             <div className="text-5xl">
@@ -1648,16 +1339,12 @@ return ( <main
             </p>
           </>
         )}
-
       </section>
     )}
 
-    {/* Share */}
     {participant && (
       <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-
         <div className="text-center">
-
           <div className="text-3xl">
             👥
           </div>
@@ -1667,7 +1354,7 @@ return ( <main
           </h2>
 
           <p className="mt-2 text-sm leading-7 text-gray-500">
-            لینک قرعه‌کشی را برای دوستانت بفرست؛ به ازای هر اشتراک‌گذاری موفق یک شانس اضافه می‌گیری.
+            لینک قرعه‌کشی را برای دوستانت بفرست؛ به ازای هر اشتراک‌گذاری موفق یک شانس اضافه می‌گیری، بدون هیچ سقفی.
           </p>
 
           <div
@@ -1679,9 +1366,7 @@ return ( <main
 
           <button
             type="button"
-            onClick={
-              shareWithFriends
-            }
+            onClick={shareWithFriends}
             disabled={sharing}
             className="mt-4 w-full rounded-2xl bg-[#F4C542] px-5 py-4 font-black text-gray-900 shadow-md transition hover:bg-[#e9ba32] disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -1689,17 +1374,12 @@ return ( <main
               ? "در حال اشتراک‌گذاری..."
               : "اشتراک‌گذاری و دریافت شانس 🎁"}
           </button>
-
         </div>
-
       </section>
     )}
 
-    {/* History */}
     <section className="mt-6 rounded-3xl bg-white p-5 shadow-sm ring-1 ring-black/5">
-
       <div className="flex items-center justify-between">
-
         <h2 className="text-lg font-black text-gray-900">
           نتایج قرعه‌کشی
         </h2>
@@ -1707,7 +1387,6 @@ return ( <main
         <span className="text-xs text-gray-400">
           آخرین نتایج
         </span>
-
       </div>
 
       {history.length === 0 ? (
@@ -1716,70 +1395,56 @@ return ( <main
         </div>
       ) : (
         <div className="mt-4 divide-y divide-gray-100">
-
-          {history.map(
-            (item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between gap-3 py-4"
-              >
-
-                <div className="min-w-0">
-
-                  <div className="font-bold text-gray-800">
-                    {item.is_win
-                      ? "🎁 برنده شد"
-                      : "😅 پوچ"}
-                  </div>
-
-                  <div className="mt-1 text-xs text-gray-400">
-                    {maskPhone(
-                      item.phone
-                    )}
-                  </div>
-
+          {history.map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between gap-3 py-4"
+            >
+              <div className="min-w-0">
+                <div className="font-bold text-gray-800">
+                  {item.is_win
+                    ? "🎁 برنده شد"
+                    : "😅 پوچ"}
                 </div>
 
-                <div className="text-left">
-
-                  <div
-                    className={`text-sm font-black ${
-                      item.is_win
-                        ? "text-[#8a6b00]"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    {item.label}
-                  </div>
-
-                  <div className="mt-1 text-xs text-gray-400">
-                    {new Date(
-                      item.created_at
-                    ).toLocaleDateString(
-                      "fa-IR"
-                    )}
-                  </div>
-
+                <div className="mt-1 text-xs text-gray-400">
+                  {maskPhone(
+                    item.phone
+                  )}
                 </div>
-
               </div>
-            )
-          )}
 
+              <div className="text-left">
+                <div
+                  className={`text-sm font-black ${
+                    item.is_win
+                      ? "text-[#8a6b00]"
+                      : "text-gray-500"
+                  }`}
+                >
+                  {item.label}
+                </div>
+
+                <div className="mt-1 text-xs text-gray-400">
+                  {new Date(
+                    item.created_at
+                  ).toLocaleDateString(
+                    "fa-IR"
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
-
     </section>
 
-    {/* Rules */}
     <section className="mt-6 rounded-3xl bg-[#0b6e4f] p-5 text-white">
-
       <h2 className="text-lg font-black">
         قوانین قرعه‌کشی
       </h2>
 
       <ul className="mt-4 space-y-3 text-sm leading-7 text-white/90">
-
         <li>
           • هر شرکت‌کننده در شروع {FREE_SPINS} شانس رایگان دارد.
         </li>
@@ -1789,15 +1454,11 @@ return ( <main
         </li>
 
         <li>
-          • برای دریافت شانس اضافه محدودیتی تعیین نشده است.
+          • سقفی برای تعداد ارسال لینک و دریافت شانس اضافه وجود ندارد.
         </li>
 
         <li>
-          • به‌طور میانگین هر ۱۰ تا ۱۲ چرخش و گاهی تا ۱۵ چرخش یک نفر برنده می‌شود.
-        </li>
-
-        <li>
-          • چرخ قرعه‌کشی دارای ۸ خانه مساوی است؛ ۷ خانه پوچ و ۱ خانه جایزه.
+          • به‌طور میانگین هر ۱۰ تا ۱۲ چرخش (و گاهی تا ۱۵ چرخش) یک نفر برنده می‌شود.
         </li>
 
         <li>
@@ -1805,13 +1466,10 @@ return ( <main
         </li>
 
         <li>
-          • پس از برنده شدن جایزه، آن جایزه از موجودی خارج می‌شود.
+          • پس از اتمام موجودی یک جایزه، آن جایزه دیگر قابل انتخاب نیست.
         </li>
-
       </ul>
-
     </section>
-
   </div>
 </main>
 ```
@@ -1825,22 +1483,9 @@ return (
 fallback={ <main
        dir="rtl"
        className="min-h-screen bg-[#f5faf7] flex items-center justify-center"
-     > <div className="flex flex-col items-center gap-4">
-
-```
-        <Spinner />
-
-        <p className="text-gray-600">
-          در حال بارگذاری...
-        </p>
-
-      </div>
-    </main>
-  }
->
-  <RafflePageContent />
-</Suspense>
-```
-
+     > <div className="flex flex-col items-center gap-4"> <Spinner /> <p className="text-gray-600">
+در حال بارگذاری... </p> </div> </main>
+}
+> <RafflePageContent /> </Suspense>
 );
 }
