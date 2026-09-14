@@ -412,11 +412,9 @@ export default function WallPage() {
       // momentarily fail right after a migration and made the wall
       // appear empty. Two plain queries are more robust.
       const { data: rawMessages, error: msgError } = await supabase
-        .from("wall_messages")
-        .select("*")
-        .order("created_at", { ascending: true })
-        .limit(200);
-
+  .from("wall_messages")
+  .select("*")
+  .order("created_at", { ascending: true });
       if (msgError) {
         console.error("wall load error", msgError);
         setMessages([]);
