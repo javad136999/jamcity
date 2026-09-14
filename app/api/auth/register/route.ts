@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import crypto from "crypto";
@@ -24,24 +25,61 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    const displayName = String(body.displayName || "").trim();
-    const phone = String(body.phone || "").trim();
-    const password = String(body.password || "");
-    const recoveryPhrase = String(body.recoveryPhrase || "").trim();
+    const displayName = String(
+      body.displayName || ""
+    ).trim();
 
-    const normalizedPhone = phone.replace(/\D/g, "");
+    const phone = String(
+      body.phone || ""
+    ).trim();
+
+    const password = String(
+      body.password || ""
+    );
+
+    const recoveryPhrase = String(
+      body.recoveryPhrase || ""
+    ).trim();
+
+    /*
+     * دریافت کد معرفی
+     *
+     * سه حالت را پشتیبانی می‌کنیم:
+     * referralCode
+     * referral_code
+     * ref
+     */
+    const referralCode = String(
+      body.referralCode ||
+        body.referral_code ||
+        body.ref ||
+        ""
+    )
+      .trim()
+      .toUpperCase();
+
+    const normalizedPhone = phone.replace(
+      /\D/g,
+      ""
+    );
 
     // بررسی نام نمایشی
     if (displayName.length < 2) {
       return NextResponse.json(
-        { error: "نام نمایشی باید حداقل ۲ کاراکتر باشد." },
+        {
+          error:
+            "نام نمایشی باید حداقل ۲ کاراکتر باشد.",
+        },
         { status: 400 }
       );
     }
 
     if (displayName.length > 50) {
       return NextResponse.json(
-        { error: "نام نمایشی نمی‌تواند بیشتر از ۵۰ کاراکتر باشد." },
+        {
+          error:
+            "نام نمایشی نمی‌تواند بیشتر از ۵۰ کاراکتر باشد.",
+        },
         { status: 400 }
       );
     }
@@ -49,7 +87,10 @@ export async function POST(request: Request) {
     // بررسی شماره موبایل
     if (!/^09\d{9}$/.test(normalizedPhone)) {
       return NextResponse.json(
-        { error: "شماره موبایل صحیح نیست." },
+        {
+          error:
+            "شماره موبایل صحیح نیست.",
+        },
         { status: 400 }
       );
     }
@@ -57,7 +98,10 @@ export async function POST(request: Request) {
     // بررسی رمز عبور
     if (password.length < 6) {
       return NextResponse.json(
-        { error: "رمز عبور باید حداقل ۶ کاراکتر باشد." },
+        {
+          error:
+            "رمز عبور باید حداقل ۶ کاراکتر باشد.",
+        },
         { status: 400 }
       );
     }
@@ -65,40 +109,128 @@ export async function POST(request: Request) {
     // بررسی عبارت بازیابی
     if (recoveryPhrase.length < 6) {
       return NextResponse.json(
-        { error: "عبارت بازیابی باید حداقل ۶ کاراکتر باشد." },
+        {
+          error:
+            "عبارت بازیابی باید حداقل ۶ کاراکتر باشد.",
+        },
         { status: 400 }
       );
     }
 
-    // ایمیل داخلی برای سیستم احراز هویت Supabase
+    // ایمیل داخلی برای Supabase Auth
     const email = `${normalizedPhone}@wall.jamcity.local`;
 
-    // بررسی اینکه شماره قبلاً ثبت نشده باشد
-    const { data: existingProfile, error: profileCheckError } =
-      await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("username", normalizedPhone)
-        .maybeSingle();
+    // بررسی شماره تکراری
+    const {
+      data: existingProfile,
+      error: profileCheckError,
+    } = await supabaseAdmin
+      .from("profiles")
+      .select("id")
+      .eq("username", normalizedPhone)
+      .maybeSingle();
 
     if (profileCheckError) {
-      console.error(profileCheckError);
+      console.error(
+        "Profile check error:",
+        profileCheckError
+      );
 
       return NextResponse.json(
-        { error: "خطا در بررسی حساب." },
+        {
+          error:
+            "خطا در بررسی حساب.",
+        },
         { status: 500 }
       );
     }
 
     if (existingProfile) {
       return NextResponse.json(
-        { error: "این شماره موبایل قبلاً ثبت‌نام کرده است." },
+        {
+          error:
+            "این شماره موبایل قبلاً ثبت‌نام کرده است.",
+        },
         { status: 409 }
       );
     }
 
+    /*
+     * --------------------------------------------------
+     * پیدا کردن معرف
+     * --------------------------------------------------
+     */
+
+    let referrerId: string | null = null;
+
+    if (referralCode) {
+      console.log(
+        "Checking referral code:",
+        referralCode
+      );
+
+      const {
+        data: referrer,
+        error: referralError,
+      } = await supabaseAdmin
+        .from("profiles")
+        .select("id, referral_code")
+        .ilike(
+          "referral_code",
+          referralCode
+        )
+        .maybeSingle();
+
+      if (referralError) {
+        console.error(
+          "Referral lookup error:",
+          referralError
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "خطا در بررسی کد معرفی.",
+          },
+          { status: 500 }
+        );
+      }
+
+      if (!referrer) {
+        console.error(
+          "Invalid referral code:",
+          referralCode
+        );
+
+        return NextResponse.json(
+          {
+            error:
+              "کد معرفی واردشده معتبر نیست.",
+          },
+          { status: 400 }
+        );
+      }
+
+      referrerId = referrer.id;
+
+      console.log(
+        "Referral accepted. Referrer:",
+        referrerId
+      );
+    }
+
+    /*
+     * جلوگیری از حالت احتمالی خودمعرفی
+     *
+     * در این مرحله userId هنوز ساخته نشده،
+     * بنابراین بعد از ساخت Auth هم بررسی می‌کنیم.
+     */
+
     // ساخت حساب در Supabase Auth
-    const { data: userData, error: createUserError } =
+    const {
+      data: userData,
+      error: createUserError,
+    } =
       await supabaseAdmin.auth.admin.createUser({
         email,
         password,
@@ -110,54 +242,114 @@ export async function POST(request: Request) {
         },
       });
 
-    if (createUserError || !userData.user) {
-      console.error(createUserError);
+    if (
+      createUserError ||
+      !userData.user
+    ) {
+      console.error(
+        "Create user error:",
+        createUserError
+      );
 
       return NextResponse.json(
         {
           error:
-            createUserError?.message || "ساخت حساب انجام نشد.",
+            createUserError?.message ||
+            "ساخت حساب انجام نشد.",
         },
         { status: 400 }
       );
     }
 
-    const userId = userData.user.id;
+    const userId =
+      userData.user.id;
 
-    // ذخیره اطلاعات پروفایل
-    // عبارت بازیابی فقط به صورت Hash ذخیره می‌شود
-    const { error: profileError } = await supabaseAdmin
+    /*
+     * جلوگیری قطعی از خودمعرفی
+     */
+    if (
+      referrerId &&
+      referrerId === userId
+    ) {
+      await supabaseAdmin.auth.admin.deleteUser(
+        userId
+      );
+
+      return NextResponse.json(
+        {
+          error:
+            "نمی‌توانید از کد معرفی خودتان استفاده کنید.",
+        },
+        { status: 400 }
+      );
+    }
+
+    /*
+     * --------------------------------------------------
+     * ذخیره اطلاعات پروفایل
+     * --------------------------------------------------
+     */
+
+    const {
+      error: profileError,
+    } = await supabaseAdmin
       .from("profiles")
       .update({
         username: normalizedPhone,
         display_name: displayName,
-        recovery_phrase_hash: hashPhrase(recoveryPhrase),
+        recovery_phrase_hash:
+          hashPhrase(
+            recoveryPhrase
+          ),
         onboarded: true,
+        referred_by: referrerId,
       })
       .eq("id", userId);
 
     if (profileError) {
-      console.error(profileError);
+      console.error(
+        "Profile update error:",
+        profileError
+      );
 
-      // اگر ساخت پروفایل شکست خورد، حساب Auth هم حذف شود
-      await supabaseAdmin.auth.admin.deleteUser(userId);
+      // اگر پروفایل شکست خورد،
+      // حساب Auth هم حذف شود.
+      await supabaseAdmin.auth.admin.deleteUser(
+        userId
+      );
 
       return NextResponse.json(
-        { error: "ساخت پروفایل انجام نشد." },
+        {
+          error:
+            "ساخت پروفایل انجام نشد.",
+        },
         { status: 500 }
       );
     }
 
+    /*
+     * ثبت موفق
+     */
     return NextResponse.json({
       success: true,
-      message: "حساب با موفقیت ساخته شد.",
+      message:
+        "حساب با موفقیت ساخته شد.",
+      referralApplied:
+        Boolean(referrerId),
     });
   } catch (error) {
-    console.error(error);
+    console.error(
+      "Unexpected register error:",
+      error
+    );
 
     return NextResponse.json(
-      { error: "خطای غیرمنتظره رخ داد." },
+      {
+        error:
+          "خطای غیرمنتظره رخ داد.",
+      },
       { status: 500 }
     );
   }
 }
+

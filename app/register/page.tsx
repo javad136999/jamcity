@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorState } from "@/components/Feedback";
@@ -12,6 +12,14 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
+  const [referralCode, setReferralCode] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const ref = new URLSearchParams(window.location.search).get("ref");
+      if (ref) setReferralCode(ref.toUpperCase());
+    }
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +40,7 @@ export default function RegisterPage() {
           phone,
           password,
           recoveryPhrase,
+          referralCode,
         }),
       });
 
@@ -148,6 +157,20 @@ export default function RegisterPage() {
             یک عبارت مخصوص خودتان انتخاب کنید و حتماً آن را به خاطر بسپارید.
             برای بازیابی رمز عبور به آن نیاز خواهید داشت.
           </p>
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-600">کد معرفی (اختیاری)</label>
+          <input
+            type="text"
+            dir="ltr"
+            maxLength={8}
+            value={referralCode}
+            onChange={(e) => setReferralCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))}
+            placeholder="مثلاً A1B2C3D4"
+            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm tracking-widest text-slate-800 outline-none transition focus:border-jam-green"
+          />
+          <p className="text-xs leading-5 text-slate-400">اگر کسی شما را دعوت کرده، کد او را وارد کنید تا عضویت شما برایش ثبت شود.</p>
         </div>
 
         <button

@@ -109,6 +109,13 @@ export default function Header() {
                     🏷️ تخفیف‌ها
                   </Link>
                   <Link
+                    href="/referrals"
+                    className="block px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    باشگاه معرفی
+                  </Link>
+                  <Link
                     href="/settings"
                     className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50"
                     onClick={() => setMenuOpen(false)}
@@ -116,13 +123,10 @@ export default function Header() {
                     تنظیمات
                   </Link>
                   {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className="block px-4 py-3 text-sm font-bold text-jam-navy hover:bg-red-50"
-                      onClick={() => setMenuOpen(false)}
-                    >
-                      پنل مدیریت
-                    </Link>
+                    <>
+                      <Link href="/admin" className="block px-4 py-3 text-sm font-bold text-jam-navy hover:bg-red-50" onClick={() => setMenuOpen(false)}>پنل مدیریت</Link>
+                      <Link href="/admin/referrals" className="block px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50" onClick={() => setMenuOpen(false)}>مدیریت معرفی‌ها</Link>
+                    </>
                   )}
                   <button
                     onClick={handleLogout}
