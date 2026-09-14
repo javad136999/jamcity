@@ -182,10 +182,10 @@ export default function ReferralAdminPage() {
           };
         })
         .filter(
-          (item) =>
-            item.referral_count > 0 ||
-            item.reward_count > 0
-        )
+  (item: Referrer) =>
+    item.referral_count > 0 ||
+    item.reward_count > 0
+)
         .sort(
           (a, b) =>
             b.referral_count -
