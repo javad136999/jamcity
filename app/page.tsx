@@ -103,6 +103,17 @@ type DisplayProduct = {
   discount_percent: number | null;
 };
 
+/* =========================================================
+   CITY EVENTS
+========================================================= */
+
+type CityEvent = {
+  id: string;
+  title: string;
+  category: string | null;
+  event_date: string | null;
+};
+
 const TOROB_RECENT_SEARCHES_KEY = "jamcity:torob-recent-searches";
 const TOROB_SUGGESTIONS = [
   "گوشی سامسونگ",
@@ -122,6 +133,9 @@ export default function HomePage() {
   // محصولات دسته‌های با پنل اختصاصی (فقط برای طلایی‌ها، برای ردیف ویترین طلایی)
   const [goldVehicles, setGoldVehicles] = useState<Vehicle[]>([]);
   const [goldFootwearItems, setGoldFootwearItems] = useState<FootwearItem[]>([]);
+
+  /* رویدادهای منتشرشده */
+  const [cityEvents, setCityEvents] = useState<CityEvent[]>([]);
 
   const [torobModalOpen, setTorobModalOpen] = useState(false);
   const [torobQuery, setTorobQuery] = useState("");
@@ -156,6 +170,27 @@ export default function HomePage() {
       }
 
       setProducts((productData ?? []) as Product[]);
+
+      /* =====================================================
+         CITY EVENTS
+         فقط رویدادهای منتشرشده
+      ===================================================== */
+
+      const { data: eventData, error: eventError } = await supabase
+        .from("events")
+        .select("id,title,category,event_date")
+        .eq("is_published", true)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (eventError) {
+        console.error(
+          "Failed to load city events:",
+          eventError.message
+        );
+      }
+
+      setCityEvents((eventData ?? []) as CityEvent[]);
     }
 
     loadHome();
@@ -426,6 +461,59 @@ export default function HomePage() {
       </Link>
 
       {/* =====================================================
+          CITY EVENTS TICKER
+          رویدادهای دستی ثبت‌شده توسط مدیر
+      ====================================================== */}
+
+      {cityEvents.length > 0 && (
+        <section
+          aria-label="آخرین رویدادهای جم"
+          className="group relative mx-auto flex max-w-md items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
+        >
+          <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/15 blur-2xl" />
+
+          <div className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-[#39ff8f]/10 blur-2xl" />
+
+          <span className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#eafff3] text-sm shadow-[0_0_12px_rgba(57,255,143,.45)]">
+            📅
+          </span>
+
+          <p className="relative hidden shrink-0 text-[11px] font-black text-[#0f9a56] sm:block">
+            آخرین رویدادها
+          </p>
+
+          <div className="relative h-4 w-px shrink-0 bg-[#39ff8f]/25" />
+
+          <div
+            className="relative min-w-0 flex-1 overflow-hidden"
+            dir="rtl"
+          >
+            <div className="jam-events-track flex w-max items-center gap-8 whitespace-nowrap">
+              {[...cityEvents, ...cityEvents].map(
+                (event, index) => (
+                  <Link
+                    key={`${event.id}-${index}`}
+                    href={`/events/${event.id}`}
+                    className="flex shrink-0 items-center gap-1.5 text-[10px] font-bold text-[#3A4A3D] transition hover:text-[#0f9a56]"
+                  >
+                    <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-[#e2574c]" />
+                    {event.title}
+                  </Link>
+                )
+              )}
+            </div>
+          </div>
+
+          <Link
+            href="/events"
+            className="relative shrink-0 rounded-full bg-[#eafff3] px-2.5 py-1 text-[9px] font-black text-[#0f9a56] transition hover:bg-[#d4ecdc]"
+          >
+            همه ←
+          </Link>
+        </section>
+      )}
+
+      {/* =====================================================
           HERO — جمع‌وجور، بدون فضای الکی، آیکون چت عمومی نئونی
       ====================================================== */}
       <section className="relative overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
@@ -488,7 +576,10 @@ export default function HomePage() {
         </div>
       </section>
 
-            {/* REFERRAL CTA — باشگاه معرفی جم‌سیتی */}
+      {/* =====================================================
+          REFERRAL CTA — باشگاه معرفی جم‌سیتی
+      ====================================================== */}
+
       <Link
         href="/referral"
         className="group relative mx-auto flex max-w-md items-center gap-3 overflow-hidden rounded-[20px] border border-[#CFE4D4] bg-gradient-to-l from-[#EAF7ED] to-white px-4 py-3 shadow-[0_0_20px_rgba(34,139,76,.12)] transition hover:shadow-[0_0_28px_rgba(34,139,76,.22)]"
@@ -511,6 +602,7 @@ export default function HomePage() {
           دعوت کن ←
         </span>
       </Link>
+
       <style jsx>{`
         @keyframes jamChatGlow {
           0%, 100% {
@@ -538,6 +630,31 @@ export default function HomePage() {
         }
         .jam-chat-ping {
           animation: jamChatPing 2.1s ease-out infinite;
+        }
+
+        @keyframes jamEventsTicker {
+          from {
+            transform: translateX(0);
+          }
+
+          to {
+            transform: translateX(-50%);
+          }
+        }
+
+        .jam-events-track {
+          animation: jamEventsTicker 32s linear infinite;
+          will-change: transform;
+        }
+
+        .jam-events-track:hover {
+          animation-play-state: paused;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .jam-events-track {
+            animation: none;
+          }
         }
       `}</style>
 
