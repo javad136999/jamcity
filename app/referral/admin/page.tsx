@@ -186,12 +186,11 @@ export default function ReferralAdminPage() {
     item.referral_count > 0 ||
     item.reward_count > 0
 )
-        .sort(
-          (a, b) =>
-            b.referral_count -
-            a.referral_count
-        );
-
+     .sort(
+  (a: Referrer, b: Referrer) =>
+    b.referral_count -
+    a.referral_count
+);   
       setReferrers(result);
 
       /*
