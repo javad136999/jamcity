@@ -173,19 +173,27 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         marker.addTo(layer);
       });
 
+      let syncTimer: ReturnType<typeof setTimeout> | null = null;
       const syncTooltips = () => {
+        if (syncTimer) clearTimeout(syncTimer);
         const zoomedIn = (map.getZoom() ?? 0) >= 16;
-        layer.eachLayer((item) => {
-          const marker = item as L.Marker;
-          // هر tooltip با مختصات خود Marker باز می‌شود؛ هیچ tooltip مستقلی روی نقشه ساخته نمی‌شود.
-          if (zoomedIn) marker.openTooltip();
-          else marker.closeTooltip();
-        });
+        if (!zoomedIn) {
+          layer.eachLayer((item) => (item as L.Marker).closeTooltip());
+          return;
+        }
+        // صبر کوتاه برای تمام‌شدن حرکت/انیمیشن نقشه؛ سپس هر پنجره روی مختصات همان آیکون باز می‌شود.
+        syncTimer = setTimeout(() => {
+          if (cancelled) return;
+          layer.eachLayer((item) => (item as L.Marker).openTooltip());
+        }, 140);
       };
       map.on("zoomend", syncTooltips);
       syncTooltips();
 
-      return () => map.off("zoomend", syncTooltips);
+      return () => {
+        if (syncTimer) clearTimeout(syncTimer);
+        map.off("zoomend", syncTooltips);
+      };
     })();
     return () => { cancelled = true; };
   }, [markers]);
