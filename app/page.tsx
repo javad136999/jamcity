@@ -899,7 +899,7 @@ export default function HomePage() {
             .gold-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.75),transparent 60%); pointer-events:none; }
             .gold-home-track { animation:goldHomeMoveRight 38s linear infinite; will-change:transform; }
             .gold-home-viewport:hover .gold-home-track { animation-play-state:paused; }
-            @keyframes goldHomeMoveRight { from { transform:translateX(-16.6667%); } to { transform:translateX(0); } }
+            @keyframes goldHomeMoveRight { from { transform:translateX(0); } to { transform:translateX(16.6667%); } }
             @media (max-width:640px) { .gold-home-track { animation-duration:44s; } }
             @media (prefers-reduced-motion:reduce) { .gold-home-track { animation:none; } }
 ` }} />
