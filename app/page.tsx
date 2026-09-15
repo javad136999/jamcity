@@ -175,6 +175,13 @@ export default function HomePage() {
     stripDragRef.current = null;
   }
 
+  function scrollGoldWithWheel(event: React.WheelEvent<HTMLDivElement>) {
+    const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+    if (!delta) return;
+    event.preventDefault();
+    event.currentTarget.scrollLeft += delta;
+  }
+
   function prepareGoldLoopDrag(event: React.PointerEvent<HTMLDivElement>) {
     beginStripDrag(event);
     const element = event.currentTarget;
@@ -829,11 +836,11 @@ export default function HomePage() {
             </div>
       
             {/* کسب‌وکارها: حرکت از چپ به راست، پنل راست ثابت است */}
-            <div className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={prepareGoldLoopDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onScroll={keepGoldLoop}>
+            <div className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={prepareGoldLoopDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
               <div className="gold-home-track flex w-max items-start gap-2.5">
                 {[...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses].map((business, index) => (
                   <Link key={`${business.id}-${index}`} href={`/business/${business.id}`} className="gold-home-card group flex w-[72px] shrink-0 flex-col items-center gap-1.5 sm:w-[82px]">
-                    <div className="relative h-[62px] w-[62px] rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2px] shadow-[0_4px_14px_rgba(217,143,43,.32)] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_8px_18px_rgba(217,143,43,.46)] sm:h-[70px] sm:w-[70px]">
+                    <div className="relative h-11 w-11 rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2px] shadow-[0_4px_14px_rgba(217,143,43,.32)] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_8px_18px_rgba(217,143,43,.46)] sm:h-12 sm:w-12">
                       <div className="h-full w-full overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA]">
                         {business.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
@@ -890,6 +897,9 @@ export default function HomePage() {
           <style dangerouslySetInnerHTML={{ __html: `            .gold-home-label { isolation:isolate; }
             .gold-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.75),transparent 60%); pointer-events:none; }
             .gold-home-track { animation:goldHomeMoveRight 38s linear infinite; will-change:transform; }
+            .gold-home-viewport { touch-action:pan-x; scrollbar-width:none; -ms-overflow-style:none; cursor:grab; overscroll-behavior-x:contain; }
+            .gold-home-viewport::-webkit-scrollbar { display:none; }
+            .gold-home-viewport.is-manual { cursor:grabbing; }
             .gold-home-viewport:hover .gold-home-track { animation-play-state:paused; }
             @keyframes goldHomeMoveRight { from { transform:translateX(0); } to { transform:translateX(16.6667%); } }
             @media (max-width:640px) { .gold-home-track { animation-duration:44s; } }
