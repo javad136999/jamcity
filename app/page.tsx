@@ -683,14 +683,14 @@ export default function HomePage() {
           animation-play-state: paused;
         }
 
-        @keyframes jamPopularTicker {
-          from {
-            transform: translateX(-50%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
+            @keyframes jamPopularTicker {
+              from {
+                transform: translateX(-33.3333%);
+              }
+              to {
+                transform: translateX(0);
+              }
+            }
 
         .jam-popular-track {
           animation: jamPopularTicker 42s linear infinite;
@@ -701,10 +701,10 @@ export default function HomePage() {
           animation-play-state: paused;
         }
 
-        @keyframes jamDiscountTicker {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
-        }
+            @keyframes jamDiscountTicker {
+              from { transform: translateX(-33.3333%); }
+              to { transform: translateX(0); }
+            }
 
         .jam-discount-track {
           animation: jamDiscountTicker 46s linear infinite;
@@ -740,7 +740,7 @@ export default function HomePage() {
         .jam-popular-viewport.is-manual .jam-popular-track,
         .gold-home-viewport.is-manual .gold-home-track,
         .discount-home-viewport.is-manual .discount-home-track {
-          animation: none !important;
+          animation-play-state: paused !important;
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -821,7 +821,7 @@ export default function HomePage() {
             {/* کسب‌وکارها: حرکت از چپ به راست، پنل راست ثابت است */}
             <div className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
               <div className="gold-home-track flex w-max items-start gap-2.5">
-                {[...goldBusinesses, ...goldBusinesses].map((business, index) => (
+                {[...goldBusinesses, ...goldBusinesses, ...goldBusinesses].map((business, index) => (
                   <Link key={`${business.id}-${index}`} href={`/business/${business.id}`} className="gold-home-card group flex w-[72px] shrink-0 flex-col items-center gap-1.5 sm:w-[82px]">
                     <div className="relative h-[62px] w-[62px] rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2px] shadow-[0_4px_14px_rgba(217,143,43,.32)] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_8px_18px_rgba(217,143,43,.46)] sm:h-[70px] sm:w-[70px]">
                       <div className="h-full w-full overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA]">
@@ -881,7 +881,7 @@ export default function HomePage() {
             .gold-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.75),transparent 60%); pointer-events:none; }
             .gold-home-track { animation:goldHomeMoveRight 38s linear infinite; will-change:transform; }
             .gold-home-viewport:hover .gold-home-track { animation-play-state:paused; }
-            @keyframes goldHomeMoveRight { from { transform:translateX(-50%); } to { transform:translateX(0); } }
+            @keyframes goldHomeMoveRight { from { transform:translateX(-33.3333%); } to { transform:translateX(0); } }
             @media (max-width:640px) { .gold-home-track { animation-duration:44s; } }
             @media (prefers-reduced-motion:reduce) { .gold-home-track { animation:none; } }
 ` }} />
@@ -902,7 +902,7 @@ export default function HomePage() {
 
             <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
               <div className="discount-home-track flex w-max items-stretch gap-2.5">
-                {[...discounts, ...discounts].map((product, index) => {
+                {[...discounts, ...discounts, ...discounts].map((product, index) => {
                   const business = findBusiness(product.business_id);
                   if (!business) return null;
                   const finalPrice = product.price !== null ? Math.round(product.price * (1 - (product.discount_percent ?? 0) / 100)) : null;
@@ -933,7 +933,7 @@ export default function HomePage() {
             .discount-gift { animation:discountGiftFloat 3s ease-in-out infinite; }
             .discount-home-track { animation:discountHomeMoveRight 36s linear infinite; will-change:transform; }
             .discount-home-viewport:hover .discount-home-track { animation-play-state:paused; }
-            @keyframes discountHomeMoveRight { from { transform:translateX(-50%); } to { transform:translateX(0); } }
+            @keyframes discountHomeMoveRight { from { transform:translateX(-33.3333%); } to { transform:translateX(0); } }
             @keyframes discountGiftFloat { 0%,100% { transform:translateY(0) rotate(-2deg); } 50% { transform:translateY(-3px) rotate(2deg); } }
             @media (max-width:640px) { .discount-home-track { animation-duration:42s; } }
             @media (prefers-reduced-motion:reduce) { .discount-home-track,.discount-gift { animation:none; } }
@@ -952,7 +952,7 @@ export default function HomePage() {
 
             <div className="jam-popular-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden" dir="ltr" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
               <div className="jam-popular-track flex w-max items-stretch gap-2 py-1">
-                {[...popular, ...popular].map((b, index) => (
+                {[...popular, ...popular, ...popular].map((b, index) => (
                   <Link
                     key={`${b.id}-${index}`}
                     href={`/business/${b.id}`}
