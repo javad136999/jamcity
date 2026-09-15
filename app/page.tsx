@@ -123,7 +123,7 @@ const TOROB_SUGGESTIONS = [
 ];
 
 export default function HomePage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const { user, profile } = useAuth();
 
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
@@ -468,7 +468,7 @@ export default function HomePage() {
       {cityEvents.length > 0 && (
         <section
           aria-label="آخرین رویدادهای جم"
-          className="group relative mx-auto flex max-w-md items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
+          className="group relative mx-auto flex max-w-[340px] items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
         >
           <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/15 blur-2xl" />
 
@@ -555,13 +555,21 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 grid grid-cols-3 gap-2">
             <Link
               href="/businesses"
               className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#E3EBDE] bg-white px-2.5 py-2.5 text-[9px] font-black text-[#1D2B1F] transition hover:border-[#39ff8f]/50 hover:bg-[#F3FAF5] sm:flex-none sm:px-5"
             >
               🏪
               <span>کشف شهر</span>
+            </Link>
+
+            <Link
+              href="/games/hokm"
+              className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-[#E8C36A] bg-gradient-to-l from-[#FFF0C7] to-[#FFF9EA] px-1.5 py-2.5 text-center text-[9px] font-black text-[#8B5A16] shadow-[0_5px_16px_rgba(217,143,43,.18)] transition hover:-translate-y-1 hover:shadow-md sm:flex-row sm:gap-1.5 sm:px-5"
+            >
+              <span className="text-xl leading-none sm:text-lg">🃏</span>
+              <span className="truncate">بازی حکم</span>
             </Link>
 
             <button
@@ -573,35 +581,26 @@ export default function HomePage() {
               <span>خرید با کف قیمت بازار</span>
             </button>
           </div>
+
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link
+              href="/games/hokm/leaderboard"
+              className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#D9C6F1] bg-gradient-to-l from-[#F3EAFE] to-white px-2 py-2 text-center text-[9px] font-black text-[#68419A] shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+            >
+              <span className="text-lg">🏆</span>
+              <span className="truncate">قهرمانان حکم</span>
+            </Link>
+
+            <Link
+              href="/referral"
+              className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#EBCB93] bg-gradient-to-l from-[#FFF0D0] to-white px-2 py-2 text-center text-[9px] font-black text-[#A96819] shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+            >
+              <span className="text-lg">🎁</span>
+              <span className="truncate">باشگاه معرفی جم‌سیتی</span>
+            </Link>
+          </div>
         </div>
       </section>
-
-      {/* =====================================================
-          REFERRAL CTA — باشگاه معرفی جم‌سیتی
-      ====================================================== */}
-
-      <Link
-        href="/referral"
-        className="group relative mx-auto flex max-w-md items-center gap-3 overflow-hidden rounded-[20px] border border-[#CFE4D4] bg-gradient-to-l from-[#EAF7ED] to-white px-4 py-3 shadow-[0_0_20px_rgba(34,139,76,.12)] transition hover:shadow-[0_0_28px_rgba(34,139,76,.22)]"
-      >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm">
-          🎁
-        </span>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-[12px] font-black text-[#1D2B1F]">
-            باشگاه معرفی جم‌سیتی
-          </p>
-
-          <p className="truncate text-[9px] text-[#56735D]">
-            هر ۲۰ کاربر جدید = ۲۰,۰۰۰ تومان شارژ هدیه
-          </p>
-        </div>
-
-        <span className="shrink-0 rounded-full bg-[#2E8B57] px-3 py-1.5 text-[9px] font-black text-white transition group-hover:bg-[#247047]">
-          دعوت کن ←
-        </span>
-      </Link>
 
       <style jsx>{`
         @keyframes jamChatGlow {
@@ -634,11 +633,11 @@ export default function HomePage() {
 
         @keyframes jamEventsTicker {
           from {
-            transform: translateX(0);
+            transform: translateX(-50%);
           }
 
           to {
-            transform: translateX(-50%);
+            transform: translateX(0);
           }
         }
 
@@ -651,8 +650,44 @@ export default function HomePage() {
           animation-play-state: paused;
         }
 
+        @keyframes jamPopularTicker {
+          from {
+            transform: translateX(-50%);
+          }
+          to {
+            transform: translateX(0);
+          }
+        }
+
+        .jam-popular-track {
+          animation: jamPopularTicker 42s linear infinite;
+          will-change: transform;
+        }
+
+        .jam-popular-track:hover {
+          animation-play-state: paused;
+        }
+
+        @keyframes jamDiscountTicker {
+          from { transform: translateX(-50%); }
+          to { transform: translateX(0); }
+        }
+
+        .jam-discount-track {
+          animation: jamDiscountTicker 46s linear infinite;
+          will-change: transform;
+        }
+
+        .jam-discount-track:hover {
+          animation-play-state: paused;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .jam-events-track {
+            animation: none;
+          }
+          .jam-popular-track,
+          .jam-discount-track {
             animation: none;
           }
         }
@@ -739,6 +774,8 @@ export default function HomePage() {
                   <div className="h-full w-full overflow-hidden rounded-full border-[2.5px] border-white bg-[#FBEEDA]">
                     {b.image_url ? (
                       <img
+                          loading="lazy"
+                          decoding="async"
                         src={b.image_url}
                         alt={b.name}
                         className="h-full w-full object-cover"
@@ -779,6 +816,8 @@ export default function HomePage() {
                     <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA] shadow-sm">
                       {business.image_url ? (
                         <img
+                          loading="lazy"
+                          decoding="async"
                           src={business.image_url}
                           alt={business.name}
                           className="h-full w-full object-cover"
@@ -804,6 +843,8 @@ export default function HomePage() {
                         <div className="relative h-20 overflow-hidden bg-[#F3F6F1]">
                           {product.image_url ? (
                             <img
+                          loading="lazy"
+                          decoding="async"
                               src={product.image_url}
                               alt={product.name}
                               className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
@@ -841,122 +882,72 @@ export default function HomePage() {
         </section>
       )}
 
-      {/* DISCOUNTS */}
+      {/* DISCOUNTS — هم‌سبک محبوب‌های جم */}
       {discounts.length > 0 && (
-        <section>
-          <div className="mb-4 flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">
-              🎁
-            </span>
-            <div>
-              <h2 className="text-lg font-black text-[#1D2B1F] sm:text-xl">
-                تخفیف‌های داغ جم
-              </h2>
-              <p className="text-[9px] text-[#8A968C]">
-                محدود و فقط برای امروز
-              </p>
+        <section className="overflow-hidden rounded-[26px] border border-[#E3EBDE] bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex w-[92px] shrink-0 flex-col items-center justify-center gap-1 border-l border-[#E3EBDE] pl-3 text-center sm:w-[120px]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">🎁</span>
+              <h2 className="text-[11px] font-black leading-tight text-[#1D2B1F] sm:text-sm">تخفیف‌های داغ جم</h2>
+              <p className="hidden text-[8px] text-[#8A968C] sm:block">فقط برای امروز</p>
             </div>
-          </div>
 
-          <div className="flex gap-3 overflow-x-auto pb-2">
-            {discounts.map((product) => {
-              const b = findBusiness(product.business_id);
-              if (!b) return null;
-
-              const finalPrice =
-                product.price !== null
-                  ? Math.round(
-                      product.price * (1 - (product.discount_percent ?? 0) / 100)
-                    )
-                  : null;
-
-              return (
-                <Link
-                  key={product.id}
-                  href={`/business/${b.id}`}
-                  className="group min-w-[140px] max-w-[140px] shrink-0 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="relative h-28 overflow-hidden bg-[#F3F6F1]">
-                    {product.image_url ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-4xl">
-                        <span>{b.icon}</span>
+            <div className="min-w-0 flex-1 overflow-hidden" dir="ltr">
+              <div className="jam-discount-track flex w-max items-stretch gap-2 py-1">
+                {[...discounts, ...discounts].map((product, index) => {
+                  const b = findBusiness(product.business_id);
+                  if (!b) return null;
+                  const finalPrice = product.price !== null
+                    ? Math.round(product.price * (1 - (product.discount_percent ?? 0) / 100))
+                    : null;
+                  return (
+                    <Link key={`${product.id}-${index}`} href={`/business/${b.id}`} dir="rtl" className="group flex w-[190px] shrink-0 items-center gap-2 rounded-2xl border border-[#E3EBDE] bg-[#FFFEFC] p-2 transition hover:-translate-y-1 hover:border-[#F0B4A8] hover:shadow-md sm:w-[215px]">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#FFF3F0]">
+                        {product.image_url ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full w-full items-center justify-center text-2xl">{b.icon}</div>}
+                        <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[7px] font-black text-white">{product.discount_percent}%</span>
                       </div>
-                    )}
-
-                    <span className="absolute left-2 top-2 rounded-full bg-[#E2574C] px-2 py-1 text-[8px] font-black text-white">
-                      {product.discount_percent}%
-                    </span>
-                  </div>
-
-                  <div className="p-3">
-                    <h3 className="truncate text-[10px] font-black text-[#1D2B1F]">
-                      {product.name}
-                    </h3>
-                    <p className="mt-1 truncate text-[8px] text-[#8A968C]">
-                      {b.name}
-                    </p>
-
-                    {finalPrice !== null && (
-                      <div className="mt-2">
-                        <span className="text-[10px] font-black text-[#E2574C]">
-                          {formatPrice(finalPrice)}
-                        </span>
-                        <span className="mr-2 text-[8px] text-[#B7C2B8] line-through">
-                          {formatPrice(product.price)}
-                        </span>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate text-[9px] font-black text-[#1D2B1F]">{product.name}</h3>
+                        <p className="mt-1 truncate text-[8px] text-[#8A968C]">{b.name}</p>
+                        {finalPrice !== null && <p className="mt-1 truncate text-[9px] font-black text-[#E2574C]">{formatPrice(finalPrice)}</p>}
                       </div>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </section>
       )}
 
-      {/* POPULAR */}
+      {/* POPULAR — آیکون ثابت سمت راست و حرکت آرام لیست از چپ به راست */}
       {popular.length > 0 && (
-        <section className="rounded-[26px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
-          <div className="mb-4 flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FBEEDA] text-lg shadow-[0_0_14px_rgba(255,183,77,.3)]">
-              ⭐
-            </span>
-            <h2 className="text-lg font-black text-[#1D2B1F] sm:text-xl">
-              محبوب‌های جم
-            </h2>
-          </div>
+        <section className="overflow-hidden rounded-[26px] border border-[#E3EBDE] bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex w-[92px] shrink-0 flex-col items-center justify-center gap-1 border-l border-[#E3EBDE] pl-3 text-center sm:w-[120px]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FBEEDA] text-lg shadow-[0_0_14px_rgba(255,183,77,.3)]">⭐</span>
+              <h2 className="text-[11px] font-black leading-tight text-[#1D2B1F] sm:text-sm">محبوب‌های جم</h2>
+            </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            {popular.map((b) => (
-              <Link
-                key={b.id}
-                href={`/business/${b.id}`}
-                className="flex items-center gap-3 rounded-2xl border border-[#E3EBDE] p-3 transition hover:border-[#CFE6D6] hover:bg-[#F7FAF6]"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#F3FAF5] text-xl">
-                  {b.icon}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[10px] font-black text-[#1D2B1F]">
-                    {b.name}
-                  </span>
-                  <span className="mt-1 block text-[8px] text-[#8A968C]">
-                    {businessCategoryLabel(b.category)}
-                  </span>
-                </span>
-
-                <span className="text-[9px] font-black text-[#D98F2B]">
-                  ⭐ {b.rating_avg.toFixed(1)}
-                </span>
-              </Link>
-            ))}
+            <div className="min-w-0 flex-1 overflow-hidden" dir="ltr">
+              <div className="jam-popular-track flex w-max items-stretch gap-2 py-1">
+                {[...popular, ...popular].map((b, index) => (
+                  <Link
+                    key={`${b.id}-${index}`}
+                    href={`/business/${b.id}`}
+                    dir="rtl"
+                    className="flex w-[190px] shrink-0 items-center gap-2 rounded-2xl border border-[#E3EBDE] bg-[#FFFEFC] p-2 transition hover:border-[#CFE6D6] hover:bg-[#F7FAF6] sm:w-[215px]"
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F3FAF5] text-lg">{b.icon}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[9px] font-black text-[#1D2B1F]">{b.name}</span>
+                      <span className="mt-1 block truncate text-[8px] text-[#8A968C]">{businessCategoryLabel(b.category)}</span>
+                    </span>
+                    <span className="shrink-0 text-[8px] font-black text-[#D98F2B]">⭐ {b.rating_avg.toFixed(1)}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
         </section>
       )}
