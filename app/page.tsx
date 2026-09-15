@@ -743,135 +743,69 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* GOLD BUSINESSES */}
+      {/* GOLD BUSINESSES — ویترین ثابت راست + حرکت آرام کارت‌ها به سمت راست */}
       {goldBusinesses.length > 0 && (
-        <section className="relative overflow-hidden rounded-[24px] border border-[#F0DCB4] bg-gradient-to-l from-[#FBEEDA] to-white px-4 py-3.5 shadow-[0_0_24px_rgba(255,183,77,.15)]">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-base shadow-[0_0_10px_rgba(255,183,77,.35)]">
-              👑
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="truncate text-[13px] font-black text-[#1D2B1F]">
-                ویترین طلایی جم
-              </h2>
-              <p className="truncate text-[8px] text-[#8A7150]">
-                بهترین کسب‌وکارهای شهر
-              </p>
+        <section className="gold-home-showcase relative overflow-hidden rounded-[24px] border border-[#F0DCB4] bg-gradient-to-l from-[#FBEEDA] via-white to-[#FFF9EF] px-3 py-3.5 shadow-[0_0_24px_rgba(255,183,77,.15)] sm:px-4">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FFE29A] via-[#D98F2B] to-[#FFE29A]" />
+      
+          <div className="flex items-stretch gap-2.5 pt-1" dir="rtl">
+            {/* عنوان ثابت سمت راست */}
+            <div className="gold-home-label relative z-20 flex w-[92px] shrink-0 flex-col items-center justify-center rounded-2xl border border-[#F0DCB4] bg-gradient-to-b from-[#FFF9E8] to-[#FFE8A8] px-1.5 py-2 text-center shadow-[0_5px_18px_rgba(217,143,43,.16)] sm:w-[126px] sm:px-2.5">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">👑</span>
+              <h2 className="mt-1.5 text-[10px] font-black leading-4 text-[#805318] sm:text-xs">ویترین طلایی جم</h2>
+              <p className="mt-0.5 text-[7px] leading-3 text-[#A77737] sm:text-[8px]">بهترین کسب‌وکارهای شهر</p>
+              <Link href="/businesses" className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#B47735] transition hover:bg-white sm:text-[8px]">همه ←</Link>
             </div>
-            <Link href="/businesses" className="shrink-0 text-[9px] font-bold text-[#D98F2B]">
-              همه ←
-            </Link>
-          </div>
-
-          <div className="flex gap-4 overflow-x-auto pb-1">
-            {goldBusinesses.map((b) => (
-              <Link
-                key={b.id}
-                href={`/business/${b.id}`}
-                className="group flex w-[72px] shrink-0 flex-col items-center gap-1.5"
-              >
-                <div className="relative h-[66px] w-[66px] rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2.5px] shadow-[0_4px_14px_rgba(217,143,43,.35)] transition group-hover:scale-105">
-                  <div className="h-full w-full overflow-hidden rounded-full border-[2.5px] border-white bg-[#FBEEDA]">
-                    {b.image_url ? (
-                      <img
-                          loading="lazy"
-                          decoding="async"
-                        src={b.image_url}
-                        alt={b.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full w-full items-center justify-center text-2xl">
-                        <span>{b.icon}</span>
+      
+            {/* کسب‌وکارها: حرکت از چپ به راست، پنل راست ثابت است */}
+            <div className="gold-home-viewport min-w-0 flex-1 overflow-hidden rounded-2xl bg-white/45 px-1 py-1.5">
+              <div className="gold-home-track flex w-max items-start gap-2.5">
+                {[...goldBusinesses, ...goldBusinesses].map((business, index) => (
+                  <Link key={`${business.id}-${index}`} href={`/business/${business.id}`} className="gold-home-card group flex w-[72px] shrink-0 flex-col items-center gap-1.5 sm:w-[82px]">
+                    <div className="relative h-[62px] w-[62px] rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2px] shadow-[0_4px_14px_rgba(217,143,43,.32)] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_8px_18px_rgba(217,143,43,.46)] sm:h-[70px] sm:w-[70px]">
+                      <div className="h-full w-full overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA]">
+                        {business.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-2xl">{business.icon || "🏪"}</div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                  <span className="absolute -bottom-0.5 -left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D98F2B] text-[7px] shadow ring-2 ring-white">
-                    👑
-                  </span>
-                </div>
-
-                <p className="max-w-full truncate text-center text-[9px] font-black leading-tight text-[#1D2B1F]">
-                  {b.name}
-                </p>
-
-                {b.rating_count > 0 && (
-                  <p className="text-[8px] font-bold text-[#D98F2B]">
-                    ⭐ {b.rating_avg.toFixed(1)}
-                  </p>
-                )}
-              </Link>
-            ))}
+                      <span className="absolute -bottom-0.5 -left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D98F2B] text-[7px] shadow ring-2 ring-white">👑</span>
+                    </div>
+                    <p className="w-full truncate text-center text-[8px] font-black leading-tight text-[#1D2B1F] sm:text-[9px]">{business.name}</p>
+                    {business.rating_count > 0 && <p className="text-[7px] font-bold text-[#D98F2B] sm:text-[8px]">⭐ {business.rating_avg.toFixed(1)}</p>}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
-
-          {/* محصولات هر کسب‌وکار طلایی: راست = اسم کسب‌وکار، چپ = اسکرول افقی محصولات */}
+      
+          {/* محصولات هر کسب‌وکار طلایی؛ بدون تغییر در منطق فعلی */}
           {goldProductGroups.length > 0 && (
             <div className="mt-4 space-y-3 border-t border-[#F0DCB4] pt-3.5">
               {goldProductGroups.map(({ business, products: businessProducts }) => (
-                <div key={business.id} className="flex items-stretch gap-3">
-                  <Link
-                    href={`/business/${business.id}`}
-                    className="flex w-[84px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#F0DCB4] bg-white/70 px-1.5 py-2 text-center"
-                  >
+                <div key={business.id} className="flex items-stretch gap-3" dir="rtl">
+                  <Link href={`/business/${business.id}`} className="flex w-[84px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#F0DCB4] bg-white/75 px-1.5 py-2 text-center">
                     <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA] shadow-sm">
                       {business.image_url ? (
-                        <img
-                          loading="lazy"
-                          decoding="async"
-                          src={business.image_url}
-                          alt={business.name}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-lg">
-                          {business.icon}
-                        </div>
-                      )}
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover" />
+                      ) : <div className="flex h-full w-full items-center justify-center text-lg">{business.icon || "🏪"}</div>}
                     </div>
-                    <p className="line-clamp-2 text-[9px] font-black leading-tight text-[#1D2B1F]">
-                      {business.name}
-                    </p>
+                    <p className="line-clamp-2 text-[9px] font-black leading-tight text-[#1D2B1F]">{business.name}</p>
                   </Link>
-
-                  <div className="flex flex-1 gap-2.5 overflow-x-auto pb-1">
+                  <div className="flex min-w-0 flex-1 gap-2.5 overflow-x-auto pb-1">
                     {businessProducts.map((product) => (
-                      <Link
-                        key={product.id}
-                        href={`/business/${business.id}`}
-                        className="group min-w-[104px] max-w-[104px] shrink-0 overflow-hidden rounded-[16px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                      >
+                      <Link key={product.id} href={`/business/${business.id}`} className="group min-w-[104px] max-w-[104px] shrink-0 overflow-hidden rounded-[16px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
                         <div className="relative h-20 overflow-hidden bg-[#F3F6F1]">
                           {product.image_url ? (
-                            <img
-                          loading="lazy"
-                          decoding="async"
-                              src={product.image_url}
-                              alt={product.name}
-                              className="h-full w-full object-cover transition duration-700 group-hover:scale-110"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-2xl">
-                              {business.icon}
-                            </div>
-                          )}
-
-                          {(product.discount_percent ?? 0) > 0 && (
-                            <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[6.5px] font-black text-white">
-                              {product.discount_percent}% تخفیف
-                            </span>
-                          )}
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
+                          ) : <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-2xl">{business.icon || "🏪"}</div>}
+                          {(product.discount_percent ?? 0) > 0 && <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[6.5px] font-black text-white">{product.discount_percent}% تخفیف</span>}
                         </div>
-
-                        <div className="p-1.5">
-                          <h3 className="truncate text-[9px] font-black text-[#1D2B1F]">
-                            {product.name}
-                          </h3>
-                          {product.price !== null && (
-                            <p className="mt-1 truncate text-[7.5px] font-black text-[#147A4B]">
-                              {formatPrice(product.price)}
-                            </p>
-                          )}
-                        </div>
+                        <div className="p-1.5"><h3 className="truncate text-[9px] font-black text-[#1D2B1F]">{product.name}</h3>{product.price !== null && <p className="mt-1 truncate text-[7.5px] font-black text-[#147A4B]">{formatPrice(product.price)}</p>}</div>
                       </Link>
                     ))}
                   </div>
@@ -879,44 +813,70 @@ export default function HomePage() {
               ))}
             </div>
           )}
+      
+          <div className="mt-2 flex items-center justify-center gap-1.5"><span className="h-1.5 w-5 rounded-full bg-[#D98F2B]" /><span className="h-1.5 w-1.5 rounded-full bg-[#F0DCB4]" /><span className="text-[8px] text-slate-400">حرکت آرام پیشنهادهای طلایی</span></div>
+      
+          <style dangerouslySetInnerHTML={{ __html: `            .gold-home-label { isolation:isolate; }
+            .gold-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.75),transparent 60%); pointer-events:none; }
+            .gold-home-track { animation:goldHomeMoveRight 38s linear infinite; will-change:transform; }
+            .gold-home-viewport:hover .gold-home-track { animation-play-state:paused; }
+            @keyframes goldHomeMoveRight { from { transform:translateX(-50%); } to { transform:translateX(0); } }
+            @media (max-width:640px) { .gold-home-track { animation-duration:44s; } }
+            @media (prefers-reduced-motion:reduce) { .gold-home-track { animation:none; } }
+` }} />
         </section>
       )}
 
-      {/* DISCOUNTS — هم‌سبک محبوب‌های جم */}
+      {/* DISCOUNTS — پنل ثابت راست + حرکت آرام کارت‌ها به سمت راست */}
       {discounts.length > 0 && (
-        <section className="overflow-hidden rounded-[26px] border border-[#E3EBDE] bg-white p-3 shadow-sm sm:p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex w-[92px] shrink-0 flex-col items-center justify-center gap-1 border-l border-[#E3EBDE] pl-3 text-center sm:w-[120px]">
-              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FCE7E4] text-lg shadow-[0_0_14px_rgba(226,87,76,.3)]">🎁</span>
-              <h2 className="text-[11px] font-black leading-tight text-[#1D2B1F] sm:text-sm">تخفیف‌های داغ جم</h2>
-              <p className="hidden text-[8px] text-[#8A968C] sm:block">فقط برای امروز</p>
+        <section className="discount-home-showcase relative overflow-hidden rounded-[24px] border border-[#F0D4CE] bg-gradient-to-l from-[#FFF1EE] via-white to-[#FFF9F7] px-3 py-3.5 shadow-[0_0_24px_rgba(226,87,76,.12)] sm:px-4">
+          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FFC2B9] via-[#E2574C] to-[#FFC2B9]" />
+          <div className="flex items-stretch gap-2.5 pt-1" dir="rtl">
+            <div className="discount-home-label relative z-20 flex w-[92px] shrink-0 flex-col items-center justify-center rounded-2xl border border-[#F0D4CE] bg-gradient-to-b from-[#FFF8F5] to-[#FFE1DC] px-1.5 py-2 text-center shadow-[0_5px_18px_rgba(226,87,76,.14)] sm:w-[126px] sm:px-2.5">
+              <span className="discount-gift flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">🎁</span>
+              <h2 className="mt-1.5 text-[10px] font-black leading-4 text-[#A43E37] sm:text-xs">تخفیف‌های داغ جم</h2>
+              <p className="mt-0.5 text-[7px] leading-3 text-[#B87972] sm:text-[8px]">پیشنهادهای ویژه امروز</p>
+              <span className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#D65349] sm:text-[8px]">فرصت محدود</span>
             </div>
 
-            <div className="min-w-0 flex-1 overflow-hidden" dir="ltr">
-              <div className="jam-discount-track flex w-max items-stretch gap-2 py-1">
+            <div className="discount-home-viewport min-w-0 flex-1 overflow-hidden rounded-2xl bg-white/45 px-1 py-1.5">
+              <div className="discount-home-track flex w-max items-stretch gap-2.5">
                 {[...discounts, ...discounts].map((product, index) => {
-                  const b = findBusiness(product.business_id);
-                  if (!b) return null;
-                  const finalPrice = product.price !== null
-                    ? Math.round(product.price * (1 - (product.discount_percent ?? 0) / 100))
-                    : null;
+                  const business = findBusiness(product.business_id);
+                  if (!business) return null;
+                  const finalPrice = product.price !== null ? Math.round(product.price * (1 - (product.discount_percent ?? 0) / 100)) : null;
                   return (
-                    <Link key={`${product.id}-${index}`} href={`/business/${b.id}`} dir="rtl" className="group flex w-[190px] shrink-0 items-center gap-2 rounded-2xl border border-[#E3EBDE] bg-[#FFFEFC] p-2 transition hover:-translate-y-1 hover:border-[#F0B4A8] hover:shadow-md sm:w-[215px]">
-                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#FFF3F0]">
-                        {product.image_url ? <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full w-full items-center justify-center text-2xl">{b.icon}</div>}
-                        <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[7px] font-black text-white">{product.discount_percent}%</span>
+                    <Link key={`${product.id}-${index}`} href={`/business/${business.id}`} dir="rtl" className="discount-home-card group flex w-[190px] shrink-0 items-center gap-2 rounded-2xl border border-[#F0D4CE] bg-white p-2 shadow-[0_3px_12px_rgba(128,60,50,.06)] transition hover:-translate-y-1 hover:border-[#E99A90] hover:shadow-[0_9px_22px_rgba(226,87,76,.17)] sm:w-[215px]">
+                      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#FFF1EE] sm:h-16 sm:w-16">
+                        {product.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                        ) : <div className="flex h-full w-full items-center justify-center text-2xl">{business.icon || "🎁"}</div>}
+                        <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[7px] font-black text-white shadow-sm">{product.discount_percent}%</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-[9px] font-black text-[#1D2B1F]">{product.name}</h3>
-                        <p className="mt-1 truncate text-[8px] text-[#8A968C]">{b.name}</p>
-                        {finalPrice !== null && <p className="mt-1 truncate text-[9px] font-black text-[#E2574C]">{formatPrice(finalPrice)}</p>}
+                        <h3 className="truncate text-[9px] font-black text-[#34271F] sm:text-[10px]">{product.name}</h3>
+                        <p className="mt-1 truncate text-[8px] text-[#9A807A]">{business.name}</p>
+                        {finalPrice !== null && <p className="mt-1 truncate text-[9px] font-black text-[#E2574C] sm:text-[10px]">{formatPrice(finalPrice)}</p>}
                       </div>
+                      <span className="text-lg text-[#E2574C] transition group-hover:-translate-x-1">←</span>
                     </Link>
                   );
                 })}
               </div>
             </div>
           </div>
+          <div className="mt-2 flex items-center justify-center gap-1.5"><span className="h-1.5 w-5 rounded-full bg-[#E2574C]" /><span className="h-1.5 w-1.5 rounded-full bg-[#F0D4CE]" /><span className="text-[8px] text-slate-400">حرکت آرام تخفیف‌های ویژه</span></div>
+          <style dangerouslySetInnerHTML={{ __html: `            .discount-home-label { isolation:isolate; }
+            .discount-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.8),transparent 60%); pointer-events:none; }
+            .discount-gift { animation:discountGiftFloat 3s ease-in-out infinite; }
+            .discount-home-track { animation:discountHomeMoveRight 36s linear infinite; will-change:transform; }
+            .discount-home-viewport:hover .discount-home-track { animation-play-state:paused; }
+            @keyframes discountHomeMoveRight { from { transform:translateX(-50%); } to { transform:translateX(0); } }
+            @keyframes discountGiftFloat { 0%,100% { transform:translateY(0) rotate(-2deg); } 50% { transform:translateY(-3px) rotate(2deg); } }
+            @media (max-width:640px) { .discount-home-track { animation-duration:42s; } }
+            @media (prefers-reduced-motion:reduce) { .discount-home-track,.discount-gift { animation:none; } }
+` }} />
         </section>
       )}
 
