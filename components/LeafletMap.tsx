@@ -167,7 +167,6 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           opacity: 1,
           className: "jam-business-tooltip",
           interactive: Boolean(markerData.href),
-          bubblingMouseEvents: false,
         });
 
         marker.on("click", () => marker.openTooltip());
