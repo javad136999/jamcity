@@ -195,12 +195,29 @@ export default function HomePage() {
 
   useEffect(() => {
     async function loadHome() {
-      const { data: businessData, error: businessError } = await supabase
-        .from("businesses")
-        .select(
-          "id,name,category,icon,image_url,lat,lng,subscription_tier,rating_avg,rating_count"
-        )
-        .eq("subscription_status", "approved");
+      const [businessResult, productResult, eventResult] = await Promise.all([
+        supabase
+          .from("businesses")
+          .select(
+            "id,name,category,icon,image_url,lat,lng,subscription_tier,rating_avg,rating_count"
+          )
+          .eq("subscription_status", "approved"),
+        supabase
+          .from("business_products")
+          .select(
+            "id,business_id,name,price,description,image_url,discount_percent"
+          )
+          .order("created_at", { ascending: false })
+          .limit(30),
+        supabase
+          .from("events")
+          .select("id,title,category,event_date")
+          .eq("is_published", true)
+          .order("created_at", { ascending: false })
+          .limit(10),
+      ]);
+
+      const { data: businessData, error: businessError } = businessResult;
 
       if (businessError) {
         console.error("Failed to load businesses:", businessError.message);
@@ -208,13 +225,7 @@ export default function HomePage() {
 
       setBusinesses((businessData ?? []) as Business[]);
 
-      const { data: productData, error: productError } = await supabase
-        .from("business_products")
-        .select(
-          "id,business_id,name,price,description,image_url,discount_percent"
-        )
-        .order("created_at", { ascending: false })
-        .limit(30);
+      const { data: productData, error: productError } = productResult;
 
       if (productError) {
         console.error("Failed to load products:", productError.message);
@@ -222,17 +233,8 @@ export default function HomePage() {
 
       setProducts((productData ?? []) as Product[]);
 
-      /* =====================================================
-         CITY EVENTS
-         فقط رویدادهای منتشرشده
-      ===================================================== */
-
-      const { data: eventData, error: eventError } = await supabase
-        .from("events")
-        .select("id,title,category,event_date")
-        .eq("is_published", true)
-        .order("created_at", { ascending: false })
-        .limit(10);
+      /* فقط رویدادهای منتشرشده؛ این درخواست هم‌زمان با دو درخواست بالاست. */
+      const { data: eventData, error: eventError } = eventResult;
 
       if (eventError) {
         console.error(
