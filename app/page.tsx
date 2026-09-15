@@ -141,6 +141,39 @@ export default function HomePage() {
   const [torobQuery, setTorobQuery] = useState("");
   const [torobRecent, setTorobRecent] = useState<string[]>([]);
   const torobInputRef = useRef<HTMLInputElement>(null);
+  const stripDragRef = useRef<{
+    element: HTMLDivElement;
+    pointerId: number;
+    startX: number;
+    startScrollLeft: number;
+  } | null>(null);
+
+  function beginStripDrag(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    const element = event.currentTarget;
+    element.classList.add("is-manual");
+    element.setPointerCapture(event.pointerId);
+    stripDragRef.current = {
+      element,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startScrollLeft: element.scrollLeft,
+    };
+  }
+
+  function moveStripDrag(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = stripDragRef.current;
+    if (!drag || drag.element !== event.currentTarget || drag.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    drag.element.scrollLeft = drag.startScrollLeft - (event.clientX - drag.startX);
+  }
+
+  function endStripDrag(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = stripDragRef.current;
+    if (!drag || drag.element !== event.currentTarget || drag.pointerId !== event.pointerId) return;
+    if (drag.element.hasPointerCapture(event.pointerId)) drag.element.releasePointerCapture(event.pointerId);
+    stripDragRef.current = null;
+  }
 
   useEffect(() => {
     async function loadHome() {
@@ -682,6 +715,34 @@ export default function HomePage() {
           animation-play-state: paused;
         }
 
+        .jam-popular-viewport,
+        .gold-home-viewport,
+        .discount-home-viewport {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+          cursor: grab;
+          touch-action: pan-x;
+          overscroll-behavior-x: contain;
+        }
+
+        .jam-popular-viewport::-webkit-scrollbar,
+        .gold-home-viewport::-webkit-scrollbar,
+        .discount-home-viewport::-webkit-scrollbar {
+          display: none;
+        }
+
+        .jam-popular-viewport.is-manual,
+        .gold-home-viewport.is-manual,
+        .discount-home-viewport.is-manual {
+          cursor: grabbing;
+        }
+
+        .jam-popular-viewport.is-manual .jam-popular-track,
+        .gold-home-viewport.is-manual .gold-home-track,
+        .discount-home-viewport.is-manual .discount-home-track {
+          animation: none !important;
+        }
+
         @media (prefers-reduced-motion: reduce) {
           .jam-events-track {
             animation: none;
@@ -758,7 +819,7 @@ export default function HomePage() {
             </div>
       
             {/* کسب‌وکارها: حرکت از چپ به راست، پنل راست ثابت است */}
-            <div className="gold-home-viewport min-w-0 flex-1 overflow-hidden rounded-2xl bg-white/45 px-1 py-1.5">
+            <div className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
               <div className="gold-home-track flex w-max items-start gap-2.5">
                 {[...goldBusinesses, ...goldBusinesses].map((business, index) => (
                   <Link key={`${business.id}-${index}`} href={`/business/${business.id}`} className="gold-home-card group flex w-[72px] shrink-0 flex-col items-center gap-1.5 sm:w-[82px]">
@@ -839,7 +900,7 @@ export default function HomePage() {
               <span className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#D65349] sm:text-[8px]">فرصت محدود</span>
             </div>
 
-            <div className="discount-home-viewport min-w-0 flex-1 overflow-hidden rounded-2xl bg-white/45 px-1 py-1.5">
+            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
               <div className="discount-home-track flex w-max items-stretch gap-2.5">
                 {[...discounts, ...discounts].map((product, index) => {
                   const business = findBusiness(product.business_id);
@@ -889,7 +950,7 @@ export default function HomePage() {
               <h2 className="text-[11px] font-black leading-tight text-[#1D2B1F] sm:text-sm">محبوب‌های جم</h2>
             </div>
 
-            <div className="min-w-0 flex-1 overflow-hidden" dir="ltr">
+            <div className="jam-popular-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden" dir="ltr" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
               <div className="jam-popular-track flex w-max items-stretch gap-2 py-1">
                 {[...popular, ...popular].map((b, index) => (
                   <Link
