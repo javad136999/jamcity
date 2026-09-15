@@ -777,31 +777,21 @@ export default function HomePage() {
       {/* MAP */}
       <section>
         {categories.length > 0 && (
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={`shrink-0 rounded-full px-4 py-2 text-[9px] font-bold transition ${
-                activeCategory === null
-                  ? "bg-[#147A4B] text-white"
-                  : "border border-[#E3EBDE] bg-white text-[#66766A]"
-              }`}
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-[#E3EBDE] bg-white px-2.5 py-2 shadow-sm">
+            <span className="shrink-0 text-[9px] font-black text-[#66766A]">دسته‌بندی</span>
+            <select
+              value={activeCategory ?? ""}
+              onChange={(event) => setActiveCategory(event.target.value || null)}
+              aria-label="فیلتر دسته‌بندی کسب‌وکارها"
+              className="min-w-0 flex-1 appearance-none rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2 text-right text-[10px] font-bold text-[#3A4A3D] outline-none focus:border-[#147A4B]"
             >
-              همه
-            </button>
-
-            {categories.map((c) => (
-              <button
-                key={c.slug}
-                onClick={() => setActiveCategory(c.slug)}
-                className={`shrink-0 rounded-full px-4 py-2 text-[9px] font-bold transition ${
-                  activeCategory === c.slug
-                    ? "bg-[#147A4B] text-white"
-                    : "border border-[#E3EBDE] bg-white text-[#66766A]"
-                }`}
-              >
-                {c.icon} {c.name}
-              </button>
-            ))}
+              <option value="">همه کسب‌وکارها</option>
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.icon} {c.name}
+                </option>
+              ))}
+            </select>
           </div>
         )}
 
