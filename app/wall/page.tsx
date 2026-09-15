@@ -887,6 +887,7 @@ function handleReply(message: WallMessage) {
                 const quoted = m.reply_to
                   ? messages?.find((msg) => msg.id === m.reply_to)
                   : null;
+                const isPromoCard = m.is_promo && !!m.business_id;
                 const isAdCard = !!m.image_url && !!m.content;
                 const liked = likedByMe.has(m.id);
                 const count = likeCounts[m.id] ?? 0;
@@ -908,7 +909,22 @@ function handleReply(message: WallMessage) {
                       </div>
                     )}
 
-                    {isAdCard ? (
+                    {isPromoCard ? (
+                      <div className="flex min-w-0 max-w-full justify-end">
+                        <div className="w-full max-w-[320px] rounded-2xl border border-[#E7C777] bg-gradient-to-l from-[#FFF9E8] to-white px-3 py-2.5 shadow-[0_4px_14px_rgba(184,114,30,.10)]">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="truncate text-[11px] font-black text-[#8A5A16]">⭐ آگهی ویژه · {m.content?.split("\n")[0]?.replace(/^⭐\s*/, "")}</p>
+                              <p className="mt-1 line-clamp-2 whitespace-pre-wrap text-[10px] leading-5 text-[#66766A]">{m.content?.split("\n").slice(1, -1).join("\n")}</p>
+                            </div>
+                            <Link href={`/business/${m.business_id}`} className="shrink-0 rounded-lg bg-[#C58A28] px-2.5 py-1.5 text-[10px] font-black text-white transition hover:bg-[#A8701D]">
+                              بیشتر
+                            </Link>
+                          </div>
+                          <p className="mt-1.5 text-[9px] text-[#B09A73]">{timeAgo(m.created_at)}</p>
+                        </div>
+                      </div>
+                    ) : isAdCard ? (
                       <div className={`flex min-w-0 max-w-full ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2" : "mt-0.5"}`}>
                         <div
                           className={`min-w-0 max-w-[80%] overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white shadow-[0_4px_16px_rgba(20,60,40,.06)] ${bubbleTail}`}
