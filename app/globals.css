@@ -394,3 +394,13 @@ body, body.gradient-bg {
 @keyframes discountLoopMove { from { transform: translateX(0); } to { transform: translateX(25%); } }
 @media (max-width: 640px) { .discount-home-track { animation-duration: 48s; } }
 @media (prefers-reduced-motion: reduce) { .discount-home-track { animation: none; } }
+
+.gold-home-viewport, .discount-home-viewport {
+  scroll-behavior: auto;
+  overscroll-behavior-x: contain;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.gold-home-viewport img, .discount-home-viewport img {
+  pointer-events: none;
+}

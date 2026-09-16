@@ -759,7 +759,7 @@ export default function HomePage() {
 
             <div
               className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/55 px-1 py-1.5"
-              dir="rtl"
+              dir="ltr"
               onPointerDown={prepareGoldLoopDrag}
               onPointerMove={moveStripDrag}
               onPointerUp={endStripDrag}
@@ -767,7 +767,7 @@ export default function HomePage() {
               onWheel={scrollGoldWithWheel}
               onScroll={keepGoldLoop}
             >
-              <div className="gold-home-track flex w-max gap-2.5">
+              <div className="gold-home-track flex w-max gap-2.5" dir="rtl">
               {[...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses].map((business, index) => {
                 const group = goldProductGroups.find((item) => item.business.id === business.id);
                 const firstProduct = group?.products[0];
@@ -848,8 +848,8 @@ export default function HomePage() {
               <span className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#D65349] sm:text-[8px]">فرصت محدود</span>
             </div>
 
-            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
-              <div className="discount-home-track flex w-max items-stretch gap-2.5">
+            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" dir="ltr" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
+              <div className="discount-home-track flex w-max items-stretch gap-2.5" dir="rtl">
                 {[...discounts, ...discounts, ...discounts, ...discounts].map((product, index) => {
                   const business = findBusiness(product.business_id);
                   if (!business) return null;
