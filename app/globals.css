@@ -352,3 +352,45 @@ a {
   );
   background-size: 400% 100%;
 }
+
+/* JAM CITY HOME — روشن، شهری و لوکس */
+body, body.gradient-bg {
+  background: radial-gradient(circle at 90% -10%, rgba(226,179,79,.22), transparent 28%), radial-gradient(circle at 5% 24%, rgba(31,157,112,.12), transparent 30%), linear-gradient(180deg, #fffdf8 0%, #f7fbf7 46%, #eef8f2 100%);
+  color: #153b2d;
+}
+.home-shell { background: radial-gradient(circle at 100% 0%, rgba(255,218,128,.16), transparent 26%), linear-gradient(180deg, rgba(255,255,255,.4), rgba(240,250,244,.45)); }
+.home-hero { border-color: rgba(21,126,87,.18) !important; background: radial-gradient(circle at 12% 110%, rgba(220,171,66,.20), transparent 31%), radial-gradient(circle at 96% 0%, rgba(22,158,110,.16), transparent 36%), linear-gradient(135deg, #fff 0%, #f4fbf6 60%, #fff9e9 100%) !important; box-shadow: 0 18px 45px rgba(22,105,73,.10), 0 2px 0 rgba(255,255,255,.85) inset !important; }
+.wall-cta { background: linear-gradient(145deg, #fff3f5, #fff 56%, #fff9ea) !important; border: 1px solid rgba(198,38,76,.25) !important; box-shadow: 0 10px 26px rgba(198,38,76,.14), 0 0 0 4px rgba(255,255,255,.72) inset !important; }
+.wall-cta-icon { background: linear-gradient(145deg, #ef476f, #c6264c) !important; color: #fff; box-shadow: 0 8px 20px rgba(198,38,76,.32) !important; }
+.gold-home-showcase { border-color: rgba(200,143,33,.35) !important; background: radial-gradient(circle at 100% 0%, rgba(255,225,146,.48), transparent 32%), linear-gradient(135deg, #fffaf0 0%, #fff 48%, #fff4d7 100%) !important; box-shadow: 0 18px 42px rgba(178,118,24,.14), 0 1px 0 #fff inset !important; }
+.gold-home-label { background: linear-gradient(155deg, #fffdf5 0%, #ffeab0 100%) !important; border-color: rgba(204,149,40,.45) !important; box-shadow: 0 10px 26px rgba(180,119,21,.20) !important; }
+.gold-home-card { border-radius: 18px; padding: 7px 4px 6px; background: rgba(255,255,255,.64); border: 1px solid rgba(213,166,73,.18); transition: transform .2s ease, box-shadow .2s ease, background .2s ease; }
+.gold-home-card:hover { background: #fff; box-shadow: 0 10px 22px rgba(180,119,21,.14); }
+@media (max-width: 640px) { .home-shell { margin-inline: -4px; padding-inline: 4px; } }
+
+
+.wall-home-feature { background: radial-gradient(circle at 100% 0%, rgba(255,232,174,.32), transparent 30%), linear-gradient(135deg, #fff 0%, #fff8fa 52%, #fffdf3 100%); }
+.wall-home-feature-icon { background: linear-gradient(145deg, #ef476f, #c6264c); color: #fff; }
+.wall-home-feature a:focus-visible { outline: 3px solid rgba(198,38,76,.35); outline-offset: 3px; }
+
+.priority-gold-card { box-shadow: 0 4px 14px rgba(180,119,21,.07); }
+.priority-gold-card:focus-visible { outline: 3px solid rgba(198,145,38,.35); outline-offset: 2px; }
+
+.wall-entry-cta { position: relative; isolation: isolate; }
+.wall-entry-cta::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: 19px; background: conic-gradient(from 90deg, rgba(34,197,94,.95), rgba(239,68,68,.95), rgba(34,197,94,.95)); filter: blur(7px); opacity: .82; animation: wallHeartPulse 1.35s ease-in-out infinite; }
+.wall-entry-icon { display: inline-flex; height: 30px; width: 30px; align-items: center; justify-content: center; border-radius: 10px; background: rgba(255,255,255,.18); box-shadow: 0 0 0 2px rgba(255,255,255,.28), 0 0 12px rgba(34,197,94,.75), 0 0 18px rgba(239,68,68,.62); animation: wallIconHeartbeat 1.35s ease-in-out infinite; }
+@keyframes wallHeartPulse { 0%, 100% { transform: scale(.96); opacity: .58; } 15% { transform: scale(1.04); opacity: .98; } 28% { transform: scale(.98); opacity: .72; } 42% { transform: scale(1.03); opacity: .92; } 62%, 100% { transform: scale(.96); opacity: .58; } }
+@keyframes wallIconHeartbeat { 0%, 100% { transform: scale(1); } 15% { transform: scale(1.14); } 28% { transform: scale(1.02); } 42% { transform: scale(1.10); } 62%, 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .wall-entry-cta::before, .wall-entry-icon { animation: none; } }
+
+.gold-home-track { animation: priorityGoldMove 38s linear infinite; will-change: transform; }
+.gold-home-viewport:hover .gold-home-track, .gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused; }
+@keyframes priorityGoldMove { from { transform: translateX(0); } to { transform: translateX(25%); } }
+@media (max-width: 640px) { .gold-home-track { animation-duration: 46s; } }
+@media (prefers-reduced-motion: reduce) { .gold-home-track { animation: none; } }
+
+.discount-home-track { animation: discountLoopMove 40s linear infinite; will-change: transform; }
+.discount-home-viewport:hover .discount-home-track, .discount-home-viewport.is-manual .discount-home-track { animation-play-state: paused; }
+@keyframes discountLoopMove { from { transform: translateX(0); } to { transform: translateX(25%); } }
+@media (max-width: 640px) { .discount-home-track { animation-duration: 48s; } }
+@media (prefers-reduced-motion: reduce) { .discount-home-track { animation: none; } }

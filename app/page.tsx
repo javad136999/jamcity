@@ -185,13 +185,13 @@ export default function HomePage() {
   function prepareGoldLoopDrag(event: React.PointerEvent<HTMLDivElement>) {
     beginStripDrag(event);
     const element = event.currentTarget;
-    const segment = element.scrollWidth / 6;
+    const segment = element.scrollWidth / 4;
     if (segment > 0 && element.scrollLeft < segment) element.scrollLeft = segment;
   }
 
   function keepGoldLoop(event: React.UIEvent<HTMLDivElement>) {
     const element = event.currentTarget;
-    const segment = element.scrollWidth / 6;
+    const segment = element.scrollWidth / 4;
     if (segment <= 0) return;
     if (element.scrollLeft <= 1) {
       element.scrollLeft = segment + Math.max(0, element.scrollLeft);
@@ -484,7 +484,7 @@ export default function HomePage() {
   }
 
   return (
-    <div dir="rtl" className="space-y-2 bg-[#F7F9F4] pb-10">
+    <div dir="rtl" className="home-shell space-y-3 rounded-[30px] pb-10 pt-1 sm:space-y-4">
       {/* JAM CITY NEWS BAR — نئون: کل ردیف یه لینک واحده به /news */}
       <Link
         href="/news"
@@ -576,87 +576,22 @@ export default function HomePage() {
       {/* =====================================================
           HERO — جمع‌وجور، بدون فضای الکی، آیکون چت عمومی نئونی
       ====================================================== */}
-      <section className="relative overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
+      <section className="home-hero relative overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.12),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.10),transparent_32%)]" />
 
         <div className="relative p-3 sm:p-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-lg shadow-[0_0_14px_rgba(57,255,143,.30)] sm:h-12 sm:w-12 sm:text-2xl">
-                🌴
-              </span>
-
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-lg shadow-[0_0_14px_rgba(57,255,143,.30)] sm:h-12 sm:w-12 sm:text-2xl">🌴</span>
               <div className="min-w-0">
                 <h1 className="truncate text-[14px] font-black leading-tight text-[#1D2B1F] sm:text-2xl">
-                  به شهر جم
-                  <span className="bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">
-                    {" "}خوش آمدید
-                  </span>
+                  به شهر جم <span className="bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">خوش آمدید</span>
                 </h1>
-                <p className="mt-0.5 truncate text-[8px] text-[#8A968C] sm:text-[10px]">
-                  شهر دیجیتال خودت را بساز
-                </p>
+                <p className="mt-0.5 truncate text-[8px] text-[#8A968C] sm:text-[10px]">شهر دیجیتال خودت را بساز</p>
               </div>
             </div>
-
-            {/* چت عمومی شهر جم — آیکون نئونی + متن دیوار جم */}
-            <Link
-              href="/wall"
-              aria-label="دیوار شهر جم"
-              className="flex shrink-0 flex-col items-center gap-1"
-            >
-              <span className="jam-chat-glow relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl ring-2 ring-[#ff2d55]/70 sm:h-14 sm:w-14 sm:text-3xl">
-                <span className="jam-chat-ping pointer-events-none absolute inset-0 rounded-2xl" />
-                <span className="relative">💬</span>
-              </span>
-              <span className="whitespace-nowrap text-[8px] font-black text-[#c9184a] sm:text-[9px]">
-                دیوار جم
-              </span>
-            </Link>
-          </div>
-
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <Link
-              href="/businesses"
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-[#E3EBDE] bg-white px-2.5 py-2.5 text-[9px] font-black text-[#1D2B1F] transition hover:border-[#39ff8f]/50 hover:bg-[#F3FAF5] sm:flex-none sm:px-5"
-            >
-              🏪
-              <span>کشف شهر</span>
-            </Link>
-
-            <Link
-              href="/games/hokm"
-              className="flex min-w-0 flex-col items-center justify-center gap-1 rounded-xl border border-[#E8C36A] bg-gradient-to-l from-[#FFF0C7] to-[#FFF9EA] px-1.5 py-2.5 text-center text-[9px] font-black text-[#8B5A16] shadow-[0_5px_16px_rgba(217,143,43,.18)] transition hover:-translate-y-1 hover:shadow-md sm:flex-row sm:gap-1.5 sm:px-5"
-            >
-              <span className="text-xl leading-none sm:text-lg">🃏</span>
-              <span className="truncate">بازی حکم</span>
-            </Link>
-
-            <button
-              type="button"
-              onClick={() => setTorobModalOpen(true)}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#D98F2B] px-2.5 py-2.5 text-[9px] font-black text-white shadow-[0_0_16px_rgba(255,183,77,.35)] transition hover:bg-[#c47f26] sm:flex-none sm:px-5"
-            >
-              🛒
-              <span>خرید با کف قیمت بازار</span>
-            </button>
-          </div>
-
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <Link
-              href="/games/hokm/leaderboard"
-              className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#D9C6F1] bg-gradient-to-l from-[#F3EAFE] to-white px-2 py-2 text-center text-[9px] font-black text-[#68419A] shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-            >
-              <span className="text-lg">🏆</span>
-              <span className="truncate">قهرمانان حکم</span>
-            </Link>
-
-            <Link
-              href="/referral"
-              className="flex min-h-[44px] min-w-0 items-center justify-center gap-1.5 rounded-xl border border-[#EBCB93] bg-gradient-to-l from-[#FFF0D0] to-white px-2 py-2 text-center text-[9px] font-black text-[#A96819] shadow-sm transition hover:-translate-y-1 hover:shadow-md"
-            >
-              <span className="text-lg">🎁</span>
-              <span className="truncate">باشگاه معرفی جم‌سیتی</span>
+            <Link href="/referral" aria-label="باشگاه معرفی جم‌سیتی" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EBCB93] bg-gradient-to-l from-[#FFF0D0] via-white to-[#FFF9EA] px-4 py-3 text-[11px] font-black text-[#A96819] shadow-[0_8px_20px_rgba(217,143,43,.16)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(217,143,43,.24)] sm:w-auto sm:min-w-[220px]">
+              <span className="text-xl">🎁</span><span>باشگاه معرفی جم‌سیتی</span><span className="text-sm">←</span>
             </Link>
           </div>
         </div>
@@ -781,6 +716,86 @@ export default function HomePage() {
         }
       `}</style>
 
+      {/* WALL FIRST — محور اصلی تجربه صفحه */}
+      <section className="wall-home-feature relative overflow-hidden rounded-[28px] border border-[#f1c1cb] bg-white p-3 shadow-[0_16px_38px_rgba(198,38,76,.12)] sm:p-5">
+        <div className="absolute -left-10 -top-12 h-40 w-40 rounded-full bg-[#ffd9e1]/70 blur-3xl" />
+        <div className="absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-[#ffe8ae]/55 blur-3xl" />
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <span className="wall-home-feature-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl shadow-[0_10px_24px_rgba(198,38,76,.28)] sm:h-16 sm:w-16 sm:text-4xl">💬</span>
+            <div>
+              <div className="mb-1 flex items-center gap-2">
+                <span className="rounded-full bg-[#c6264c] px-2 py-1 text-[8px] font-black text-white">محور اصلی شهر</span>
+                <span className="text-[9px] font-bold text-[#bd6678]">گفتگو، خبر و آگهی‌های محلی</span>
+              </div>
+              <h2 className="text-lg font-black text-[#351d25] sm:text-2xl">دیوار شهر جم</h2>
+              <p className="mt-1 max-w-xl text-[10px] leading-6 text-[#80636b] sm:text-xs">صدای شهروندان جم را ببینید، با همسایه‌ها گفتگو کنید و پیشنهادها و خبرهای مهم شهر را در یک فضای زنده دنبال کنید.</p>
+            </div>
+          </div>
+          <Link href="/wall" className="wall-entry-cta group flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#c6264c] to-[#ef476f] px-4 py-3 text-xs font-black text-white shadow-[0_10px_22px_rgba(198,38,76,.28)] transition hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(198,38,76,.36)] sm:px-5">
+            <span className="wall-entry-icon" aria-hidden="true">💬</span>
+            <span>ورود به دیوار جم</span>
+            <span className="text-base transition group-hover:-translate-x-1">←</span>
+          </Link>
+        </div>
+        <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-[#f5dfe3] pt-3 text-center">
+          <div><p className="text-base font-black text-[#c6264c]">زنده</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">گفتگوی لحظه‌ای</p></div>
+          <div className="border-x border-[#f5dfe3]"><p className="text-base font-black text-[#b57a1d]">محلی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">ویژه شهر جم</p></div>
+          <div><p className="text-base font-black text-[#147a4b]">صمیمی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">برای همشهری‌ها</p></div>
+        </div>
+
+        {goldBusinesses.length > 0 && (
+          <div className="relative mt-4 overflow-hidden rounded-2xl border border-[#efd49b] bg-gradient-to-l from-[#fff7df] via-white to-[#fffaf0] p-3 sm:p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#ffe29a] to-[#c88b24] text-base shadow-sm">👑</span>
+                <div>
+                  <h3 className="text-[11px] font-black text-[#704817] sm:text-sm">ویترین طلایی کنار دیوار</h3>
+                  <p className="text-[8px] font-bold text-[#ae8750] sm:text-[9px]">کسب‌وکارها و محصولات منتخب جم</p>
+                </div>
+              </div>
+              <Link href="/businesses" className="rounded-full bg-white px-2.5 py-1.5 text-[8px] font-black text-[#a66b19] shadow-sm transition hover:bg-[#fff3cf]">مشاهده همه ←</Link>
+            </div>
+
+            <div
+              className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/55 px-1 py-1.5"
+              dir="rtl"
+              onPointerDown={prepareGoldLoopDrag}
+              onPointerMove={moveStripDrag}
+              onPointerUp={endStripDrag}
+              onPointerCancel={endStripDrag}
+              onWheel={scrollGoldWithWheel}
+              onScroll={keepGoldLoop}
+            >
+              <div className="gold-home-track flex w-max gap-2.5">
+              {[...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses].map((business, index) => {
+                const group = goldProductGroups.find((item) => item.business.id === business.id);
+                const firstProduct = group?.products[0];
+                return (
+                  <Link key={business.id} href={`/business/${business.id}`} className="priority-gold-card group flex min-w-[190px] shrink-0 items-center gap-2 rounded-2xl border border-[#f0ddb2] bg-white/90 p-2 transition hover:-translate-y-1 hover:shadow-[0_10px_22px_rgba(180,119,21,.16)]">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-[#f0d27f] bg-[#fff6dc] shadow-sm">
+                      {business.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                      ) : <div className="flex h-full w-full items-center justify-center text-2xl">{business.icon || "🏪"}</div>}
+                      <span className="absolute -bottom-0.5 -left-0.5 text-xs">👑</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[10px] font-black text-[#34271f]">{business.name}</p>
+                      <p className="mt-1 text-[8px] font-bold text-[#bd8b35]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "کسب‌وکار منتخب"}</p>
+                      {firstProduct ? (
+                        <p className="mt-1 truncate text-[8px] font-bold text-[#147a4b]">{firstProduct.name}</p>
+                      ) : <p className="mt-1 text-[8px] text-[#9f8b72]">مشاهده محصولات ←</p>}
+                    </div>
+                  </Link>
+                );
+              })}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+
       {/* MAP */}
       <section>
         {categories.length > 0 && (
@@ -821,93 +836,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* GOLD BUSINESSES — ویترین ثابت راست + حرکت آرام کارت‌ها به سمت راست */}
-      {goldBusinesses.length > 0 && (
-        <section className="gold-home-showcase relative overflow-hidden rounded-[24px] border border-[#F0DCB4] bg-gradient-to-l from-[#FBEEDA] via-white to-[#FFF9EF] px-3 py-3.5 shadow-[0_0_24px_rgba(255,183,77,.15)] sm:px-4">
-          <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#FFE29A] via-[#D98F2B] to-[#FFE29A]" />
-      
-          <div className="flex items-stretch gap-2.5 pt-1" dir="rtl">
-            {/* عنوان ثابت سمت راست */}
-            <div className="gold-home-label relative z-20 flex w-[92px] shrink-0 flex-col items-center justify-center rounded-2xl border border-[#F0DCB4] bg-gradient-to-b from-[#FFF9E8] to-[#FFE8A8] px-1.5 py-2 text-center shadow-[0_5px_18px_rgba(217,143,43,.16)] sm:w-[126px] sm:px-2.5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">👑</span>
-              <h2 className="mt-1.5 text-[10px] font-black leading-4 text-[#805318] sm:text-xs">ویترین طلایی جم</h2>
-              <p className="mt-0.5 text-[7px] leading-3 text-[#A77737] sm:text-[8px]">بهترین کسب‌وکارهای شهر</p>
-              <Link href="/businesses" className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#B47735] transition hover:bg-white sm:text-[8px]">همه ←</Link>
-            </div>
-      
-            {/* کسب‌وکارها: حرکت از چپ به راست، پنل راست ثابت است */}
-            <div className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={prepareGoldLoopDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
-              <div className="gold-home-track flex w-max items-start gap-2.5">
-                {[...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses].map((business, index) => (
-                  <Link key={`${business.id}-${index}`} href={`/business/${business.id}`} className="gold-home-card group flex w-[72px] shrink-0 flex-col items-center gap-1.5 sm:w-[82px]">
-                    <div className="relative h-11 w-11 rounded-full bg-gradient-to-br from-[#FFE29A] via-[#D98F2B] to-[#B8721E] p-[2px] shadow-[0_4px_14px_rgba(217,143,43,.32)] transition duration-300 group-hover:-translate-y-1 group-hover:shadow-[0_8px_18px_rgba(217,143,43,.46)] sm:h-12 sm:w-12">
-                      <div className="h-full w-full overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA]">
-                        {business.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center text-2xl">{business.icon || "🏪"}</div>
-                        )}
-                      </div>
-                      <span className="absolute -bottom-0.5 -left-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#D98F2B] text-[7px] shadow ring-2 ring-white">👑</span>
-                    </div>
-                    <p className="w-full truncate text-center text-[8px] font-black leading-tight text-[#1D2B1F] sm:text-[9px]">{business.name}</p>
-                    {business.rating_count > 0 && <p className="text-[7px] font-bold text-[#D98F2B] sm:text-[8px]">⭐ {business.rating_avg.toFixed(1)}</p>}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </div>
-      
-          {/* محصولات هر کسب‌وکار طلایی؛ بدون تغییر در منطق فعلی */}
-          {goldProductGroups.length > 0 && (
-            <div className="mt-4 space-y-3 border-t border-[#F0DCB4] pt-3.5">
-              {goldProductGroups.map(({ business, products: businessProducts }) => (
-                <div key={business.id} className="flex items-stretch gap-3" dir="rtl">
-                  <Link href={`/business/${business.id}`} className="flex w-[84px] shrink-0 flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#F0DCB4] bg-white/75 px-1.5 py-2 text-center">
-                    <div className="relative h-11 w-11 overflow-hidden rounded-full border-2 border-white bg-[#FBEEDA] shadow-sm">
-                      {business.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover" />
-                      ) : <div className="flex h-full w-full items-center justify-center text-lg">{business.icon || "🏪"}</div>}
-                    </div>
-                    <p className="line-clamp-2 text-[9px] font-black leading-tight text-[#1D2B1F]">{business.name}</p>
-                  </Link>
-                  <div className="flex min-w-0 flex-1 gap-2.5 overflow-x-auto pb-1">
-                    {businessProducts.map((product) => (
-                      <Link key={product.id} href={`/business/${business.id}`} className="group min-w-[104px] max-w-[104px] shrink-0 overflow-hidden rounded-[16px] border border-[#E3EBDE] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                        <div className="relative h-20 overflow-hidden bg-[#F3F6F1]">
-                          {product.image_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-110" />
-                          ) : <div className="flex h-full w-full items-center justify-center bg-[#F3FAF5] text-2xl">{business.icon || "🏪"}</div>}
-                          {(product.discount_percent ?? 0) > 0 && <span className="absolute left-1 top-1 rounded-full bg-[#E2574C] px-1.5 py-0.5 text-[6.5px] font-black text-white">{product.discount_percent}% تخفیف</span>}
-                        </div>
-                        <div className="p-1.5"><h3 className="truncate text-[9px] font-black text-[#1D2B1F]">{product.name}</h3>{product.price !== null && <p className="mt-1 truncate text-[7.5px] font-black text-[#147A4B]">{formatPrice(product.price)}</p>}</div>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-      
-          <div className="mt-2 flex items-center justify-center gap-1.5"><span className="h-1.5 w-5 rounded-full bg-[#D98F2B]" /><span className="h-1.5 w-1.5 rounded-full bg-[#F0DCB4]" /><span className="text-[8px] text-slate-400">حرکت آرام پیشنهادهای طلایی</span></div>
-      
-          <style dangerouslySetInnerHTML={{ __html: `            .gold-home-label { isolation:isolate; }
-            .gold-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.75),transparent 60%); pointer-events:none; }
-            .gold-home-track { animation:goldHomeMoveRight 38s linear infinite; will-change:transform; }
-            .gold-home-viewport { touch-action:pan-x; scrollbar-width:none; -ms-overflow-style:none; cursor:grab; overscroll-behavior-x:contain; }
-            .gold-home-viewport::-webkit-scrollbar { display:none; }
-            .gold-home-viewport.is-manual { cursor:grabbing; }
-            .gold-home-viewport:hover .gold-home-track { animation-play-state:paused; }
-            @keyframes goldHomeMoveRight { from { transform:translateX(0); } to { transform:translateX(16.6667%); } }
-            @media (max-width:640px) { .gold-home-track { animation-duration:44s; } }
-            @media (prefers-reduced-motion:reduce) { .gold-home-track { animation:none; } }
-` }} />
-        </section>
-      )}
-
       {/* DISCOUNTS — پنل ثابت راست + حرکت آرام کارت‌ها به سمت راست */}
       {discounts.length > 0 && (
         <section className="discount-home-showcase relative overflow-hidden rounded-[24px] border border-[#F0D4CE] bg-gradient-to-l from-[#FFF1EE] via-white to-[#FFF9F7] px-3 py-3.5 shadow-[0_0_24px_rgba(226,87,76,.12)] sm:px-4">
@@ -920,9 +848,9 @@ export default function HomePage() {
               <span className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#D65349] sm:text-[8px]">فرصت محدود</span>
             </div>
 
-            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag}>
+            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
               <div className="discount-home-track flex w-max items-stretch gap-2.5">
-                {[...discounts, ...discounts, ...discounts].map((product, index) => {
+                {[...discounts, ...discounts, ...discounts, ...discounts].map((product, index) => {
                   const business = findBusiness(product.business_id);
                   if (!business) return null;
                   const finalPrice = product.price !== null ? Math.round(product.price * (1 - (product.discount_percent ?? 0) / 100)) : null;
@@ -951,9 +879,7 @@ export default function HomePage() {
           <style dangerouslySetInnerHTML={{ __html: `            .discount-home-label { isolation:isolate; }
             .discount-home-label::after { content:""; position:absolute; inset:0; z-index:-1; border-radius:inherit; background:linear-gradient(135deg,rgba(255,255,255,.8),transparent 60%); pointer-events:none; }
             .discount-gift { animation:discountGiftFloat 3s ease-in-out infinite; }
-            .discount-home-track { animation:discountHomeMoveRight 36s linear infinite; will-change:transform; }
-            .discount-home-viewport:hover .discount-home-track { animation-play-state:paused; }
-            @keyframes discountHomeMoveRight { from { transform:translateX(-33.3333%); } to { transform:translateX(0); } }
+            .discount-home-viewport.is-manual .discount-home-track { animation-play-state:paused; }
             @keyframes discountGiftFloat { 0%,100% { transform:translateY(0) rotate(-2deg); } 50% { transform:translateY(-3px) rotate(2deg); } }
             @media (max-width:640px) { .discount-home-track { animation-duration:42s; } }
             @media (prefers-reduced-motion:reduce) { .discount-home-track,.discount-gift { animation:none; } }
