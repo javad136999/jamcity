@@ -415,7 +415,8 @@ export default function WallPage() {
       // select محدود، حجم پاسخ و زمان parse/rerender موبایل را کم می‌کند.
       const { data: rawMessages, error: msgError } = await supabase
         .from("wall_messages")
-        .select("id,user_id,content,reply_to,image_url,audio_url,is_promo,business_id,category,created_at")
+        // reply_to در تایپ فعلی دیتابیس وجود ندارد؛ آن را از select حذف می‌کنیم.
+        .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at")
         .order("created_at", { ascending: false })
         .limit(30);
       if (msgError) {
@@ -425,7 +426,9 @@ export default function WallPage() {
       }
 
       // کوئری برای رسیدن سریع‌تر به آخرین پیام‌ها نزولی است؛ نمایش همچنان قدیمی به جدید باشد.
-      const rows = [...((rawMessages as WallMessage[]) ?? [])].reverse();
+      const rows = [...((rawMessages as unknown as Omit<WallMessage, "reply_to">[]) ?? [])]
+        .map((row) => ({ ...row, reply_to: null }))
+        .reverse() as WallMessage[];
 
       if (rows.length > 0) {
         const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
