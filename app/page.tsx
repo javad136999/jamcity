@@ -760,51 +760,6 @@ export default function HomePage() {
             <span className="text-base transition group-hover:-translate-x-1">←</span>
           </Link>
         </div>
-        <div className="relative mt-2 grid grid-cols-3 gap-2 border-t border-[#f5dfe3] pt-2 text-center sm:mt-4 sm:pt-3">
-          <div><p className="text-base font-black text-[#c6264c]">زنده</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">گفتگوی لحظه‌ای</p></div>
-          <div className="border-x border-[#f5dfe3]"><p className="text-base font-black text-[#b57a1d]">محلی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">ویژه شهر جم</p></div>
-          <div><p className="text-base font-black text-[#147a4b]">صمیمی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">برای همشهری‌ها</p></div>
-        </div>
-      </section>
-
-      {/* MAP */}
-      <section>
-        {categories.length > 0 && (
-          <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-[#E3EBDE] bg-white px-2.5 py-2 shadow-sm">
-            <span className="shrink-0 text-[9px] font-black text-[#66766A]">دسته‌بندی</span>
-            <select
-              value={activeCategory ?? ""}
-              onChange={(event) => setActiveCategory(event.target.value || null)}
-              aria-label="فیلتر دسته‌بندی کسب‌وکارها"
-              className="min-w-0 flex-1 appearance-none rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2 text-right text-[10px] font-bold text-[#3A4A3D] outline-none focus:border-[#147A4B]"
-            >
-              <option value="">همه کسب‌وکارها</option>
-              {categories.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.icon} {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/*
-          نکته‌ی مهم: relative + isolate + z-0 اینجا یه stacking context
-          مستقل برای نقشه می‌سازه. لیفلت داخل خودش کنترل‌ها و پنل‌هاش رو
-          با z-index های بالا (تا ۱۰۰۰) می‌سازه؛ بدون isolate، همون
-          z-index های داخلی از مرز این باکس بیرون می‌زنن و روی بخش‌های
-          دیگه‌ی صفحه (مثل بخش‌های بالاتر/پایین‌تر) موقع اسکرول میفتن.
-          isolate این نشتی رو کاملاً مهار می‌کنه.
-        */}
-        <div className="relative isolate z-0 overflow-hidden rounded-[28px] border-4 border-white bg-white shadow-[0_0_0_1px_rgba(57,255,143,.25),0_0_35px_rgba(57,255,143,.18),0_15px_45px_rgba(20,60,40,.1)]">
-          {businesses === null ? (
-            <div className="flex h-80 items-center justify-center">
-              <Spinner label="در حال بارگذاری نقشه..." />
-            </div>
-          ) : (
-            <LeafletMap markers={markers} />
-          )}
-        </div>
       </section>
 
       {/* GOLD SHOWCASE — کسب‌وکار ثابت در سمت راست، محصولات قابل اسکرول در سمت چپ */}
@@ -867,6 +822,47 @@ export default function HomePage() {
           ))}
         </section>
       )}
+
+
+      {/* MAP */}
+      <section>
+        {categories.length > 0 && (
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-[#E3EBDE] bg-white px-2.5 py-2 shadow-sm">
+            <span className="shrink-0 text-[9px] font-black text-[#66766A]">دسته‌بندی</span>
+            <select
+              value={activeCategory ?? ""}
+              onChange={(event) => setActiveCategory(event.target.value || null)}
+              aria-label="فیلتر دسته‌بندی کسب‌وکارها"
+              className="min-w-0 flex-1 appearance-none rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-2 text-right text-[10px] font-bold text-[#3A4A3D] outline-none focus:border-[#147A4B]"
+            >
+              <option value="">همه کسب‌وکارها</option>
+              {categories.map((c) => (
+                <option key={c.slug} value={c.slug}>
+                  {c.icon} {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/*
+          نکته‌ی مهم: relative + isolate + z-0 اینجا یه stacking context
+          مستقل برای نقشه می‌سازه. لیفلت داخل خودش کنترل‌ها و پنل‌هاش رو
+          با z-index های بالا (تا ۱۰۰۰) می‌سازه؛ بدون isolate، همون
+          z-index های داخلی از مرز این باکس بیرون می‌زنن و روی بخش‌های
+          دیگه‌ی صفحه (مثل بخش‌های بالاتر/پایین‌تر) موقع اسکرول میفتن.
+          isolate این نشتی رو کاملاً مهار می‌کنه.
+        */}
+        <div className="relative isolate z-0 overflow-hidden rounded-[28px] border-4 border-white bg-white shadow-[0_0_0_1px_rgba(57,255,143,.25),0_0_35px_rgba(57,255,143,.18),0_15px_45px_rgba(20,60,40,.1)]">
+          {businesses === null ? (
+            <div className="flex h-80 items-center justify-center">
+              <Spinner label="در حال بارگذاری نقشه..." />
+            </div>
+          ) : (
+            <LeafletMap markers={markers} />
+          )}
+        </div>
+      </section>
 
       {/* DISCOUNTS — پنل ثابت راست + حرکت آرام کارت‌ها به سمت راست */}
       {discounts.length > 0 && (
