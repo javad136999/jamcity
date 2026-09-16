@@ -760,7 +760,7 @@ export default function HomePage() {
             <div
               className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/55 px-1 py-1.5"
               dir="ltr"
-              onPointerDown={prepareGoldLoopDrag}
+              onPointerDown={beginStripDrag}
               onPointerMove={moveStripDrag}
               onPointerUp={endStripDrag}
               onPointerCancel={endStripDrag}
@@ -862,10 +862,19 @@ export default function HomePage() {
                   <span className="text-[8px] font-bold text-[#BD8B35]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "منتخب جم"}</span>
                 </Link>
 
-                <div className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl bg-white/65 px-1 py-1.5" dir="ltr">
+                <div
+                  className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl bg-white/65 px-1 py-1.5"
+                  dir="rtl"
+                  onPointerDown={prepareGoldLoopDrag}
+                  onPointerMove={moveStripDrag}
+                  onPointerUp={endStripDrag}
+                  onPointerCancel={endStripDrag}
+                  onWheel={scrollGoldWithWheel}
+                  onScroll={keepGoldLoop}
+                >
                   <div className="flex w-max items-stretch gap-2.5" dir="rtl">
-                    {groupProducts.map((product) => (
-                      <Link key={product.id} href={`/business/${business.id}`} className="group flex w-[176px] shrink-0 items-center gap-2 rounded-xl border border-[#F0DDB2] bg-white p-2 transition hover:-translate-y-0.5 hover:border-[#D9A63A] hover:shadow-[0_8px_18px_rgba(180,119,21,.14)] sm:w-[210px]">
+                    {[...groupProducts, ...groupProducts, ...groupProducts, ...groupProducts].map((product, index) => (
+                      <Link key={`${product.id}-${index}`} href={`/business/${business.id}`} className="group flex w-[176px] shrink-0 items-center gap-2 rounded-xl border border-[#F0DDB2] bg-white p-2 transition hover:-translate-y-0.5 hover:border-[#D9A63A] hover:shadow-[0_8px_18px_rgba(180,119,21,.14)] sm:w-[210px]">
                         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#FFF6DC] sm:h-14 sm:w-14">
                           {product.image_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
