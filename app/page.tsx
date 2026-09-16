@@ -864,7 +864,7 @@ export default function HomePage() {
 
                 <div
                   className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl bg-white/65 px-1 py-1.5"
-                  dir="rtl"
+                  dir="ltr"
                   onPointerDown={prepareGoldLoopDrag}
                   onPointerMove={moveStripDrag}
                   onPointerUp={endStripDrag}
