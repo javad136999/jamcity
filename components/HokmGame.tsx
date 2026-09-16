@@ -97,7 +97,7 @@ function normalizeCard(card: any): Card {
 }
 
 function normalizeCards(cards: any[]): Card[] {
-return (cards ?? []).map(normalizeCard);
+  return (cards ?? []).map(normalizeCard);
 }
 
 export default function HokmGame({
@@ -274,12 +274,12 @@ export default function HokmGame({
   ]);
 
   const botMemory = useRef<BotMemory>({
-  played: [],
-  knownTrump: [],
-  teamScore: 0,
-  opponentScore: 0,
-  botSeat: 1,
-});
+    played: [],
+    knownTrump: [],
+    teamScore: 0,
+    opponentScore: 0,
+    botSeat: 1,
+  });
 
   // دست کامل هر بازیکن که تا انتخاب حکم مخفی می‌ماند.
   const pendingOfflineHands = useRef<Card[][]>([[], [], [], []]);
@@ -1714,17 +1714,6 @@ export default function HokmGame({
     }
   }
 
-  if (
-    !waiting &&
-    !started
-  ) {
-    return (
-      <LobbyCard
-        onJoin={joinRoom}
-      />
-    );
-  }
-
   // First-trick announcement: runs inside HokmGame only.
   useEffect(() => {
     if (
@@ -1742,6 +1731,16 @@ export default function HokmGame({
     return undefined;
   }, [matchPhase, currentTrick.length]);
 
+  if (
+    !waiting &&
+    !started
+  ) {
+    return (
+      <LobbyCard
+        onJoin={joinRoom}
+      />
+    );
+  }
 
   return (
     <main>
@@ -3349,7 +3348,7 @@ function WaitingRoom({
   return (
     <section
       dir="rtl"
-      className="pasour-lobby mx-auto min-h-[600px] max-w-2xl rounded-[32px] p-5 text-center text-white sm:p-8"
+      className="waiting-room mx-auto min-h-[600px] max-w-2xl overflow-hidden rounded-[32px] p-5 text-center sm:p-8"
     >
       <div className="mb-7 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
         <div>
@@ -3357,7 +3356,7 @@ function WaitingRoom({
             بازیکن آماده
           </p>
 
-          <p className="mt-1 font-black">
+          <p className="mt-1 font-black text-white">
             همشهری جم
           </p>
         </div>
@@ -3381,84 +3380,105 @@ function WaitingRoom({
         🃏
       </div>
 
-      <h2 className="mt-4 text-2xl font-black">
+      <h2 className="mt-4 text-2xl font-black text-white">
         در حال پیدا کردن بازیکنان...
       </h2>
 
-      <p className="mt-2 text-xs text-white/50">
+      <p className="mt-2 text-xs text-white/60">
         هر چهار جایگاه که پر شود، بازی شروع می‌شود
       </p>
 
       <div className="relative mx-auto mt-8 grid max-w-md grid-cols-2 gap-3">
-        {[0, 1, 2, 3].map(
-          (seat) => {
-            const player =
-              players.find(
-                (item) =>
-                  item.seat ===
-                  seat
-              );
+        {[0, 1, 2, 3].map((seat) => {
+          const player = players.find((item) => item.seat === seat);
 
-            return (
-              <div
-                key={seat}
-                className={`match-seat rounded-2xl border p-5 ${
-                  player
-                    ? "match-seat-ready"
-                    : "border-white/10 bg-white/5"
-                }`}
-              >
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-2xl">
-                  {player
-                    ? "👤"
-                    : "❔"}
-                </div>
-
-                <p className="mt-2 text-xs font-black">
-                  {player
-                    ? player.name
-                    : "در انتظار"}
-                </p>
-
-                <p className="mt-1 text-[9px] text-white/45">
-                  {player
-                    ? "آماده بازی"
-                    : "جایگاه خالی"}
-                </p>
+          return (
+            <div
+              key={seat}
+              className={`rounded-2xl border p-5 ${
+                player
+                  ? "match-seat match-seat-ready"
+                  : "border-white/10 bg-white/5"
+              }`}
+            >
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-2xl">
+                {player ? "👤" : "❔"}
               </div>
-            );
-          }
-        )}
+
+              <p className="mt-2 text-xs font-black text-white">
+                {player ? player.name : "در انتظار"}
+              </p>
+
+              <p className="mt-1 text-[9px] text-white/50">
+                {player ? "آماده بازی" : "جایگاه خالی"}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
       <div className="mx-auto mt-7 h-2 max-w-md overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full bg-gradient-to-l from-[#E8C878] to-[#9C6B2F] transition-all"
           style={{
-            width: `${Math.min(
-              100,
-              (players.length /
-                4) *
-                100
-            )}%`,
+            width: `${Math.min(100, (players.length / 4) * 100)}%`,
           }}
         />
       </div>
 
-      <p className="mt-3 text-xs text-white/55">
-        {players.length}/۴ بازیکن ·{" "}
-        {seconds} ثانیه
+      <p className="mt-3 text-xs text-white/70">
+        {players.length}/۴ بازیکن · {seconds} ثانیه
       </p>
 
       {seconds <= 15 && (
         <button
           type="button"
           onClick={onOffline}
-          className="mt-5 rounded-xl bg-[#E8C878] px-5 py-3 text-xs font-black text-[#352415]"
+          className="mt-5 rounded-xl bg-[#E8C878] px-5 py-3 text-xs font-black text-[#352415] transition hover:bg-[#f0d38a]"
         >
           🤖 ادامه با ربات
         </button>
       )}
+
+      <style jsx>{`
+        .waiting-room {
+          position: relative;
+          background: radial-gradient(
+            circle at 50% 10%,
+            #244d3e 0%,
+            #102d25 48%,
+            #081b18 100%
+          );
+          color: #ffffff;
+          box-shadow:
+            inset 0 0 120px rgba(0, 0, 0, 0.45),
+            0 24px 70px rgba(0, 0, 0, 0.3);
+        }
+
+        .match-seat {
+          border-color: rgba(232, 200, 120, 0.35);
+          background: linear-gradient(
+            145deg,
+            rgba(232, 200, 120, 0.15),
+            rgba(255, 255, 255, 0.04)
+          );
+        }
+
+        .match-seat-ready {
+          animation: seatReady 0.7s ease both;
+        }
+
+        @keyframes seatReady {
+          from {
+            opacity: 0;
+            transform: scale(0.8) translateY(15px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
     </section>
   );
 }
