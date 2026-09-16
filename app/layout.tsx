@@ -1,5 +1,6 @@
 ﻿import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./home-overrides.css";
 import { AuthProvider } from "@/lib/auth-context";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
