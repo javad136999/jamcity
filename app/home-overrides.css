@@ -6,6 +6,7 @@
    - Better touch/manual horizontal scrolling
    - Mobile unified news + events + wall pulse panel
    - Compact business name card on map zoom
+   - Compact manual-only gold showcase
 ========================================================= */
 
 .home-shell div:has(> .jam-events-track) {
@@ -15,12 +16,75 @@
 .jam-events-track { animation: jamEventsTickerSmooth 30s linear infinite !important; will-change: transform; }
 @keyframes jamEventsTickerSmooth { from { transform: translateX(-50%); } to { transform: translateX(0); } }
 @media (prefers-reduced-motion: reduce) { .jam-events-track { animation: none !important; } }
+
 @media (min-width: 900px) {
   .home-shell { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start; }
   .home-shell > * { grid-column:1 / -1; min-width:0; }
   .home-shell > .wall-home-feature { grid-column:1; grid-row:auto; height:100%; }
   .home-shell > .wall-home-feature + div { grid-column:2; grid-row:auto; height:100%; margin-top:0; }
 }
+
+/* Gold business showcase: fixed/manual horizontal strip, never auto-scroll. */
+.gold-home-viewport {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  cursor: grab;
+  overscroll-behavior-x: contain;
+}
+.gold-home-viewport::-webkit-scrollbar { display:none; }
+.gold-home-viewport .gold-home-track {
+  animation: none !important;
+  -webkit-animation: none !important;
+  transform: none !important;
+  will-change: auto !important;
+}
+.gold-home-viewport.is-manual { cursor: grabbing; }
+.gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused !important; }
+
+/* Make the gold cards denser so more businesses are visible in one row. */
+.gold-home-viewport > .gold-home-track { gap: 7px !important; }
+.gold-home-viewport .gold-home-track > * {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  flex: 0 0 clamp(132px, 15vw, 172px) !important;
+  min-width: 0 !important;
+}
+.gold-home-viewport img {
+  max-height: 86px;
+  object-fit: cover;
+}
+
+/* Vehicle/product cards: compact image, name, then price directly underneath. */
+.gold-home-viewport .gold-home-track a,
+.gold-home-viewport .gold-home-track > div {
+  border-radius: 14px !important;
+}
+.gold-home-viewport .gold-home-track p,
+.gold-home-viewport .gold-home-track span {
+  line-height: 1.35 !important;
+}
+.gold-home-viewport .gold-home-track .text-\[10px\],
+.gold-home-viewport .gold-home-track .text-\[11px\] {
+  line-height: 1.3 !important;
+}
+
+/* The gold business/category identity stays small and is visually anchored to the right. */
+.gold-home-viewport .gold-home-track .gold-business-icon,
+.gold-home-viewport .gold-home-track [class*="business-icon"] {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+  font-size: 14px !important;
+  border-radius: 9px !important;
+}
+.gold-home-viewport .gold-home-track [class*="business-header"],
+.gold-home-viewport .gold-home-track [class*="business-title"] {
+  min-width: 0 !important;
+}
+
 @media (max-width:640px) {
   .home-shell > a[href="/news"], .home-shell > section[aria-label="آخرین رویدادهای جم"], .home-shell > .wall-home-feature { max-width:none !important; width:100% !important; margin-top:0 !important; margin-bottom:0 !important; box-shadow:none !important; }
   .home-shell > a[href="/news"] { min-height:38px; padding:5px 10px !important; border-radius:18px 18px 0 0 !important; border-bottom-color:rgba(57,255,143,.25) !important; background:linear-gradient(90deg,#fff 0%,#f6fff9 100%) !important; }
@@ -39,10 +103,14 @@
   .wall-home-feature .mb-1 span:last-child { font-size:7px !important; }
   .wall-home-feature .wall-entry-cta { max-width:100px !important; min-height:36px; padding:5px 7px !important; border-radius:12px !important; font-size:8px !important; line-height:1.25 !important; }
   .wall-home-feature .wall-entry-icon { width:22px !important; height:22px !important; border-radius:8px !important; font-size:11px !important; }
-  .jam-popular-viewport, .gold-home-viewport, .discount-home-viewport, .gold-products-manual-viewport { -webkit-overflow-scrolling:touch; touch-action:pan-x; scrollbar-width:none; }
-  .jam-popular-viewport::-webkit-scrollbar, .gold-home-viewport::-webkit-scrollbar, .discount-home-viewport::-webkit-scrollbar, .gold-products-manual-viewport::-webkit-scrollbar { display:none; }
+  .jam-popular-viewport, .discount-home-viewport, .gold-products-manual-viewport { -webkit-overflow-scrolling:touch; touch-action:pan-x; scrollbar-width:none; }
+  .jam-popular-viewport::-webkit-scrollbar, .discount-home-viewport::-webkit-scrollbar, .gold-products-manual-viewport::-webkit-scrollbar { display:none; }
+  .gold-home-viewport { padding-inline:2px !important; }
+  .gold-home-viewport .gold-home-track > * { flex-basis:126px !important; }
+  .gold-home-viewport img { max-height:72px; }
 }
-.jam-popular-viewport.is-manual .jam-popular-track, .gold-home-viewport.is-manual .gold-home-track, .discount-home-viewport.is-manual .discount-home-track { animation-play-state:paused !important; }
+
+.jam-popular-viewport.is-manual .jam-popular-track, .discount-home-viewport.is-manual .discount-home-track { animation-play-state:paused !important; }
 
 /* Map zoom card: existing business icon stays untouched; card shows only name. */
 .jam-business-tooltip .jam-marker-tooltip { position:relative !important; min-width:92px !important; max-width:145px !important; padding:6px 9px !important; border-radius:10px !important; border:1px solid rgba(47,118,87,.16) !important; box-shadow:0 6px 16px rgba(55,45,35,.16) !important; }
