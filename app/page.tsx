@@ -738,11 +738,9 @@ export default function HomePage() {
             <span className="text-base transition group-hover:-translate-x-1">←</span>
           </Link>
         </div>
-        <div className="relative mt-2 grid grid-cols-3 gap-2 border-t border-[#f5dfe3] pt-2 text-center sm:mt-4 sm:pt-3">
-          <div><p className="text-base font-black text-[#c6264c]">زنده</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">گفتگوی لحظه‌ای</p></div>
-          <div className="border-x border-[#f5dfe3]"><p className="text-base font-black text-[#b57a1d]">محلی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">ویژه شهر جم</p></div>
-          <div><p className="text-base font-black text-[#147a4b]">صمیمی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">برای همشهری‌ها</p></div>
-        </div>
+
+
+      </section>
 
         {goldBusinesses.length > 0 && (
           <div className="relative mt-4 overflow-hidden rounded-2xl border border-[#efd49b] bg-gradient-to-l from-[#fff7df] via-white to-[#fffaf0] p-3 sm:p-4">
@@ -794,7 +792,7 @@ export default function HomePage() {
             </div>
           </div>
         )}
-      </section>
+
 
       {/* MAP */}
       <section>
