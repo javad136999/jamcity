@@ -5,191 +5,49 @@
    - Compact mobile wall card
    - Better touch/manual horizontal scrolling
    - Mobile unified news + events + wall pulse panel
+   - Compact business name card on map zoom
 ========================================================= */
 
-/* Events: continuous duplicated track + soft fade at both edges. */
 .home-shell div:has(> .jam-events-track) {
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
 }
-
-.jam-events-track {
-  animation: jamEventsTickerSmooth 30s linear infinite !important;
-  will-change: transform;
-}
-
-@keyframes jamEventsTickerSmooth {
-  from { transform: translateX(-50%); }
-  to { transform: translateX(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .jam-events-track { animation: none !important; }
-}
-
-/* The wall and its immediately-following gold showcase are one visual pair. */
+.jam-events-track { animation: jamEventsTickerSmooth 30s linear infinite !important; will-change: transform; }
+@keyframes jamEventsTickerSmooth { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .jam-events-track { animation: none !important; } }
 @media (min-width: 900px) {
-  .home-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 12px;
-    align-items: start;
-  }
-
-  .home-shell > * {
-    grid-column: 1 / -1;
-    min-width: 0;
-  }
-
-  .home-shell > .wall-home-feature {
-    grid-column: 1;
-    grid-row: auto;
-    height: 100%;
-  }
-
-  .home-shell > .wall-home-feature + div {
-    grid-column: 2;
-    grid-row: auto;
-    height: 100%;
-    margin-top: 0;
-  }
+  .home-shell { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; align-items:start; }
+  .home-shell > * { grid-column:1 / -1; min-width:0; }
+  .home-shell > .wall-home-feature { grid-column:1; grid-row:auto; height:100%; }
+  .home-shell > .wall-home-feature + div { grid-column:2; grid-row:auto; height:100%; margin-top:0; }
 }
-
-/* Mobile: compact wall + unified top information panel. */
-@media (max-width: 640px) {
-  /* News + events + wall visually become one compact three-row card. */
-  .home-shell > a[href="/news"],
-  .home-shell > section[aria-label="آخرین رویدادهای جم"],
-  .home-shell > .wall-home-feature {
-    max-width: none !important;
-    width: 100% !important;
-    margin-top: 0 !important;
-    margin-bottom: 0 !important;
-    box-shadow: none !important;
-  }
-
-  .home-shell > a[href="/news"] {
-    min-height: 38px;
-    padding: 5px 10px !important;
-    border-radius: 18px 18px 0 0 !important;
-    border-bottom-color: rgba(57,255,143,.25) !important;
-    background: linear-gradient(90deg, #ffffff 0%, #f6fff9 100%) !important;
-  }
-
-  .home-shell > a[href="/news"] > span:first-child {
-    width: 27px !important;
-    height: 27px !important;
-    font-size: 13px !important;
-  }
-
-  .home-shell > a[href="/news"] p {
-    font-size: 9px !important;
-  }
-
-  .home-shell > a[href="/news"] > div p {
-    font-size: 9px !important;
-  }
-
-  .home-shell > section[aria-label="آخرین رویدادهای جم"] {
-    min-height: 38px;
-    padding: 5px 10px !important;
-    border-radius: 0 !important;
-    border-top: 0 !important;
-    border-bottom-color: rgba(57,255,143,.25) !important;
-    background: #fbfffc !important;
-  }
-
-  .home-shell > section[aria-label="آخرین رویدادهای جم"] > span:first-child {
-    width: 27px !important;
-    height: 27px !important;
-    font-size: 13px !important;
-  }
-
-  .home-shell > section[aria-label="آخرین رویدادهای جم"] a {
-    font-size: 9px !important;
-  }
-
-  .home-shell > .wall-home-feature {
-    border-radius: 0 0 18px 18px !important;
-    border-top: 0 !important;
-    padding: 8px 10px !important;
-    background: linear-gradient(90deg, #fffafb 0%, #ffffff 55%, #fffdf6 100%) !important;
-  }
-
-  .home-shell > .wall-home-feature > .relative {
-    gap: 7px !important;
-    align-items: center !important;
-  }
-
-  .wall-home-feature-icon {
-    width: 36px !important;
-    height: 36px !important;
-    border-radius: 12px !important;
-    font-size: 18px !important;
-    box-shadow: 0 7px 16px rgba(198,38,76,.22) !important;
-  }
-
-  .wall-home-feature h2 {
-    font-size: 15px !important;
-    line-height: 1.2 !important;
-  }
-
-  .wall-home-feature h2 + p {
-    display: none !important;
-  }
-
-  .wall-home-feature .mb-1 {
-    margin-bottom: 2px !important;
-    gap: 4px !important;
-  }
-
-  .wall-home-feature .mb-1 span:first-child {
-    padding: 2px 6px !important;
-    font-size: 7px !important;
-  }
-
-  .wall-home-feature .mb-1 span:last-child {
-    font-size: 7px !important;
-  }
-
-  /* Keep the existing heartbeat/animation on the wall-entry button untouched. */
-  .wall-home-feature .wall-entry-cta {
-    max-width: 100px !important;
-    min-height: 36px;
-    padding: 5px 7px !important;
-    border-radius: 12px !important;
-    font-size: 8px !important;
-    line-height: 1.25 !important;
-  }
-
-  .wall-home-feature .wall-entry-icon {
-    width: 22px !important;
-    height: 22px !important;
-    border-radius: 8px !important;
-    font-size: 11px !important;
-  }
-
-  /* Keep all horizontal shelves comfortable for touch dragging. */
-  .jam-popular-viewport,
-  .gold-home-viewport,
-  .discount-home-viewport,
-  .gold-products-manual-viewport {
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-x;
-    scrollbar-width: none;
-  }
-
-  .jam-popular-viewport::-webkit-scrollbar,
-  .gold-home-viewport::-webkit-scrollbar,
-  .discount-home-viewport::-webkit-scrollbar,
-  .gold-products-manual-viewport::-webkit-scrollbar {
-    display: none;
-  }
+@media (max-width:640px) {
+  .home-shell > a[href="/news"], .home-shell > section[aria-label="آخرین رویدادهای جم"], .home-shell > .wall-home-feature { max-width:none !important; width:100% !important; margin-top:0 !important; margin-bottom:0 !important; box-shadow:none !important; }
+  .home-shell > a[href="/news"] { min-height:38px; padding:5px 10px !important; border-radius:18px 18px 0 0 !important; border-bottom-color:rgba(57,255,143,.25) !important; background:linear-gradient(90deg,#fff 0%,#f6fff9 100%) !important; }
+  .home-shell > a[href="/news"] > span:first-child { width:27px !important; height:27px !important; font-size:13px !important; }
+  .home-shell > a[href="/news"] p, .home-shell > a[href="/news"] > div p { font-size:9px !important; }
+  .home-shell > section[aria-label="آخرین رویدادهای جم"] { min-height:38px; padding:5px 10px !important; border-radius:0 !important; border-top:0 !important; border-bottom-color:rgba(57,255,143,.25) !important; background:#fbfffc !important; }
+  .home-shell > section[aria-label="آخرین رویدادهای جم"] > span:first-child { width:27px !important; height:27px !important; font-size:13px !important; }
+  .home-shell > section[aria-label="آخرین رویدادهای جم"] a { font-size:9px !important; }
+  .home-shell > .wall-home-feature { border-radius:0 0 18px 18px !important; border-top:0 !important; padding:8px 10px !important; background:linear-gradient(90deg,#fffafb 0%,#fff 55%,#fffdf6 100%) !important; }
+  .home-shell > .wall-home-feature > .relative { gap:7px !important; align-items:center !important; }
+  .wall-home-feature-icon { width:36px !important; height:36px !important; border-radius:12px !important; font-size:18px !important; box-shadow:0 7px 16px rgba(198,38,76,.22) !important; }
+  .wall-home-feature h2 { font-size:15px !important; line-height:1.2 !important; }
+  .wall-home-feature h2 + p { display:none !important; }
+  .wall-home-feature .mb-1 { margin-bottom:2px !important; gap:4px !important; }
+  .wall-home-feature .mb-1 span:first-child { padding:2px 6px !important; font-size:7px !important; }
+  .wall-home-feature .mb-1 span:last-child { font-size:7px !important; }
+  .wall-home-feature .wall-entry-cta { max-width:100px !important; min-height:36px; padding:5px 7px !important; border-radius:12px !important; font-size:8px !important; line-height:1.25 !important; }
+  .wall-home-feature .wall-entry-icon { width:22px !important; height:22px !important; border-radius:8px !important; font-size:11px !important; }
+  .jam-popular-viewport, .gold-home-viewport, .discount-home-viewport, .gold-products-manual-viewport { -webkit-overflow-scrolling:touch; touch-action:pan-x; scrollbar-width:none; }
+  .jam-popular-viewport::-webkit-scrollbar, .gold-home-viewport::-webkit-scrollbar, .discount-home-viewport::-webkit-scrollbar, .gold-products-manual-viewport::-webkit-scrollbar { display:none; }
 }
+.jam-popular-viewport.is-manual .jam-popular-track, .gold-home-viewport.is-manual .gold-home-track, .discount-home-viewport.is-manual .discount-home-track { animation-play-state:paused !important; }
 
-/* Manual scrolling always wins over auto movement while dragging. */
-.jam-popular-viewport.is-manual .jam-popular-track,
-.gold-home-viewport.is-manual .gold-home-track,
-.discount-home-viewport.is-manual .discount-home-track {
-  animation-play-state: paused !important;
-}
+/* Map zoom card: existing business icon stays untouched; card shows only name. */
+.jam-business-tooltip .jam-marker-tooltip { position:relative !important; min-width:92px !important; max-width:145px !important; padding:6px 9px !important; border-radius:10px !important; border:1px solid rgba(47,118,87,.16) !important; box-shadow:0 6px 16px rgba(55,45,35,.16) !important; }
+.jam-business-tooltip .jam-marker-tooltip-title { margin:0 !important; color:#2f7657 !important; font-size:10px !important; font-weight:900 !important; line-height:1.35 !important; text-align:center !important; }
+.jam-business-tooltip .jam-marker-tooltip-subtitle { display:none !important; }
+.jam-business-tooltip .jam-marker-more { position:absolute !important; inset:0 !important; z-index:5 !important; display:block !important; margin:0 !important; padding:0 !important; border-radius:inherit !important; background:transparent !important; color:transparent !important; font-size:0 !important; line-height:1 !important; text-decoration:none !important; }
+.jam-business-tooltip .jam-marker-more b { display:none !important; }
+.jam-business-tooltip .jam-marker-tooltip:hover { border-color:rgba(47,118,87,.35) !important; box-shadow:0 8px 20px rgba(55,45,35,.2) !important; transform:translateY(-1px); }
