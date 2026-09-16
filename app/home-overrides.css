@@ -1,0 +1,126 @@
+/* =========================================================
+   JAM CITY HOME OVERRIDES
+   - Seamless event ticker with soft edge fade
+   - Desktop wall + gold showcase side-by-side
+   - Compact mobile wall card
+   - Better touch/manual horizontal scrolling
+========================================================= */
+
+/* Events: continuous duplicated track + soft fade at both edges.
+   The existing duplicated data prevents a visible jump at the loop point. */
+.home-shell div:has(> .jam-events-track) {
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 11%, #000 89%, transparent 100%);
+}
+
+.jam-events-track {
+  animation: jamEventsTickerSmooth 30s linear infinite !important;
+  will-change: transform;
+}
+
+@keyframes jamEventsTickerSmooth {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jam-events-track { animation: none !important; }
+}
+
+/* The wall and its immediately-following gold showcase are one visual pair. */
+@media (min-width: 900px) {
+  .home-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+
+  .home-shell > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .home-shell > .wall-home-feature {
+    grid-column: 1;
+    grid-row: auto;
+    height: 100%;
+  }
+
+  .home-shell > .wall-home-feature + div {
+    grid-column: 2;
+    grid-row: auto;
+    height: 100%;
+    margin-top: 0;
+  }
+}
+
+/* Mobile: make "دیوار شهر جم" noticeably shorter and more compact. */
+@media (max-width: 640px) {
+  .wall-home-feature {
+    border-radius: 20px !important;
+    padding: 9px !important;
+  }
+
+  .wall-home-feature > .relative {
+    gap: 7px !important;
+    align-items: center !important;
+  }
+
+  .wall-home-feature-icon {
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 13px !important;
+    font-size: 19px !important;
+    box-shadow: 0 7px 16px rgba(198,38,76,.22) !important;
+  }
+
+  .wall-home-feature h2 {
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+  }
+
+  .wall-home-feature h2 + p {
+    display: none !important;
+  }
+
+  .wall-home-feature .wall-entry-cta {
+    max-width: 96px !important;
+    min-height: 38px;
+    padding: 6px 7px !important;
+    border-radius: 13px !important;
+    font-size: 8px !important;
+    line-height: 1.35 !important;
+  }
+
+  .wall-home-feature .wall-entry-icon {
+    width: 23px !important;
+    height: 23px !important;
+    border-radius: 8px !important;
+    font-size: 12px !important;
+  }
+
+  /* Keep all horizontal shelves comfortable for touch dragging. */
+  .jam-popular-viewport,
+  .gold-home-viewport,
+  .discount-home-viewport,
+  .gold-products-manual-viewport {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: none;
+  }
+
+  .jam-popular-viewport::-webkit-scrollbar,
+  .gold-home-viewport::-webkit-scrollbar,
+  .discount-home-viewport::-webkit-scrollbar,
+  .gold-products-manual-viewport::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Manual scrolling always wins over auto movement while dragging. */
+.jam-popular-viewport.is-manual .jam-popular-track,
+.gold-home-viewport.is-manual .gold-home-track,
+.discount-home-viewport.is-manual .discount-home-track {
+  animation-play-state: paused !important;
+}
