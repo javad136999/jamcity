@@ -16,6 +16,7 @@ import {
   isMatchComplete,
   getMatchWinner,
   TRICKS_TO_WIN_ROUND,
+  sortHand,
 } from "@/lib/hokm-engine";
 import type {
   HokmCard,
@@ -124,8 +125,7 @@ export default function HokmGame({ userId, displayName }: Props) {
   const [trumpReveal, setTrumpReveal] = useState(false);
   const trumpRevealTimer = useRef<number | null>(null);
 
-  const [selectedCardIndex, setSelectedCardIndex] =
-    useState<number | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   const [hand, setHand] = useState<Card[]>([]);
   const [dealAnimation, setDealAnimation] = useState(false);
@@ -150,6 +150,12 @@ export default function HokmGame({ userId, displayName }: Props) {
   const [lastRoundResult, setLastRoundResult] = useState<RoundResult | null>(null);
   const [showRoundSummary, setShowRoundSummary] = useState(false);
   const [, setMatchWinner] = useState<Team | null>(null);
+
+  const sortedHand = useMemo(() => sortHand(hand), [hand]);
+  const handBySuit = useMemo(
+    () => SUITS.map((suit) => ({ suit, cards: sortedHand.filter((card) => card.suit === suit) })),
+    [sortedHand]
+  );
 
   const mySeat =
     players.find((player) => player.id === userId)?.seat ?? 0;
@@ -645,6 +651,10 @@ export default function HokmGame({ userId, displayName }: Props) {
 
   // ===== شروع بازی آفلاین =====
   function startOfflineGame() {
+    setOffline(true);
+    setWaiting(false);
+    setRoom(null);
+    setMatchId(null);
     const drawDeck = shuffleDeck(createHokmDeck());
     let cursor = 0;
     const draws: { seat: number; card: Card }[] = [];
@@ -964,23 +974,22 @@ export default function HokmGame({ userId, displayName }: Props) {
     }
 
     const timer = window.setTimeout(async () => {
-      // حاکم بعدی رو از round_wins و hakem_team محاسبه کن
+      // حاکم بعدی باید از نتیجه همین راند محاسبه شود، نه مجموع امتیاز بازی
       const { data: match } = await supabase
         .from("hokm_matches")
-        .select("hakem_seat,hakem_team")
+        .select("hakem_seat,hakem_team,team_scores")
         .eq("id", matchId)
         .maybeSingle();
 
       if (!match || match.hakem_seat === null) return;
 
       const hakemTeam: 0 | 1 = (match.hakem_team ?? 0) as 0 | 1;
-      const roundWinsTuple: [number, number] = [
-        roundWinsRef.current["0"],
-        roundWinsRef.current["1"],
-      ];
-
+      const teamScores = (match.team_scores ?? { "0": 0, "1": 0 }) as {
+        "0": number;
+        "1": number;
+      };
       const lastWinner: Team =
-        roundWinsTuple[0] > roundWinsTuple[1] ? 0 : 1;
+        Number(teamScores["0"]) > Number(teamScores["1"]) ? 0 : 1;
 
       const hakemStays = lastWinner === hakemTeam;
       const nextHakem = nextHakemSeat(match.hakem_seat, hakemStays);
@@ -1151,7 +1160,7 @@ export default function HokmGame({ userId, displayName }: Props) {
   }
 
   // ===== Play human card =====
-  async function playCard(index: number) {
+  async function playCard(cardId: string) {
     if (
       !started ||
       winner ||
@@ -1162,7 +1171,7 @@ export default function HokmGame({ userId, displayName }: Props) {
       return;
     }
 
-    const selected = hand[index];
+    const selected = hand.find((card) => card.id === cardId);
     if (!selected) return;
 
     if (!canPlayCard(hand, selected, leadSuit)) {
@@ -1564,51 +1573,40 @@ export default function HokmGame({ userId, displayName }: Props) {
               </div>
 
               <div
-                className={`hokm-hand absolute bottom-5 left-1/2 z-20 flex w-[96%] -translate-x-1/2 items-end justify-start gap-1 overflow-x-auto overflow-y-visible px-2 pb-3 sm:bottom-7 sm:justify-center sm:gap-2 ${
+                className={`hokm-hand absolute bottom-5 left-1/2 z-20 grid w-[96%] -translate-x-1/2 grid-cols-2 gap-2 px-2 pb-3 sm:bottom-7 sm:grid-cols-4 sm:gap-3 ${
                   dealAnimation ? "hokm-dealing" : ""
                 }`}
               >
-                {hand.map((card, index) => {
-                  const legal = getLegalCards(hand, leadSuit).some(
-                    (item) => item.id === card.id
-                  );
+                {handBySuit.map(({ suit, cards }) => (
+                  <div key={suit} className="flex min-w-0 flex-wrap items-end justify-center gap-1 rounded-2xl border border-white/10 bg-black/10 p-1.5 sm:gap-1.5 sm:p-2">
+                    <span className={`w-full text-center text-xs font-black ${suit === "♥" || suit === "♦" ? "text-[#FFB0A7]" : "text-[#D9F5E0]"}`}>
+                      {suit}
+                    </span>
+                    {cards.map((card) => {
+                      const legal = getLegalCards(hand, leadSuit).some((item) => item.id === card.id);
 
-                  return (
-                    <button
-                      key={card.id}
-                      type="button"
-                      disabled={turnSeat !== mySeat || matchPhase !== "playing"}
-                      onClick={() => {
-                        if (turnSeat !== mySeat || matchPhase !== "playing") {
-                          return;
-                        }
-
-                        setSelectedCardIndex(index);
-
-                        window.setTimeout(() => {
-                          setSelectedCardIndex(null);
-                          void playCard(index);
-                        }, 250);
-                      }}
-                      className={`hokm-card group shrink-0 ${
-                        selectedCardIndex === index ? "hokm-card-selected" : ""
-                      } w-[56px] min-w-[56px] rounded-2xl border-2 border-[#E7EFE8] bg-gradient-to-br from-white to-[#F1F6F1] px-2 py-3 text-center text-sm font-black shadow-[0_12px_20px_rgba(0,0,0,.22)] first:ml-0 sm:w-[64px] sm:min-w-[64px] ${
-                        legal ? "" : "opacity-45"
-                      } ${
-                        card.suit === "♥" || card.suit === "♦"
-                          ? "text-[#D9574A]"
-                          : "text-[#183B2A]"
-                      }`}
-                    >
-                      <span className="block text-[10px] text-black/30">
-                        {card.suit}
-                      </span>
-                      {card.rank}
-                      <br />
-                      <span className="text-lg">{card.suit}</span>
-                    </button>
-                  );
-                })}
+                      return (
+                        <button
+                          key={card.id}
+                          type="button"
+                          disabled={turnSeat !== mySeat || matchPhase !== "playing"}
+                          onClick={() => {
+                            if (turnSeat !== mySeat || matchPhase !== "playing") return;
+                            setSelectedCardId(card.id);
+                            window.setTimeout(() => {
+                              setSelectedCardId(null);
+                              void playCard(card.id);
+                            }, 250);
+                          }}
+                          className={`hokm-card group shrink-0 ${selectedCardId === card.id ? "hokm-card-selected" : ""} w-[42px] min-w-[42px] rounded-xl border-2 border-[#E7EFE8] bg-gradient-to-br from-white to-[#F1F6F1] px-1 py-2 text-center text-xs font-black shadow-[0_10px_16px_rgba(0,0,0,.22)] sm:w-[56px] sm:min-w-[56px] sm:rounded-2xl sm:px-2 sm:py-3 sm:text-sm ${legal ? "" : "opacity-45"} ${card.suit === "♥" || card.suit === "♦" ? "text-[#D9574A]" : "text-[#183B2A]"}`}
+                        >
+                          <span className="block text-[9px] text-black/30">{card.rank}</span>
+                          <span className="text-base sm:text-lg">{card.suit}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
 
               {ruleMessage && (
