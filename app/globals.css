@@ -1,5 +1,6 @@
 @import url("https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css");
 @import "leaflet/dist/leaflet.css";
+@import "./home-overrides.css";
 
 @tailwind base;
 @tailwind components;
@@ -15,349 +16,68 @@ body {
   margin: 0;
   direction: rtl;
   font-family: "Vazirmatn", sans-serif;
-
-  /* جم سیتی — مشکی + سبز نئونی */
   background:
-    radial-gradient(
-      circle at 50% -10%,
-      rgba(34, 197, 94, 0.14),
-      transparent 38%
-    ),
-    linear-gradient(
-      180deg,
-      #07110b 0%,
-      #09150e 45%,
-      #0b1710 100%
-    );
-
+    radial-gradient(circle at 50% -10%, rgba(34, 197, 94, 0.14), transparent 38%),
+    linear-gradient(180deg, #07110b 0%, #09150e 45%, #0b1710 100%);
   color: #ecfdf5;
   scroll-behavior: smooth;
   min-height: 100vh;
 }
 
-/* =========================================
-   SELECTION
-========================================= */
+::selection { background: rgba(34, 197, 94, 0.35); color: #ffffff; }
 
-::selection {
-  background: rgba(34, 197, 94, 0.35);
-  color: #ffffff;
-}
-
-/* =========================================
-   SCROLLBAR
-========================================= */
-
-::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    180deg,
-    #22c55e,
-    #16a34a
-  );
-  border-radius: 999px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* =========================================
-   MAIN GLASS
-========================================= */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #22c55e, #16a34a); border-radius: 999px; }
+::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.03); }
 
 .glass {
-  background:
-    linear-gradient(
-      135deg,
-      rgba(255, 255, 255, 0.09),
-      rgba(255, 255, 255, 0.035)
-    );
-
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.035));
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-
   border: 1px solid rgba(74, 222, 128, 0.16);
-
-  box-shadow:
-    0 10px 35px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
-
-/* =========================================
-   GRADIENT BACKGROUND
-========================================= */
 
 .gradient-bg {
-  background:
-    radial-gradient(
-      circle at 80% 0%,
-      rgba(34, 197, 94, 0.18),
-      transparent 30%
-    ),
-    radial-gradient(
-      circle at 10% 80%,
-      rgba(16, 185, 129, 0.10),
-      transparent 28%
-    ),
-    linear-gradient(
-      180deg,
-      #07110b,
-      #0a1710
-    );
+  background: radial-gradient(circle at 80% 0%, rgba(34, 197, 94, 0.18), transparent 30%), radial-gradient(circle at 10% 80%, rgba(16, 185, 129, 0.10), transparent 28%), linear-gradient(180deg, #07110b, #0a1710);
 }
 
-/* =========================================
-   NEON GREEN UTILITIES
-========================================= */
+.neon-green { color: #4ade80; text-shadow: 0 0 8px rgba(74, 222, 128, 0.45), 0 0 22px rgba(34, 197, 94, 0.22); }
+.neon-border { border: 1px solid rgba(74, 222, 128, 0.35); box-shadow: 0 0 18px rgba(34, 197, 94, 0.10), inset 0 0 18px rgba(34, 197, 94, 0.04); }
 
-.neon-green {
-  color: #4ade80;
+.skeleton { background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(74, 222, 128, 0.10) 37%, rgba(255, 255, 255, 0.04) 63%); background-size: 400% 100%; animation: skeleton-loading 1.4s ease infinite; }
+@keyframes skeleton-loading { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+.fade-in { animation: fadeIn 0.35s ease both; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-  text-shadow:
-    0 0 8px rgba(74, 222, 128, 0.45),
-    0 0 22px rgba(34, 197, 94, 0.22);
-}
+input, textarea, select, button { font-family: inherit; }
+input, textarea, select { color: #ecfdf5; }
+input::placeholder, textarea::placeholder { color: rgba(148, 163, 184, 0.65); }
 
-.neon-border {
-  border: 1px solid rgba(74, 222, 128, 0.35);
-
-  box-shadow:
-    0 0 18px rgba(34, 197, 94, 0.10),
-    inset 0 0 18px rgba(34, 197, 94, 0.04);
-}
-
-/* =========================================
-   SKELETON
-========================================= */
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 25%,
-    rgba(74, 222, 128, 0.10) 37%,
-    rgba(255, 255, 255, 0.04) 63%
-  );
-
-  background-size: 400% 100%;
-  animation: skeleton-loading 1.4s ease infinite;
-}
-
-@keyframes skeleton-loading {
-  0% {
-    background-position: 100% 50%;
-  }
-
-  100% {
-    background-position: 0 50%;
-  }
-}
-
-/* =========================================
-   FADE
-========================================= */
-
-.fade-in {
-  animation: fadeIn 0.35s ease both;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* =========================================
-   INPUTS
-========================================= */
-
-input,
-textarea,
-select,
-button {
-  font-family: inherit;
-}
-
-input,
-textarea,
-select {
-  color: #ecfdf5;
-}
-
-input::placeholder,
-textarea::placeholder {
-  color: rgba(148, 163, 184, 0.65);
-}
-
-/* =========================================
-   LEAFLET
-========================================= */
-
-.leaflet-popup-content-wrapper {
-  padding: 2px;
-
-  border-radius: 14px;
-
-  background: #0b1710;
-
-  color: #ecfdf5;
-
-  border: 1px solid rgba(74, 222, 128, 0.20);
-
-  box-shadow:
-    0 15px 45px rgba(0, 0, 0, 0.35),
-    0 0 20px rgba(34, 197, 94, 0.08);
-}
-
-.leaflet-popup-content {
-  margin: 6px 8px;
-  line-height: 1.4;
-}
-
-.leaflet-popup-close-button {
-  width: 16px !important;
-  height: 16px !important;
-
-  font-size: 14px !important;
-
-  padding: 2px 4px 0 0 !important;
-
-  color: #86efac !important;
-}
-
-.leaflet-popup-tip {
-  background: #0b1710;
-}
-
-.leaflet-popup-tip-container {
-  width: 16px;
-  height: 8px;
-}
-
-/* =========================================
-   MOBILE
-========================================= */
+.leaflet-popup-content-wrapper { padding: 2px; border-radius: 14px; background: #0b1710; color: #ecfdf5; border: 1px solid rgba(74, 222, 128, 0.20); box-shadow: 0 15px 45px rgba(0, 0, 0, 0.35), 0 0 20px rgba(34, 197, 94, 0.08); }
+.leaflet-popup-content { margin: 6px 8px; line-height: 1.4; }
+.leaflet-popup-close-button { width: 16px !important; height: 16px !important; font-size: 14px !important; padding: 2px 4px 0 0 !important; color: #86efac !important; }
+.leaflet-popup-tip { background: #0b1710; }
+.leaflet-popup-tip-container { width: 16px; height: 8px; }
 
 @media (max-width: 640px) {
-  html,
-  body {
-    background:
-      radial-gradient(
-        circle at 50% -5%,
-        rgba(34, 197, 94, 0.13),
-        transparent 34%
-      ),
-      linear-gradient(
-        180deg,
-        #07110b 0%,
-        #09150e 100%
-      );
-  }
-
-  .glass {
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-  }
+  html, body { background: radial-gradient(circle at 50% -5%, rgba(34, 197, 94, 0.13), transparent 34%), linear-gradient(180deg, #07110b 0%, #09150e 100%); }
+  .glass { backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
 }
 
-/* =========================================
-   SMOOTH UI
-========================================= */
+a, button { -webkit-tap-highlight-color: transparent; }
+button, a { transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
 
-a,
-button {
-  -webkit-tap-highlight-color: transparent;
-}
+.business-light-theme { min-height: 100vh; background: radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.10), transparent 30%), radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.08), transparent 30%), linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f0fdf4 100%); color: #0f172a; }
+.business-light-theme .glass { background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.72)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 1px solid rgba(16, 185, 129, 0.18); box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6); }
+.business-light-theme input, .business-light-theme textarea, .business-light-theme select { color: #0f172a; }
+.business-light-theme input::placeholder, .business-light-theme textarea::placeholder { color: rgba(100, 116, 139, 0.6); }
+.business-light-theme ::selection { background: rgba(16, 185, 129, 0.25); color: #0f172a; }
+.business-light-theme .neon-green { color: #0d9488; text-shadow: none; }
+.business-light-theme .neon-border { border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: none; }
+.business-light-theme .skeleton { background: linear-gradient(90deg, rgba(15, 23, 42, 0.04) 25%, rgba(16, 185, 129, 0.1) 37%, rgba(15, 23, 42, 0.04) 63%); background-size: 400% 100%; }
 
-button,
-a {
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
-}
-
-/* =========================================================
-   BUSINESS PANEL — LIGHT THEME OVERRIDE
-   فقط داخل .business-light-theme اعمال می‌شه (مسیرهای /business/*)
-   بقیه‌ی سایت همچنان تم مشکی + سبز نئونی خودش رو حفظ می‌کنه
-========================================================= */
-
-.business-light-theme {
-  min-height: 100vh;
-  background:
-    radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.10), transparent 30%),
-    radial-gradient(circle at 10% 90%, rgba(16, 185, 129, 0.08), transparent 30%),
-    linear-gradient(180deg, #f8fafc 0%, #ffffff 45%, #f0fdf4 100%);
-  color: #0f172a;
-}
-
-.business-light-theme .glass {
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.92),
-    rgba(255, 255, 255, 0.72)
-  );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(16, 185, 129, 0.18);
-  box-shadow:
-    0 8px 30px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6);
-}
-
-.business-light-theme input,
-.business-light-theme textarea,
-.business-light-theme select {
-  color: #0f172a;
-}
-
-.business-light-theme input::placeholder,
-.business-light-theme textarea::placeholder {
-  color: rgba(100, 116, 139, 0.6);
-}
-
-.business-light-theme ::selection {
-  background: rgba(16, 185, 129, 0.25);
-  color: #0f172a;
-}
-
-.business-light-theme .neon-green {
-  color: #0d9488;
-  text-shadow: none;
-}
-
-.business-light-theme .neon-border {
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: none;
-}
-
-.business-light-theme .skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(15, 23, 42, 0.04) 25%,
-    rgba(16, 185, 129, 0.1) 37%,
-    rgba(15, 23, 42, 0.04) 63%
-  );
-  background-size: 400% 100%;
-}
-
-/* JAM CITY HOME — روشن، شهری و لوکس */
-body, body.gradient-bg {
-  background: radial-gradient(circle at 90% -10%, rgba(226,179,79,.22), transparent 28%), radial-gradient(circle at 5% 24%, rgba(31,157,112,.12), transparent 30%), linear-gradient(180deg, #fffdf8 0%, #f7fbf7 46%, #eef8f2 100%);
-  color: #153b2d;
-}
+body, body.gradient-bg { background: radial-gradient(circle at 90% -10%, rgba(226,179,79,.22), transparent 28%), radial-gradient(circle at 5% 24%, rgba(31,157,112,.12), transparent 30%), linear-gradient(180deg, #fffdf8 0%, #f7fbf7 46%, #eef8f2 100%); color: #153b2d; }
 .home-shell { background: radial-gradient(circle at 100% 0%, rgba(255,218,128,.16), transparent 26%), linear-gradient(180deg, rgba(255,255,255,.4), rgba(240,250,244,.45)); }
 .home-hero { border-color: rgba(21,126,87,.18) !important; background: radial-gradient(circle at 12% 110%, rgba(220,171,66,.20), transparent 31%), radial-gradient(circle at 96% 0%, rgba(22,158,110,.16), transparent 36%), linear-gradient(135deg, #fff 0%, #f4fbf6 60%, #fff9e9 100%) !important; box-shadow: 0 18px 45px rgba(22,105,73,.10), 0 2px 0 rgba(255,255,255,.85) inset !important; }
 .wall-cta { background: linear-gradient(145deg, #fff3f5, #fff 56%, #fff9ea) !important; border: 1px solid rgba(198,38,76,.25) !important; box-shadow: 0 10px 26px rgba(198,38,76,.14), 0 0 0 4px rgba(255,255,255,.72) inset !important; }
@@ -368,14 +88,11 @@ body, body.gradient-bg {
 .gold-home-card:hover { background: #fff; box-shadow: 0 10px 22px rgba(180,119,21,.14); }
 @media (max-width: 640px) { .home-shell { margin-inline: -4px; padding-inline: 4px; } }
 
-
 .wall-home-feature { background: radial-gradient(circle at 100% 0%, rgba(255,232,174,.32), transparent 30%), linear-gradient(135deg, #fff 0%, #fff8fa 52%, #fffdf3 100%); }
 .wall-home-feature-icon { background: linear-gradient(145deg, #ef476f, #c6264c); color: #fff; }
 .wall-home-feature a:focus-visible { outline: 3px solid rgba(198,38,76,.35); outline-offset: 3px; }
-
 .priority-gold-card { box-shadow: 0 4px 14px rgba(180,119,21,.07); }
 .priority-gold-card:focus-visible { outline: 3px solid rgba(198,145,38,.35); outline-offset: 2px; }
-
 .wall-entry-cta { position: relative; isolation: isolate; }
 .wall-entry-cta::before { content: ""; position: absolute; inset: -5px; z-index: -1; border-radius: 19px; background: conic-gradient(from 90deg, rgba(34,197,94,.95), rgba(239,68,68,.95), rgba(34,197,94,.95)); filter: blur(7px); opacity: .82; animation: wallHeartPulse 1.35s ease-in-out infinite; }
 .wall-entry-icon { display: inline-flex; height: 30px; width: 30px; align-items: center; justify-content: center; border-radius: 10px; background: rgba(255,255,255,.18); box-shadow: 0 0 0 2px rgba(255,255,255,.28), 0 0 12px rgba(34,197,94,.75), 0 0 18px rgba(239,68,68,.62); animation: wallIconHeartbeat 1.35s ease-in-out infinite; }
@@ -385,22 +102,5 @@ body, body.gradient-bg {
 
 .gold-home-track { animation: priorityGoldMove 38s linear infinite; will-change: transform; }
 .gold-home-viewport:hover .gold-home-track, .gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused; }
-@keyframes priorityGoldMove { from { transform: translateX(0); } to { transform: translateX(25%); } }
-@media (max-width: 640px) { .gold-home-track { animation-duration: 46s; } }
-@media (prefers-reduced-motion: reduce) { .gold-home-track { animation: none; } }
 
-.discount-home-track { animation: discountLoopMove 40s linear infinite; will-change: transform; }
-.discount-home-viewport:hover .discount-home-track, .discount-home-viewport.is-manual .discount-home-track { animation-play-state: paused; }
-@keyframes discountLoopMove { from { transform: translateX(0); } to { transform: translateX(25%); } }
-@media (max-width: 640px) { .discount-home-track { animation-duration: 48s; } }
-@media (prefers-reduced-motion: reduce) { .discount-home-track { animation: none; } }
-
-.gold-home-viewport, .discount-home-viewport {
-  scroll-behavior: auto;
-  overscroll-behavior-x: contain;
-  -webkit-user-select: none;
-  user-select: none;
-}
-.gold-home-viewport img, .discount-home-viewport img {
-  pointer-events: none;
-}
+@keyframes priorityGoldMove { from { transform: translateX(-25%); } to { transform: translateX(0); } }
