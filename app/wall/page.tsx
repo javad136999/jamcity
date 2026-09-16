@@ -411,17 +411,21 @@ export default function WallPage() {
       // PostgREST's schema cache recognizing the foreign key, which can
       // momentarily fail right after a migration and made the wall
       // appear empty. Two plain queries are more robust.
+      // فقط آخرین پیام‌ها را در لود اولیه بگیر؛ پیام‌های قدیمی باید با pagination لود شوند.
+      // select محدود، حجم پاسخ و زمان parse/rerender موبایل را کم می‌کند.
       const { data: rawMessages, error: msgError } = await supabase
-  .from("wall_messages")
-  .select("*")
-  .order("created_at", { ascending: true });
+        .from("wall_messages")
+        .select("id,user_id,content,reply_to,image_url,audio_url,is_promo,business_id,category,created_at")
+        .order("created_at", { ascending: false })
+        .limit(30);
       if (msgError) {
         console.error("wall load error", msgError);
         setMessages([]);
         return;
       }
 
-      const rows = (rawMessages as WallMessage[]) ?? [];
+      // کوئری برای رسیدن سریع‌تر به آخرین پیام‌ها نزولی است؛ نمایش همچنان قدیمی به جدید باشد.
+      const rows = [...((rawMessages as WallMessage[]) ?? [])].reverse();
 
       if (rows.length > 0) {
         const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
@@ -530,13 +534,10 @@ rows.forEach((r) => {
     if (messages === null || initialScrollDone.current) return;
     initialScrollDone.current = true;
 
-    const scrollNow = () => bottomRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
-
-    requestAnimationFrame(scrollNow);
-
-    const timers = [50, 150, 350, 700, 1200].map((delay) => setTimeout(scrollNow, delay));
-
-    return () => timers.forEach(clearTimeout);
+    // یک اسکرول اولیه کافی است؛ چند timeout متوالی روی موبایل باعث reflow و پرش می‌شد.
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: "instant", block: "end" });
+    });
   }, [messages]);
 
   // اگر کاربر همین الان پایین صفحه بود و پیام جدیدی از بقیه رسید،
@@ -826,7 +827,7 @@ function handleReply(message: WallMessage) {
                   )}
                   {m.image_url && (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={m.image_url} alt="" className="max-h-72 w-full rounded-2xl object-cover" loading="lazy" />
+                    <img src={m.image_url} alt="" className="aspect-[4/3] max-h-72 w-full rounded-2xl object-cover" loading="lazy" />
                   )}
                   {m.content && <p className="whitespace-pre-wrap text-sm leading-7 text-[#1D2B1F]">{m.content}</p>}
                   <p className="text-[10px] text-[#B0BAB1]">{timeAgo(m.created_at)}</p>
@@ -934,7 +935,7 @@ function handleReply(message: WallMessage) {
                             <img
                               src={m.image_url!}
                               alt=""
-                              className="max-h-72 w-full object-cover"
+                              className="aspect-[4/3] max-h-72 w-full object-cover"
                               loading="lazy"
                               decoding="async"
                               onLoad={() => {
@@ -1084,7 +1085,7 @@ function handleReply(message: WallMessage) {
                                 <img
                                   src={m.image_url}
                                   alt=""
-                                  className="mb-1 max-h-64 w-full rounded-xl object-cover"
+                                  className="mb-1 aspect-[4/3] max-h-64 w-full rounded-xl object-cover"
                                   loading="lazy"
                                   decoding="async"
                                   onLoad={() => {
