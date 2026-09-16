@@ -836,6 +836,57 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* GOLD PRODUCTS BELOW MAP — ثابت و فقط قابل اسکرول دستی */}
+      {goldProductGroups.length > 0 && (
+        <section className="relative overflow-hidden rounded-[24px] border border-[#EFD49B] bg-gradient-to-l from-[#FFF8E6] via-white to-[#FFFCF3] p-3 shadow-[0_8px_26px_rgba(180,119,21,.10)] sm:p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-base shadow-sm">👑</span>
+            <div>
+              <h2 className="text-[11px] font-black text-[#704817] sm:text-sm">منوی کسب‌وکارهای طلایی</h2>
+              <p className="text-[8px] font-bold text-[#AE8750] sm:text-[9px]">محصولات منتخب کسب‌وکارهای ویژه جم</p>
+            </div>
+          </div>
+
+          <div className="space-y-2.5">
+            {goldProductGroups.map(({ business, products: groupProducts }) => (
+              <div key={business.id} className="flex min-w-0 items-stretch gap-2 rounded-2xl border border-[#F0DDB2] bg-white/70 p-1.5 sm:gap-2.5 sm:p-2" dir="rtl">
+                <Link href={`/business/${business.id}`} className="flex w-[72px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#F0D27F] bg-gradient-to-b from-[#FFF8DF] to-[#FFF0C4] px-1 py-1.5 text-center transition hover:shadow-[0_8px_18px_rgba(180,119,21,.16)] sm:w-[104px] sm:gap-1 sm:px-2 sm:py-2">
+                  <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border-2 border-[#F0D27F] bg-white text-base shadow-sm sm:h-10 sm:w-10 sm:text-xl">
+                    {business.image_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover" />
+                    ) : (business.icon || "🏪")}
+                    <span className="absolute -bottom-0.5 -left-0.5 text-[8px]">👑</span>
+                  </span>
+                  <span className="w-full truncate text-[8px] font-black text-[#34271F] sm:text-[9px]">{business.name}</span>
+                  <span className="truncate text-[7px] font-bold text-[#BD8B35] sm:text-[8px]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "منتخب جم"}</span>
+                </Link>
+
+                <div className="gold-products-manual-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl bg-white/65 px-1 py-1.5" dir="ltr" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel}>
+                  <div className="flex w-max items-stretch gap-2.5" dir="rtl">
+                    {groupProducts.map((product) => (
+                      <Link key={product.id} href={`/business/${business.id}`} className="group flex w-[172px] shrink-0 items-center gap-2 rounded-xl border border-[#F0DDB2] bg-white p-1.5 transition hover:-translate-y-0.5 hover:border-[#D9A63A] hover:shadow-[0_8px_18px_rgba(180,119,21,.14)] sm:w-[208px] sm:p-2">
+                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#FFF6DC] sm:h-14 sm:w-14">
+                          {product.image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                          ) : <div className="flex h-full w-full items-center justify-center text-xl">{business.icon || "🛍️"}</div>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[9px] font-black text-[#34271F] sm:text-[10px]">{product.name}</p>
+                          {product.price !== null && <p className="mt-1 truncate text-[9px] font-black text-[#A66B19] sm:text-[10px]">{formatPrice(product.price)}</p>}
+                          <p className="mt-1 text-[8px] text-[#9F8B72]">مشاهده ←</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* DISCOUNTS — پنل ثابت راست + حرکت آرام کارت‌ها به سمت راست */}
       {discounts.length > 0 && (
         <section className="discount-home-showcase relative overflow-hidden rounded-[24px] border border-[#F0D4CE] bg-gradient-to-l from-[#FFF1EE] via-white to-[#FFF9F7] px-3 py-3.5 shadow-[0_0_24px_rgba(226,87,76,.12)] sm:px-4">
