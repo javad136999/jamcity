@@ -10,11 +10,19 @@ import {
   getTrickWinner,
   shuffleDeck,
   createHokmDeck,
+  getTeamBySeat,
+  evaluateRound,
+  nextHakemSeat,
+  isMatchComplete,
+  getMatchWinner,
+  TRICKS_TO_WIN_ROUND,
 } from "@/lib/hokm-engine";
 import type {
   HokmCard,
   HokmSuit,
   PlayedCard,
+  RoundResult,
+  Team,
 } from "@/lib/hokm-engine";
 import { chooseBotCard, chooseTrumpForBot } from "@/lib/hokm-bot";
 import type { BotMemory } from "@/lib/hokm-bot";
@@ -53,37 +61,24 @@ type Props = {
   displayName?: string | null;
 };
 
+type MatchPhase =
+  | "choosing_hakem"
+  | "choosing_trump"
+  | "playing"
+  | "round_end"
+  | "finished";
+
 const SUITS: Suit[] = ["♠", "♥", "♦", "♣"];
 
 const RANKS: Card["rank"][] = [
-  "2",
-  "3",
-  "4",
-  "5",
-  "6",
-  "7",
-  "8",
-  "9",
-  "10",
-  "J",
-  "Q",
-  "K",
-  "A",
+  "2", "3", "4", "5", "6", "7",
+  "8", "9", "10", "J", "Q", "K", "A",
 ];
 
 const STICKERS = ["👏", "😂", "🔥", "😮", "😎", "❤️"];
 
 const WAIT_SECONDS = 20;
 
-/**
- * ساخت دسته کارت با ساختار جدید HokmCard
- * شامل id یکتا برای هر کارت
- */
-
-/**
- * تبدیل یک کارت خام/دریافتی از Supabase به HokmCard
- * برای سازگاری با داده‌های قدیمی.
- */
 function normalizeCard(card: any): Card {
   return {
     id: card.id ?? `${card.suit}-${card.rank}`,
@@ -100,10 +95,7 @@ function normalizeCards(cards: any[]): Card[] {
   return (cards ?? []).map(normalizeCard);
 }
 
-export default function HokmGame({
-  userId,
-  displayName,
-}: Props) {
+export default function HokmGame({ userId, displayName }: Props) {
   const supabase = useMemo(() => createClient() as any, []);
 
   const [room, setRoom] = useState<Room | null>(null);
@@ -115,9 +107,7 @@ export default function HokmGame({
   const [started, setStarted] = useState(false);
   const [matchId, setMatchId] = useState<string | null>(null);
 
-  const [matchPhase, setMatchPhase] = useState<
-    "choosing_hakem" | "choosing_trump" | "playing" | "finished"
-  >("choosing_hakem");
+  const [matchPhase, setMatchPhase] = useState<MatchPhase>("choosing_hakem");
 
   const [hakemSeat, setHakemSeat] = useState<number | null>(null);
   const [hakemCard, setHakemCard] = useState<Card | null>(null);
@@ -129,7 +119,6 @@ export default function HokmGame({
   >([]);
 
   const [trumpSeconds, setTrumpSeconds] = useState(15);
-  const [dealingFinalCards, setDealingFinalCards] = useState(false);
   const [showFirstTrickBanner, setShowFirstTrickBanner] = useState(false);
   const previousPhaseRef = useRef<string | null>(null);
   const [trumpReveal, setTrumpReveal] = useState(false);
@@ -147,48 +136,36 @@ export default function HokmGame({
   const [ruleMessage, setRuleMessage] = useState("");
 
   const [currentTrick, setCurrentTrick] = useState<
-    {
-      seat: number;
-      card: Card;
-    }[]
+    { seat: number; card: Card }[]
   >([]);
 
-  const [teamScores, setTeamScores] = useState({
-    "0": 0,
-    "1": 0,
-  });
+  const [teamScores, setTeamScores] = useState({ "0": 0, "1": 0 });
 
   const teamScoresRef = useRef({ "0": 0, "1": 0 });
   const tricksPlayedRef = useRef(0);
 
-  // صندلی واقعی کاربر؛ باید قبل از useEffectها تعریف شود.
+  const [roundWins, setRoundWins] = useState({ "0": 0, "1": 0 });
+  const roundWinsRef = useRef({ "0": 0, "1": 0 });
+  const [roundNumber, setRoundNumber] = useState(1);
+  const [lastRoundResult, setLastRoundResult] = useState<RoundResult | null>(null);
+  const [showRoundSummary, setShowRoundSummary] = useState(false);
+  const [, setMatchWinner] = useState<Team | null>(null);
+
   const mySeat =
-    players.find(
-      (player) => player.id === userId
-    )?.seat ?? 0;
-
-  useEffect(() => {
-    if (
-      matchPhase === "playing" &&
-      previousPhaseRef.current === "choosing_trump"
-    ) {
-      setDealingFinalCards(true);
-      const timer = window.setTimeout(() => setDealingFinalCards(false), 2600);
-      return () => window.clearTimeout(timer);
-    }
-    return undefined;
-  }, [matchPhase]);
-
-  useEffect(() => {
-    previousPhaseRef.current = matchPhase;
-  }, [matchPhase]);
-
+    players.find((player) => player.id === userId)?.seat ?? 0;
 
   useEffect(() => {
     teamScoresRef.current = teamScores;
   }, [teamScores]);
 
-  // اعلام حاکم فقط یک‌بار هنگام ورود به مرحله انتخاب حکم نمایش داده می‌شود.
+  useEffect(() => {
+    roundWinsRef.current = roundWins;
+  }, [roundWins]);
+
+  useEffect(() => {
+    previousPhaseRef.current = matchPhase;
+  }, [matchPhase]);
+
   useEffect(() => {
     if (hakemSeat === null || matchPhase !== "choosing_trump") return;
 
@@ -211,7 +188,6 @@ export default function HokmGame({
     };
   }, [hakemSeat, matchPhase]);
 
-  // انیمیشن پخش کارت فقط هنگام ورود کارت‌های جدید به دست انجام می‌شود.
   useEffect(() => {
     if (!trump || matchPhase !== "playing") return;
 
@@ -230,11 +206,6 @@ export default function HokmGame({
       if (trumpRevealTimer.current) {
         window.clearTimeout(trumpRevealTimer.current);
         trumpRevealTimer.current = null;
-      }
-
-      if (hakemRevealTimer.current) {
-        window.clearTimeout(hakemRevealTimer.current);
-        hakemRevealTimer.current = null;
       }
     };
   }, [trump, matchPhase]);
@@ -258,20 +229,10 @@ export default function HokmGame({
         window.clearTimeout(dealAnimationTimer.current);
         dealAnimationTimer.current = null;
       }
-
-      if (trumpRevealTimer.current) {
-        window.clearTimeout(trumpRevealTimer.current);
-        trumpRevealTimer.current = null;
-      }
     };
   }, [hand.length]);
 
-  const [botHands, setBotHands] = useState<Card[][]>([
-    [],
-    [],
-    [],
-    [],
-  ]);
+  const [botHands, setBotHands] = useState<Card[][]>([[], [], [], []]);
 
   const botMemory = useRef<BotMemory>({
     played: [],
@@ -281,7 +242,6 @@ export default function HokmGame({
     botSeat: 1,
   });
 
-  // دست کامل هر بازیکن که تا انتخاب حکم مخفی می‌ماند.
   const pendingOfflineHands = useRef<Card[][]>([[], [], [], []]);
   const trickResolutionTimer = useRef<number | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -291,81 +251,7 @@ export default function HokmGame({
 
   const audioContext = useRef<AudioContext | null>(null);
   const musicTimer = useRef<number | null>(null);
-
   const [musicOn, setMusicOn] = useState(false);
-
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const previousTrickLengthRef = useRef(currentTrick.length);
-  const previousScoresRef = useRef(`${teamScores["0"]}-${teamScores["1"]}`);
-
-  const playHokmTone = useCallback(
-    (type: "card" | "win" | "finish") => {
-      try {
-        const AudioCtx =
-          window.AudioContext ||
-          (window as typeof window & {
-            webkitAudioContext?: typeof AudioContext;
-          }).webkitAudioContext;
-        if (!AudioCtx) return;
-
-        const ctx = audioContextRef.current ?? new AudioCtx();
-        audioContextRef.current = ctx;
-        if (ctx.state === "suspended") void ctx.resume();
-
-        const now = ctx.currentTime;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-
-        const settings =
-          type === "card"
-            ? {
-                start: 240,
-                end: 150,
-                duration: 0.07,
-                volume: 0.045,
-                wave: "triangle" as OscillatorType,
-              }
-            : type === "win"
-              ? {
-                  start: 420,
-                  end: 720,
-                  duration: 0.22,
-                  volume: 0.06,
-                  wave: "sine" as OscillatorType,
-                }
-              : {
-                  start: 360,
-                  end: 880,
-                  duration: 0.42,
-                  volume: 0.07,
-                  wave: "sine" as OscillatorType,
-                };
-
-        osc.type = settings.wave;
-        osc.frequency.setValueAtTime(settings.start, now);
-        osc.frequency.exponentialRampToValueAtTime(
-          settings.end,
-          now + settings.duration
-        );
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.exponentialRampToValueAtTime(
-          settings.volume,
-          now + 0.012
-        );
-        gain.gain.exponentialRampToValueAtTime(
-          0.0001,
-          now + settings.duration
-        );
-
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now);
-        osc.stop(now + settings.duration + 0.02);
-      } catch {}
-    },
-    []
-  );
 
   useEffect(() => {
     return () => {
@@ -392,51 +278,29 @@ export default function HokmGame({
   ) {
     if (typeof window === "undefined") return;
 
-    const AudioCtor =
-      window.AudioContext ||
-      (window as any).webkitAudioContext;
-
+    const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioCtor) return;
 
-    const context =
-      audioContext.current ?? new AudioCtor();
-
+    const context = audioContext.current ?? new AudioCtor();
     audioContext.current = context;
 
-    if (context.state === "suspended") {
-      void context.resume();
-    }
+    if (context.state === "suspended") void context.resume();
 
     const oscillator = context.createOscillator();
     const gain = context.createGain();
 
     oscillator.type = type;
-    oscillator.frequency.setValueAtTime(
-      frequency,
-      context.currentTime
-    );
-
-    gain.gain.setValueAtTime(
-      volume,
-      context.currentTime
-    );
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.001,
-      context.currentTime + duration
-    );
+    oscillator.frequency.setValueAtTime(frequency, context.currentTime);
+    gain.gain.setValueAtTime(volume, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
 
     oscillator.connect(gain).connect(context.destination);
-
     oscillator.start();
-    oscillator.stop(
-      context.currentTime + duration
-    );
+    oscillator.stop(context.currentTime + duration);
   }
 
   function playCardSound() {
     tone(210, 0.06, "triangle", 0.045);
-
     window.setTimeout(() => {
       tone(155, 0.05, "triangle", 0.025);
     }, 30);
@@ -445,213 +309,99 @@ export default function HokmGame({
   function playDealSound() {
     [0, 1, 2, 3].forEach((step) => {
       window.setTimeout(
-        () =>
-          tone(
-            260 + step * 35,
-            0.07,
-            "triangle",
-            0.03
-          ),
+        () => tone(260 + step * 35, 0.07, "triangle", 0.03),
         step * 75
       );
     });
   }
 
   function playVictorySound() {
-    [523, 659, 784, 1046].forEach(
-      (frequency, index) => {
-        window.setTimeout(
-          () =>
-            tone(
-              frequency,
-              0.25,
-              "sine",
-              0.055
-            ),
-          index * 120
-        );
-      }
-    );
+    [523, 659, 784, 1046].forEach((frequency, index) => {
+      window.setTimeout(
+        () => tone(frequency, 0.25, "sine", 0.055),
+        index * 120
+      );
+    });
   }
 
   function toggleMusic() {
     if (musicOn) {
-      if (musicTimer.current) {
-        window.clearInterval(
-          musicTimer.current
-        );
-      }
-
+      if (musicTimer.current) window.clearInterval(musicTimer.current);
       musicTimer.current = null;
       setMusicOn(false);
       return;
     }
 
-    const notes = [
-      196,
-      247,
-      294,
-      247,
-      220,
-      262,
-      330,
-      262,
-    ];
-
+    const notes = [196, 247, 294, 247, 220, 262, 330, 262];
     let index = 0;
 
-    tone(
-      notes[index],
-      0.35,
-      "sine",
-      0.018
-    );
+    tone(notes[index], 0.35, "sine", 0.018);
 
-    musicTimer.current =
-      window.setInterval(() => {
-        index =
-          (index + 1) % notes.length;
-
-        tone(
-          notes[index],
-          0.35,
-          "sine",
-          0.018
-        );
-      }, 650);
+    musicTimer.current = window.setInterval(() => {
+      index = (index + 1) % notes.length;
+      tone(notes[index], 0.35, "sine", 0.018);
+    }, 650);
 
     setMusicOn(true);
   }
 
-  /*
-   * Online realtime channel
-   */
+  // ===== Online realtime =====
   useEffect(() => {
     if (!room || offline) return;
 
-    const channel = supabase.channel(
-      `hokm-room:${room.id}`,
-      {
-        config: {
-          presence: {
-            key: userId,
-          },
-        },
-      }
-    );
+    const channel = supabase.channel(`hokm-room:${room.id}`, {
+      config: { presence: { key: userId } },
+    });
 
     channel
-      .on(
-        "presence",
-        {
-          event: "sync",
-        },
-        () => {
-          const state =
-            channel.presenceState();
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const online = Object.values(state).flat() as any[];
 
-          const online = Object.values(
-            state
-          ).flat() as any[];
-
-          setPlayers((old) =>
-            old.map((player) => ({
-              ...player,
-              online: online.some(
-                (item) =>
-                  item.user_id === player.id
-              ),
-            }))
-          );
+        setPlayers((old) =>
+          old.map((player) => ({
+            ...player,
+            online: online.some((item) => item.user_id === player.id),
+          }))
+        );
+      })
+      .on("broadcast", { event: "game" }, ({ payload }: any) => {
+        if (payload.type === "start") {
+          setMatchId(payload.matchId ?? null);
+          setStarted(true);
+          playDealSound();
         }
-      )
-      .on(
-        "broadcast",
-        {
-          event: "game",
-        },
-        ({ payload }: any) => {
-          if (payload.type === "start") {
-            setMatchId(
-              payload.matchId ?? null
-            );
-
-            setStarted(true);
-            playDealSound();
-          }
-
-          if (payload.type === "message") {
-            setMessages((old) => [
-              ...old,
-              payload.message,
-            ]);
-          }
-
-          if (payload.type === "reaction") {
-            showReaction(
-              payload.reaction
-            );
-          }
-
-          if (payload.type === "victory") {
-            showVictory(payload.name);
-          }
+        if (payload.type === "message") {
+          setMessages((old) => [...old, payload.message]);
         }
-      )
+        if (payload.type === "reaction") {
+          showReaction(payload.reaction);
+        }
+        if (payload.type === "victory") {
+          showVictory(payload.name);
+        }
+      })
       .on(
         "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "hokm_matches",
-        },
+        { event: "UPDATE", schema: "public", table: "hokm_matches" },
         ({ new: nextMatch }: any) => {
-          if (
-            !matchId ||
-            nextMatch.id !== matchId
-          ) {
-            return;
+          if (!matchId || nextMatch.id !== matchId) return;
+
+          setTrump(nextMatch.trump ?? null);
+          setMatchPhase(nextMatch.phase ?? "choosing_trump");
+          setHakemSeat(nextMatch.hakem_seat ?? null);
+          setLeadSuit(nextMatch.lead_suit ?? null);
+          setTurnSeat(nextMatch.turn_seat ?? 0);
+          setCurrentTrick(nextMatch.current_trick ?? []);
+          setTeamScores(nextMatch.team_scores ?? { "0": 0, "1": 0 });
+          setRoundWins(nextMatch.round_wins ?? { "0": 0, "1": 0 });
+
+          if (typeof nextMatch.hakem_round === "number") {
+            setRoundNumber(nextMatch.hakem_round);
           }
 
-          setTrump(
-            nextMatch.trump ?? null
-          );
-
-          setMatchPhase(
-            nextMatch.phase ??
-              "choosing_trump"
-          );
-
-          setHakemSeat(
-            nextMatch.hakem_seat ??
-              null
-          );
-
-          setLeadSuit(
-            nextMatch.lead_suit ??
-              null
-          );
-
-          setTurnSeat(
-            nextMatch.turn_seat ?? 0
-          );
-
-          setCurrentTrick(
-            nextMatch.current_trick ??
-              []
-          );
-
-          setTeamScores(
-            nextMatch.team_scores ?? {
-              "0": 0,
-              "1": 0,
-            }
-          );
-
-          if (
-            nextMatch.status ===
-            "finished"
-          ) {
+          if (nextMatch.status === "finished") {
+            setMatchPhase("finished");
             setWinner("تیم برنده");
           }
         }
@@ -665,228 +415,115 @@ export default function HokmGame({
           filter: `room_id=eq.${room.id}`,
         },
         async () => {
-          if (
-            room.host_id !== userId ||
-            started ||
-            matchId
-          ) {
-            return;
-          }
+          if (room.host_id !== userId || started || matchId) return;
 
-          const { count } =
-            await supabase
-              .from("hokm_players")
-              .select("user_id", {
-                count: "exact",
-                head: true,
-              })
-              .eq(
-                "room_id",
-                room.id
-              );
+          const { count } = await supabase
+            .from("hokm_players")
+            .select("user_id", { count: "exact", head: true })
+            .eq("room_id", room.id);
 
           if (count === 4) {
-            await startOnlineGame(
-              room.id
-            );
+            await startOnlineGame(room.id);
           }
         }
       )
-      .subscribe(
-        async (status: string) => {
-          if (
-            status === "SUBSCRIBED"
-          ) {
-            await channel.track({
-              user_id: userId,
-              name:
-                displayName ||
-                "همشهری",
-            });
-          }
+      .subscribe(async (status: string) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track({
+            user_id: userId,
+            name: displayName || "همشهری",
+          });
         }
-      );
+      });
 
     return () => {
-      supabase.removeChannel(
-        channel
-      );
+      supabase.removeChannel(channel);
     };
-  }, [
-    room,
-    offline,
-    supabase,
-    userId,
-    displayName,
-    matchId,
-    started,
-  ]);
+  }, [room, offline, supabase, userId, displayName, matchId, started]);
 
-  /*
-   * Load private online hand
-   */
+  // ===== Load online private hand =====
   useEffect(() => {
     if (!matchId || offline) return;
 
     async function loadPrivateHand() {
-      const { data: match } =
-        await supabase
-          .from("hokm_matches")
-          .select(
-            "phase,hakem_seat,trump,lead_suit,turn_seat,current_trick,team_scores"
-          )
-          .eq("id", matchId)
-          .maybeSingle();
+      const { data: match } = await supabase
+        .from("hokm_matches")
+        .select("phase,hakem_seat,trump,lead_suit,turn_seat,current_trick,team_scores,round_wins,hakem_round")
+        .eq("id", matchId)
+        .maybeSingle();
 
       if (match) {
-        setMatchPhase(
-          match.phase ??
-            "choosing_trump"
-        );
-
-        setHakemSeat(
-          match.hakem_seat ?? null
-        );
-
-        setTrump(
-          match.trump ?? null
-        );
-
-        setLeadSuit(
-          match.lead_suit ?? null
-        );
-
-        setTurnSeat(
-          match.turn_seat ?? 0
-        );
-
-        setCurrentTrick(
-          match.current_trick ?? []
-        );
-
-        setTeamScores(
-          match.team_scores ?? {
-            "0": 0,
-            "1": 0,
-          }
-        );
+        setMatchPhase((match.phase ?? "choosing_trump") as MatchPhase);
+        setHakemSeat(match.hakem_seat ?? null);
+        setTrump(match.trump ?? null);
+        setLeadSuit(match.lead_suit ?? null);
+        setTurnSeat(match.turn_seat ?? 0);
+        setCurrentTrick(match.current_trick ?? []);
+        setTeamScores(match.team_scores ?? { "0": 0, "1": 0 });
+        setRoundWins(match.round_wins ?? { "0": 0, "1": 0 });
+        if (typeof match.hakem_round === "number") {
+          setRoundNumber(match.hakem_round);
+        }
       }
 
-      const { data, error } =
-        await supabase
-          .from("hokm_hands")
-          .select("cards")
-          .eq(
-            "match_id",
-            matchId
-          )
-          .eq(
-            "user_id",
-            userId
-          )
-          .maybeSingle();
+      const { data, error } = await supabase
+        .from("hokm_hands")
+        .select("cards")
+        .eq("match_id", matchId)
+        .eq("user_id", userId)
+        .maybeSingle();
 
       if (!error && data?.cards) {
-        setHand(
-          normalizeCards(
-            data.cards
-          )
-        );
+        setHand(normalizeCards(data.cards));
       }
 
-      const { data: draw } =
-        await supabase
-          .from("hokm_hakem_draws")
-          .select("card")
-          .eq(
-            "match_id",
-            matchId
-          )
-          .eq(
-            "user_id",
-            userId
-          )
-          .maybeSingle();
+      const { data: draw } = await supabase
+        .from("hokm_hakem_draws")
+        .select("card")
+        .eq("match_id", matchId)
+        .eq("user_id", userId)
+        .maybeSingle();
 
-      if (draw?.card) {
-        setHakemCard(
-          normalizeCard(draw.card)
-        );
-      }
+      if (draw?.card) setHakemCard(normalizeCard(draw.card));
 
-      const { data: allDraws } =
-        await supabase
-          .from(
-            "hokm_hakem_draws"
-          )
-          .select("seat,card")
-          .eq(
-            "match_id",
-            matchId
-          )
-          .order("seat");
+      const { data: allDraws } = await supabase
+        .from("hokm_hakem_draws")
+        .select("seat,card")
+        .eq("match_id", matchId)
+        .order("seat");
 
       if (allDraws) {
         setHakemDraws(
-          allDraws.map(
-            (item: any) => ({
-              seat: item.seat,
-              card: normalizeCard(
-                item.card
-              ),
-            })
-          )
+          allDraws.map((item: any) => ({
+            seat: item.seat,
+            card: normalizeCard(item.card),
+          }))
         );
       }
     }
 
     void loadPrivateHand();
-  }, [
-    matchId,
-    matchPhase,
-    offline,
-    supabase,
-    userId,
-  ]);
+  }, [matchId, matchPhase, offline, supabase, userId]);
 
-  /*
-   * Trump timer
-   */
+  // ===== Trump timer =====
   useEffect(() => {
-    if (
-      matchPhase !==
-      "choosing_trump"
-    ) {
-      return;
-    }
+    if (matchPhase !== "choosing_trump") return;
 
     setTrumpSeconds(15);
 
-    const timer =
-      window.setInterval(() => {
-        setTrumpSeconds(
-          (value) =>
-            Math.max(0, value - 1)
-        );
-      }, 1000);
+    const timer = window.setInterval(() => {
+      setTrumpSeconds((value) => Math.max(0, value - 1));
+    }, 1000);
 
-    return () =>
-      window.clearInterval(timer);
+    return () => window.clearInterval(timer);
   }, [matchPhase]);
 
-  /*
-   * Auto choose trump if hakem time expires
-   */
+  // ===== Auto choose trump =====
   useEffect(() => {
-    const currentSeat =
-      players.find(
-        (player) =>
-          player.id === userId
-      )?.seat ?? 0;
+    const currentSeat = players.find((p) => p.id === userId)?.seat ?? 0;
 
     if (
-      matchPhase !==
-        "choosing_trump" ||
+      matchPhase !== "choosing_trump" ||
       hakemSeat !== currentSeat ||
       trumpSeconds !== 0 ||
       trump
@@ -896,18 +533,19 @@ export default function HokmGame({
 
     const autoSuit = SUITS[Math.floor(Math.random() * SUITS.length)];
     void chooseTrump(autoSuit);
-  }, [
-    matchPhase,
-    hakemSeat,
-    players,
-    userId,
-    trumpSeconds,
-    trump,
-  ]);
+  }, [matchPhase, hakemSeat, players, userId, trumpSeconds, trump]);
 
-  // اگر حاکم ربات باشد، بعد از دریافت ۵ کارت خودش حکم را انتخاب می‌کند.
+  // ===== Bot hakem chooses trump =====
   useEffect(() => {
-    if (!offline || !started || matchPhase !== "choosing_trump" || hakemSeat === null || hakemSeat === 0) return;
+    if (
+      !offline ||
+      !started ||
+      matchPhase !== "choosing_trump" ||
+      hakemSeat === null ||
+      hakemSeat === 0
+    ) {
+      return;
+    }
 
     const timer = window.setTimeout(() => {
       const hakemHand = botHands[hakemSeat] ?? [];
@@ -924,14 +562,9 @@ export default function HokmGame({
     if (offline) {
       if (hakemSeat === null) return;
 
-      const currentSeat =
-        players.find((player) => player.id === userId)?.seat ?? 0;
-
-      // در حالت آفلاین، اگر حاکم ربات باشد، خود ربات مجاز به انتخاب حکم است.
+      const currentSeat = players.find((p) => p.id === userId)?.seat ?? 0;
       const isBotHakem =
-        currentSeat !== hakemSeat &&
-        hakemSeat !== null &&
-        hakemSeat !== 0;
+        currentSeat !== hakemSeat && hakemSeat !== null && hakemSeat !== 0;
 
       if (currentSeat !== hakemSeat && !isBotHakem) return;
 
@@ -945,7 +578,11 @@ export default function HokmGame({
       setTurnSeat(hakemSeat);
       setLeadSuit(null);
       setCurrentTrick([]);
-      botMemory.current.knownTrump = completeHands.flat().filter((card) => card.suit === suit);
+
+      botMemory.current.knownTrump = completeHands
+        .flat()
+        .filter((card) => card.suit === suit);
+
       playDealSound();
       return;
     }
@@ -968,80 +605,33 @@ export default function HokmGame({
     setTurnSeat(hakemSeat ?? 0);
   }
 
-  /*
-   * Waiting timer
-   */
+  // ===== Waiting timer =====
   useEffect(() => {
-    if (
-      !waiting ||
-      offline ||
-      started
-    ) {
-      return;
-    }
+    if (!waiting || offline || started) return;
 
-    const timer =
-      window.setInterval(() => {
-        setSeconds(
-          (value) =>
-            Math.max(value - 1, 0)
-        );
-      }, 1000);
+    const timer = window.setInterval(() => {
+      setSeconds((value) => Math.max(value - 1, 0));
+    }, 1000);
 
-    return () =>
-      window.clearInterval(timer);
-  }, [
-    waiting,
-    offline,
-    started,
-  ]);
+    return () => window.clearInterval(timer);
+  }, [waiting, offline, started]);
 
-  /*
-   * Fallback to bots
-   */
+  // ===== Fallback to bots =====
   useEffect(() => {
-    if (
-      !waiting ||
-      started ||
-      seconds > 0
-    ) {
-      return;
-    }
+    if (!waiting || started || seconds > 0) return;
 
     setOffline(true);
 
     setPlayers((old) => {
-      const existingSeats =
-        new Set(
-          old.map(
-            (player) =>
-              player.seat
-          )
-        );
-
+      const existingSeats = new Set(old.map((p) => p.seat));
       const bots: Player[] = [];
 
-      for (
-        let seat = 0;
-        seat < 4;
-        seat++
-      ) {
-        if (
-          existingSeats.has(seat)
-        ) {
-          continue;
-        }
+      for (let seat = 0; seat < 4; seat++) {
+        if (existingSeats.has(seat)) continue;
 
         bots.push({
           id: `bot-${seat}`,
-          name:
-            seat === 0
-              ? "شما"
-              : `ربات جم${
-                  seat > 1
-                    ? ` ${seat}`
-                    : ""
-                }`,
+          name: seat === 0 ? "شما" : `ربات جم${seat > 1 ? ` ${seat}` : ""}`,
           seat,
           isBot: true,
         });
@@ -1051,31 +641,15 @@ export default function HokmGame({
     });
 
     startOfflineGame();
-  }, [
-    seconds,
-    waiting,
-    started,
-  ]);
+  }, [seconds, waiting, started]);
 
-  /*
-   * ساخت یک دست برای حالت آفلاین
-   */
-
-  /**
-   * شروع بازی آفلاین با جریان واقعی حکم ایرانی:
-   * 1) تعیین حاکم با قرعه
-   * 2) ۵ کارت برای هر نفر
-   * 3) انتخاب خال حکم توسط حاکم
-   * 4) تکمیل دست تا ۱۳ کارت
-   * 5) شروع بازی از حاکم
-   */
+  // ===== شروع بازی آفلاین =====
   function startOfflineGame() {
     const drawDeck = shuffleDeck(createHokmDeck());
     let cursor = 0;
     const draws: { seat: number; card: Card }[] = [];
     let contenders = [0, 1, 2, 3];
 
-    // در صورت تساوی، فقط بازیکنان مساوی دوباره قرعه می‌کشند.
     while (contenders.length > 1) {
       const round = contenders.map((seat) => ({
         seat,
@@ -1088,9 +662,10 @@ export default function HokmGame({
     }
 
     const hakemSeatValue = contenders[0] ?? 0;
-    const hakemDraw = [...draws].reverse().find((item) => item.seat === hakemSeatValue);
+    const hakemDraw = [...draws]
+      .reverse()
+      .find((item) => item.seat === hakemSeatValue);
 
-    // قرعه‌ها فقط برای تعیین حاکم هستند؛ برای دست بازی یک دسته تازه و کامل می‌سازیم.
     const dealDeck = shuffleDeck(createHokmDeck());
     const fiveCardHands: Card[][] = [[], [], [], []];
     let dealIndex = 0;
@@ -1124,6 +699,14 @@ export default function HokmGame({
     setTeamScores({ "0": 0, "1": 0 });
     teamScoresRef.current = { "0": 0, "1": 0 };
     tricksPlayedRef.current = 0;
+
+    setRoundWins({ "0": 0, "1": 0 });
+    roundWinsRef.current = { "0": 0, "1": 0 };
+    setRoundNumber(1);
+    setLastRoundResult(null);
+    setShowRoundSummary(false);
+    setMatchWinner(null);
+
     if (trickResolutionTimer.current !== null) {
       window.clearTimeout(trickResolutionTimer.current);
       trickResolutionTimer.current = null;
@@ -1138,18 +721,164 @@ export default function HokmGame({
       botSeat: hakemSeatValue === 0 ? 1 : hakemSeatValue,
     };
 
-    // ذخیره ۸ کارت باقیمانده برای تکمیل دست بعد از انتخاب حکم.
     pendingOfflineHands.current = completeHands;
+    playDealSound();
+  }
+
+  // ===== پایان راند (آفلاین) =====
+  const handleRoundEndOffline = useCallback(
+    (finalScores: { "0": number; "1": number }) => {
+      setHakemSeat((currentHakem) => {
+        if (currentHakem === null) return currentHakem;
+
+        const hakemTeam = getTeamBySeat(currentHakem);
+        const scoresTuple: [number, number] = [
+          finalScores["0"],
+          finalScores["1"],
+        ];
+
+        const result = evaluateRound(scoresTuple, hakemTeam);
+        setLastRoundResult(result);
+
+        const winnerTeamStr = result.winnerTeam.toString() as "0" | "1";
+        const nextRoundWins = {
+          ...roundWinsRef.current,
+          [winnerTeamStr]:
+            roundWinsRef.current[winnerTeamStr] + result.roundPoints,
+        };
+        roundWinsRef.current = nextRoundWins;
+        setRoundWins(nextRoundWins);
+
+        setShowRoundSummary(true);
+
+        const totalWins: [number, number] = [
+          nextRoundWins["0"],
+          nextRoundWins["1"],
+        ];
+
+        if (isMatchComplete(totalWins)) {
+          const matchWin = getMatchWinner(totalWins);
+          setMatchWinner(matchWin);
+          setMatchPhase("finished");
+          playVictorySound();
+
+          window.setTimeout(() => {
+            showVictory(
+              matchWin === 0 ? "تیم شما برنده شد" : "تیم رقیب برنده شد"
+            );
+          }, 1500);
+
+          return currentHakem;
+        }
+
+        const nextHakem = nextHakemSeat(currentHakem, result.hakemStays);
+
+        window.setTimeout(() => {
+          setShowRoundSummary(false);
+          setHakemSeat(nextHakem);
+          setRoundNumber((r) => r + 1);
+          startNewOfflineRound(nextHakem);
+        }, 3500);
+
+        return nextHakem;
+      });
+    },
+    []
+  );
+
+  // ===== شروع راند جدید آفلاین =====
+  function startNewOfflineRound(newHakemSeat: number) {
+    if (trickResolutionTimer.current !== null) {
+      window.clearTimeout(trickResolutionTimer.current);
+      trickResolutionTimer.current = null;
+    }
+
+    const dealDeck = shuffleDeck(createHokmDeck());
+    const fiveCardHands: Card[][] = [[], [], [], []];
+    let idx = 0;
+
+    for (let r = 0; r < 5; r += 1) {
+      for (let s = 0; s < 4; s += 1) {
+        fiveCardHands[s].push(dealDeck[idx++]);
+      }
+    }
+
+    const completeHands: Card[][] = fiveCardHands.map((c) => [...c]);
+    for (let r = 0; r < 8; r += 1) {
+      for (let s = 0; s < 4; s += 1) {
+        completeHands[s].push(dealDeck[idx++]);
+      }
+    }
+
+    setBotHands(fiveCardHands);
+    setHand(fiveCardHands[0] ?? []);
+    setTrump(null);
+    setTurnSeat(newHakemSeat);
+    setLeadSuit(null);
+    setCurrentTrick([]);
+    setTeamScores({ "0": 0, "1": 0 });
+    teamScoresRef.current = { "0": 0, "1": 0 };
+    tricksPlayedRef.current = 0;
+    setLastRoundResult(null);
+    setMatchPhase("choosing_trump");
+
+    pendingOfflineHands.current = completeHands;
+
+    botMemory.current = {
+      played: [],
+      knownTrump: [],
+      teamScore: 0,
+      opponentScore: 0,
+      botSeat: newHakemSeat === 0 ? 1 : newHakemSeat,
+    };
 
     playDealSound();
   }
 
-  /*
-   * Bot turn
-   *
-   * آفلاین: ربات همان قوانین بازی انسان را رعایت می‌کند:
-   * پیروی اجباری از خال، محاسبه برنده تریک، امتیازدهی و شروع تریک بعدی.
-   */
+  // ===== پایان تریک آفلاین =====
+  const finalizeOfflineTrick = useCallback(
+    (nextTrick: { seat: number; card: Card }[], trumpSuit: Suit) => {
+      const played: PlayedCard[] = nextTrick.map((item) => ({
+        playerId: String(item.seat),
+        seat: item.seat,
+        card: item.card,
+      }));
+
+      const winnerCard = getTrickWinner(played, trumpSuit);
+      const winningSeat = winnerCard.seat;
+      const winningTeam = getTeamBySeat(winningSeat).toString() as "0" | "1";
+
+      const nextScores = {
+        ...teamScoresRef.current,
+        [winningTeam]: teamScoresRef.current[winningTeam] + 1,
+      };
+
+      teamScoresRef.current = nextScores;
+      setTeamScores(nextScores);
+
+      tricksPlayedRef.current += 1;
+
+      const roundFinished =
+        nextScores["0"] >= TRICKS_TO_WIN_ROUND ||
+        nextScores["1"] >= TRICKS_TO_WIN_ROUND;
+
+      trickResolutionTimer.current = window.setTimeout(() => {
+        trickResolutionTimer.current = null;
+        setCurrentTrick([]);
+        setLeadSuit(null);
+
+        if (roundFinished) {
+          handleRoundEndOffline(nextScores);
+          return;
+        }
+
+        setTurnSeat(winningSeat);
+      }, 650);
+    },
+    [handleRoundEndOffline]
+  );
+
+  // ===== Bot turn (offline) =====
   useEffect(() => {
     if (
       !offline ||
@@ -1158,7 +887,8 @@ export default function HokmGame({
       matchPhase !== "playing" ||
       turnSeat === mySeat ||
       currentTrick.length >= 4 ||
-      trickResolutionTimer.current !== null
+      trickResolutionTimer.current !== null ||
+      !trump
     ) {
       return;
     }
@@ -1177,12 +907,7 @@ export default function HokmGame({
 
       let card: Card;
       try {
-        card = chooseBotCard(
-          botHand,
-          trick,
-          trump || "♠",
-          botMemory.current
-        );
+        card = chooseBotCard(botHand, trick, trump || "♠", botMemory.current);
       } catch {
         return;
       }
@@ -1200,70 +925,16 @@ export default function HokmGame({
       setBotHands(nextHands);
       playCardSound();
 
-      const nextTrick = [
-        ...currentTrick,
-        {
-          seat: turnSeat,
-          card,
-        },
-      ];
-
+      const nextTrick = [...currentTrick, { seat: turnSeat, card }];
       setCurrentTrick(nextTrick);
 
       if (nextTrick.length < 4) {
-        if (currentTrick.length === 0) {
-          setLeadSuit(card.suit);
-        }
+        if (currentTrick.length === 0) setLeadSuit(card.suit);
         setTurnSeat((turnSeat + 1) % 4);
         return;
       }
 
-      const played: PlayedCard[] = nextTrick.map((item) => ({
-        playerId: String(item.seat),
-        seat: item.seat,
-        card: item.card,
-      }));
-
-      const winnerCard = getTrickWinner(
-        played,
-        trump || "♠"
-      );
-      const winningSeat = winnerCard.seat;
-
-      const winningTeam =
-        winningSeat % 2 === 0 ? "0" : "1";
-
-      const nextScores = {
-        ...teamScoresRef.current,
-        [winningTeam]:
-          teamScoresRef.current[winningTeam] + 1,
-      };
-
-      teamScoresRef.current = nextScores;
-      setTeamScores(nextScores);
-
-      tricksPlayedRef.current += 1;
-      const nextTricksPlayed = tricksPlayedRef.current;
-
-      trickResolutionTimer.current = window.setTimeout(() => {
-        trickResolutionTimer.current = null;
-        setCurrentTrick([]);
-        setLeadSuit(null);
-
-        if (nextTricksPlayed >= 13) {
-          setTurnSeat(winningSeat);
-          setMatchPhase("finished");
-
-          showVictory(
-            nextScores["0"] > nextScores["1"]
-              ? "تیم شما برنده شد"
-              : "تیم رقیب برنده شد"
-          );
-          return;
-        }
-
-        setTurnSeat(winningSeat);
-      }, 650);
+      finalizeOfflineTrick(nextTrick, trump || "♠");
     }, 900);
 
     return () => window.clearTimeout(timer);
@@ -1277,44 +948,77 @@ export default function HokmGame({
     currentTrick,
     botHands,
     mySeat,
+    finalizeOfflineTrick,
   ]);
 
-  /*
-   * Join online room
-   */
+  // ===== هاست راند جدید آنلاین رو شروع می‌کنه =====
+  useEffect(() => {
+    if (
+      offline ||
+      !room ||
+      !matchId ||
+      matchPhase !== "round_end" ||
+      room.host_id !== userId
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      // حاکم بعدی رو از round_wins و hakem_team محاسبه کن
+      const { data: match } = await supabase
+        .from("hokm_matches")
+        .select("hakem_seat,hakem_team")
+        .eq("id", matchId)
+        .maybeSingle();
+
+      if (!match || match.hakem_seat === null) return;
+
+      const hakemTeam: 0 | 1 = (match.hakem_team ?? 0) as 0 | 1;
+      const roundWinsTuple: [number, number] = [
+        roundWinsRef.current["0"],
+        roundWinsRef.current["1"],
+      ];
+
+      const lastWinner: Team =
+        roundWinsTuple[0] > roundWinsTuple[1] ? 0 : 1;
+
+      const hakemStays = lastWinner === hakemTeam;
+      const nextHakem = nextHakemSeat(match.hakem_seat, hakemStays);
+
+      const { error } = await supabase.rpc("start_hokm_new_round", {
+        p_match_id: matchId,
+        p_new_hakem_seat: nextHakem,
+      });
+
+      if (error) {
+        console.error("شروع راند جدید ناموفق:", error);
+      }
+    }, 3500);
+
+    return () => window.clearTimeout(timer);
+  }, [offline, room, matchId, matchPhase, userId]);
+
+  // ===== Join online room =====
   async function joinRoom() {
     setWaiting(true);
     setSeconds(WAIT_SECONDS);
     setOffline(false);
 
-    const { data } =
-      await supabase
-        .from("hokm_rooms")
-        .select(
-          "id,status,host_id"
-        )
-        .eq(
-          "status",
-          "waiting"
-        )
-        .limit(1)
-        .maybeSingle();
+    const { data } = await supabase
+      .from("hokm_rooms")
+      .select("id,status,host_id")
+      .eq("status", "waiting")
+      .limit(1)
+      .maybeSingle();
 
-    let selected =
-      data as Room | null;
+    let selected = data as Room | null;
 
     if (!selected) {
-      const created =
-        await supabase
-          .from("hokm_rooms")
-          .insert({
-            status: "waiting",
-            host_id: userId,
-          })
-          .select(
-            "id,status,host_id"
-          )
-          .single();
+      const created = await supabase
+        .from("hokm_rooms")
+        .insert({ status: "waiting", host_id: userId })
+        .select("id,status,host_id")
+        .single();
 
       if (created.error) {
         setOffline(true);
@@ -1322,203 +1026,113 @@ export default function HokmGame({
         return;
       }
 
-      selected =
-        created.data as Room;
+      selected = created.data as Room;
     }
 
     setRoom(selected);
 
-    const current =
-      await supabase
-        .from("hokm_players")
-        .select(
-          "user_id,name,seat"
-        )
-        .eq(
-          "room_id",
-          selected.id
-        )
-        .order("seat");
-
-    const rows =
-      (current.data ??
-        []) as any[];
-
-    const nextSeat =
-      rows.length;
-
-    await supabase
+    const current = await supabase
       .from("hokm_players")
-      .upsert({
-        room_id:
-          selected.id,
-        user_id: userId,
-        name:
-          displayName ||
-          "همشهری",
-        seat: nextSeat,
-      });
+      .select("user_id,name,seat")
+      .eq("room_id", selected.id)
+      .order("seat");
+
+    const rows = (current.data ?? []) as any[];
+    const nextSeat = rows.length;
+
+    await supabase.from("hokm_players").upsert({
+      room_id: selected.id,
+      user_id: userId,
+      name: displayName || "همشهری",
+      seat: nextSeat,
+    });
 
     setPlayers([
-      ...rows.map(
-        (item) => ({
-          id: item.user_id,
-          name: item.name,
-          seat: item.seat,
-        })
-      ),
+      ...rows.map((item) => ({
+        id: item.user_id,
+        name: item.name,
+        seat: item.seat,
+      })),
       {
         id: userId,
-        name:
-          displayName ||
-          "همشهری",
+        name: displayName || "همشهری",
         seat: nextSeat,
       },
     ]);
 
-    if (
-      rows.length + 1 >= 4 &&
-      selected.host_id === userId
-    ) {
-      await startOnlineGame(
-        selected.id
-      );
+    if (rows.length + 1 >= 4 && selected.host_id === userId) {
+      await startOnlineGame(selected.id);
     }
   }
 
-  /*
-   * Start online game
-   */
-  async function startOnlineGame(
-    roomId: string
-  ) {
+  // ===== Start online game =====
+  async function startOnlineGame(roomId: string) {
     await supabase
       .from("hokm_rooms")
-      .update({
-        status: "playing",
-      })
-      .eq(
-        "id",
-        roomId
-      );
+      .update({ status: "playing" })
+      .eq("id", roomId);
 
-    const {
-      data: createdMatch,
-      error,
-    } = await supabase.rpc(
+    const { data: createdMatch, error } = await supabase.rpc(
       "start_hokm_match",
-      {
-        p_room_id: roomId,
-      }
+      { p_room_id: roomId }
     );
 
-    if (
-      error ||
-      !createdMatch
-    ) {
-      setRuleMessage(
-        error?.message ||
-          "شروع مسابقه انجام نشد."
-      );
-
+    if (error || !createdMatch) {
+      setRuleMessage(error?.message || "شروع مسابقه انجام نشد.");
       return;
     }
 
-    setMatchId(
-      createdMatch as string
-    );
+    setMatchId(createdMatch as string);
+    setMatchPhase("choosing_trump");
+    setRoundNumber(1);
 
-    setMatchPhase(
-      "choosing_trump"
-    );
-
-    const {
-      data: drawMatch,
-    } = await supabase
+    const { data: drawMatch } = await supabase
       .from("hokm_matches")
-      .select(
-        "phase,hakem_seat,trump,turn_seat"
-      )
-      .eq(
-        "id",
-        createdMatch
-      )
+      .select("phase,hakem_seat,trump,turn_seat,round_wins,hakem_round")
+      .eq("id", createdMatch)
       .maybeSingle();
 
     if (drawMatch) {
-      setMatchPhase(
-        drawMatch.phase ??
-          "choosing_trump"
-      );
-
-      setHakemSeat(
-        drawMatch.hakem_seat ??
-          null
-      );
-
-      setTrump(
-        drawMatch.trump ??
-          null
-      );
-
-      setTurnSeat(
-        drawMatch.turn_seat ??
-          0
-      );
+      setMatchPhase((drawMatch.phase ?? "choosing_trump") as MatchPhase);
+      setHakemSeat(drawMatch.hakem_seat ?? null);
+      setTrump(drawMatch.trump ?? null);
+      setTurnSeat(drawMatch.turn_seat ?? 0);
+      setRoundWins(drawMatch.round_wins ?? { "0": 0, "1": 0 });
+      if (typeof drawMatch.hakem_round === "number") {
+        setRoundNumber(drawMatch.hakem_round);
+      }
     }
 
     setStarted(true);
 
-    await supabase
-      .channel(
-        `hokm-room:${roomId}`
-      )
-      .send({
-        type: "broadcast",
-        event: "game",
-        payload: {
-          type: "start",
-          matchId:
-            createdMatch,
-        },
-      });
+    await supabase.channel(`hokm-room:${roomId}`).send({
+      type: "broadcast",
+      event: "game",
+      payload: { type: "start", matchId: createdMatch },
+    });
   }
 
-  function showReaction(
-    reaction: Reaction
-  ) {
+  function showReaction(reaction: Reaction) {
     setReactions((old) => [
-      ...old.filter(
-        (item) =>
-          item.playerId !==
-          reaction.playerId
-      ),
+      ...old.filter((item) => item.playerId !== reaction.playerId),
       reaction,
     ]);
 
     window.setTimeout(
       () =>
         setReactions((old) =>
-          old.filter(
-            (item) =>
-              item.id !==
-              reaction.id
-          )
+          old.filter((item) => item.id !== reaction.id)
         ),
       3200
     );
   }
 
-  function showVictory(
-    name: string
-  ) {
+  function showVictory(name: string) {
     setWinner(name);
     playVictorySound();
   }
 
-  async function sendReaction(
-    sticker: string
-  ) {
+  async function sendReaction(sticker: string) {
     const reaction = {
       id: crypto.randomUUID(),
       playerId: userId,
@@ -1527,31 +1141,16 @@ export default function HokmGame({
 
     showReaction(reaction);
 
-    if (
-      room &&
-      !offline
-    ) {
-      await supabase
-        .channel(
-          `hokm-room:${room.id}`
-        )
-        .send({
-          type: "broadcast",
-          event: "game",
-          payload: {
-            type: "reaction",
-            reaction,
-          },
-        });
+    if (room && !offline) {
+      await supabase.channel(`hokm-room:${room.id}`).send({
+        type: "broadcast",
+        event: "game",
+        payload: { type: "reaction", reaction },
+      });
     }
   }
 
-  /*
-   * Play human card
-   *
-   * این تابع هم برای کارت انسان و هم برای پایان تریک مسئول state آفلاین است.
-   * در حالت آنلاین فقط حرکت را به Supabase می‌فرستد و state از سرور می‌آید.
-   */
+  // ===== Play human card =====
   async function playCard(index: number) {
     if (
       !started ||
@@ -1568,11 +1167,8 @@ export default function HokmGame({
 
     if (!canPlayCard(hand, selected, leadSuit)) {
       setRuleMessage(
-        leadSuit
-          ? `باید خال ${leadSuit} را بازی کنی.`
-          : "این کارت قابل بازی نیست."
+        leadSuit ? `باید خال ${leadSuit} را بازی کنی.` : "این کارت قابل بازی نیست."
       );
-
       window.setTimeout(() => setRuleMessage(""), 2200);
       return;
     }
@@ -1594,127 +1190,48 @@ export default function HokmGame({
       return;
     }
 
-    // حالت آفلاین
+    // آفلاین
     playCardSound();
+    setHand((old) => old.filter((card) => card.id !== selected.id));
 
-    setHand((old) =>
-      old.filter((card) => card.id !== selected.id)
-    );
-
-    const nextTrick = [
-      ...currentTrick,
-      {
-        seat: 0,
-        card: selected,
-      },
-    ];
-
+    const nextTrick = [...currentTrick, { seat: mySeat, card: selected }];
     setCurrentTrick(nextTrick);
 
-    if (currentTrick.length === 0) {
-      setLeadSuit(selected.suit);
-    }
+    if (currentTrick.length === 0) setLeadSuit(selected.suit);
 
     if (nextTrick.length < 4) {
-      setTurnSeat(1);
+      setTurnSeat((mySeat + 1) % 4);
       return;
     }
 
-    const played: PlayedCard[] = nextTrick.map((item) => ({
-      playerId: String(item.seat),
-      seat: item.seat,
-      card: item.card,
-    }));
-
-    const winnerCard = getTrickWinner(
-      played,
-      trump || "♠"
-    );
-    const winningSeat = winnerCard.seat;
-
-    const winningTeam = winningSeat % 2 === 0 ? "0" : "1";
-    const nextScores = {
-      ...teamScoresRef.current,
-      [winningTeam]:
-        teamScoresRef.current[winningTeam] + 1,
-    };
-
-    teamScoresRef.current = nextScores;
-    setTeamScores(nextScores);
-
-    tricksPlayedRef.current += 1;
-    const nextTricksPlayed = tricksPlayedRef.current;
-
-    if (trickResolutionTimer.current !== null) {
-      window.clearTimeout(trickResolutionTimer.current);
-    }
-
-    trickResolutionTimer.current = window.setTimeout(() => {
-      trickResolutionTimer.current = null;
-      setCurrentTrick([]);
-      setLeadSuit(null);
-
-      if (nextTricksPlayed >= 13) {
-        setTurnSeat(winningSeat);
-        setMatchPhase("finished");
-
-        showVictory(
-          nextScores["0"] > nextScores["1"]
-            ? "تیم شما برنده شد"
-            : "تیم رقیب برنده شد"
-        );
-        return;
-      }
-
-      setTurnSeat(winningSeat);
-    }, 650);
+    finalizeOfflineTrick(nextTrick, trump || "♠");
   }
 
-  async function sendMessage(
-    event: FormEvent
-  ) {
+  async function sendMessage(event: FormEvent) {
     event.preventDefault();
 
-    const text =
-      message.trim();
-
+    const text = message.trim();
     if (!text) return;
 
     const item = {
       id: crypto.randomUUID(),
-      name:
-        displayName ||
-        "همشهری",
+      name: displayName || "همشهری",
       text,
     };
 
-    setMessages((old) => [
-      ...old,
-      item,
-    ]);
-
+    setMessages((old) => [...old, item]);
     setMessage("");
 
-    if (
-      room &&
-      !offline
-    ) {
-      await supabase
-        .channel(
-          `hokm-room:${room.id}`
-        )
-        .send({
-          type: "broadcast",
-          event: "game",
-          payload: {
-            type: "message",
-            message: item,
-          },
-        });
+    if (room && !offline) {
+      await supabase.channel(`hokm-room:${room.id}`).send({
+        type: "broadcast",
+        event: "game",
+        payload: { type: "message", message: item },
+      });
     }
   }
 
-  // First-trick announcement: runs inside HokmGame only.
+  // ===== First-trick banner =====
   useEffect(() => {
     if (
       matchPhase === "playing" &&
@@ -1723,6 +1240,7 @@ export default function HokmGame({
     ) {
       const timer = window.setTimeout(() => setShowFirstTrickBanner(true), 2650);
       const hide = window.setTimeout(() => setShowFirstTrickBanner(false), 4650);
+
       return () => {
         window.clearTimeout(timer);
         window.clearTimeout(hide);
@@ -1731,15 +1249,8 @@ export default function HokmGame({
     return undefined;
   }, [matchPhase, currentTrick.length]);
 
-  if (
-    !waiting &&
-    !started
-  ) {
-    return (
-      <LobbyCard
-        onJoin={joinRoom}
-      />
-    );
+  if (!waiting && !started) {
+    return <LobbyCard onJoin={joinRoom} />;
   }
 
   return (
@@ -1747,51 +1258,66 @@ export default function HokmGame({
       {showFirstTrickBanner && (
         <div className="hokm-first-trick-banner" aria-live="polite">
           <span className="crown">👑</span>
-          <div className="title">دست ۱ از ۱۳</div>
-          <div className="subtitle">
-            حاکم شروع می‌کند • نوبت اولین کارت
-          </div>
+          <div className="title">دست ۱ از ۷</div>
+          <div className="subtitle">حاکم شروع می‌کند • نوبت اولین کارت</div>
           <div className="hokm-seven-rule">🏆 اولین تیم با ۷ دست، برنده راند</div>
+        </div>
+      )}
+
+      {showRoundSummary && lastRoundResult && (
+        <div className="hokm-round-summary" aria-live="polite">
+          <div className="title">
+            {lastRoundResult.wasKot
+              ? `🎯 کت! تیم ${lastRoundResult.winnerTeam === 0 ? "شما" : "رقیب"}`
+              : `🏆 راند ${roundNumber} تمام شد`}
+          </div>
+          <div className="subtitle">
+            تیم {lastRoundResult.winnerTeam === 0 ? "شما" : "رقیب"} برنده شد
+            {lastRoundResult.wasKot &&
+              ` (${lastRoundResult.roundPoints} امتیاز)`}
+          </div>
+          <div className="scoreboard">
+            امتیاز راندها: شما {roundWins["0"]} — رقیب {roundWins["1"]}
+          </div>
+          <div className="hakem">
+            {lastRoundResult.hakemStays
+              ? "👑 حاکم همان‌جا می‌ماند"
+              : "👑 حاکم به تیم مقابل می‌رود"}
+          </div>
         </div>
       )}
 
       <div className="mx-auto max-w-6xl">
         <header className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs text-[#B8E9C7]">
-              بازی حکم چهارنفره
-            </p>
-
+            <p className="text-xs text-[#B8E9C7]">بازی حکم چهارنفره</p>
             <h1 className="text-2xl font-black">
               میز جم{" "}
               {offline && (
-                <span className="text-sm text-[#FFD98A]">
-                  · آفلاین
-                </span>
+                <span className="text-sm text-[#FFD98A]">· آفلاین</span>
               )}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-white/10 px-3 py-2 text-xs">
+              راند {roundNumber} / ۷
+            </span>
+            <span className="rounded-full bg-[#FFD98A]/20 px-3 py-2 text-xs font-black text-[#FFD98A]">
+              🏆 شما {roundWins["0"]} — رقیب {roundWins["1"]}
+            </span>
+
             <button
               type="button"
               onClick={toggleMusic}
               className="rounded-full bg-white/10 px-3 py-2 text-xs transition hover:bg-white/20"
               aria-label="موسیقی پس‌زمینه"
             >
-              {musicOn
-                ? "🔊 موسیقی روشن"
-                : "🔇 موسیقی خاموش"}
+              {musicOn ? "🔊 موسیقی روشن" : "🔇 موسیقی خاموش"}
             </button>
 
             <span className="rounded-full bg-white/10 px-3 py-2 text-xs">
-              {
-                players.filter(
-                  (p) =>
-                    !p.isBot
-                ).length
-              }
-              /۴ بازیکن
+              {players.filter((p) => !p.isBot).length}/۴ بازیکن
             </span>
           </div>
         </header>
@@ -1800,9 +1326,7 @@ export default function HokmGame({
           <WaitingRoom
             players={players}
             seconds={seconds}
-            onOffline={
-              startOfflineGame
-            }
+            onOffline={startOfflineGame}
           />
         ) : (
           <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
@@ -1814,16 +1338,15 @@ export default function HokmGame({
                     <div className="text-[10px] font-black tracking-[.38em] text-[#F7D98A] sm:text-xs">
                       حاکم این دست
                     </div>
-
                     <div className="mt-3 flex h-28 w-28 items-center justify-center rounded-full border-2 border-[#F2CF7A]/70 bg-[#071E14]/95 text-5xl shadow-[0_0_60px_rgba(232,200,120,.38)] sm:h-32 sm:w-32 sm:text-6xl">
                       👑
                     </div>
-
                     <div className="mt-3 rounded-2xl border border-[#F2CF7A]/30 bg-black/45 px-6 py-3 text-center backdrop-blur-md">
                       <div className="text-lg font-black text-white">
                         {hakemSeat === mySeat
                           ? "شما حاکم شدید!"
-                          : players.find((p) => p.seat === hakemSeat)?.name || `بازیکن ${hakemSeat + 1}`}
+                          : players.find((p) => p.seat === hakemSeat)?.name ||
+                            `بازیکن ${hakemSeat + 1}`}
                       </div>
                       <div className="mt-1 text-[10px] font-bold text-white/60">
                         حاکم اکنون خال حکم را انتخاب می‌کند
@@ -1832,6 +1355,7 @@ export default function HokmGame({
                   </div>
                 </div>
               )}
+
               {trumpReveal && (
                 <div className="pointer-events-none absolute inset-0 z-[60] flex items-center justify-center">
                   <div className="hokm-trump-reveal absolute inset-0" />
@@ -1848,104 +1372,44 @@ export default function HokmGame({
                   </div>
                 </div>
               )}
-              <button
-                type="button"
-                aria-label="فعال کردن صدای بازی"
-                title="صدای بازی"
-                onClick={() => playHokmTone("card")}
-                className="hokm-sound-button absolute right-4 top-4 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-[#E8C878]/25 bg-[#082719]/75 text-base shadow-lg backdrop-blur-md transition hover:scale-105"
-              >
-                🔊
-              </button>
+
               <div className="pointer-events-none absolute inset-4 rounded-[26px] border border-[#E8C878]/20 sm:inset-5" />
               <div className="pointer-events-none absolute inset-7 rounded-[22px] border border-white/[0.06] sm:inset-8" />
               <div className="pointer-events-none absolute left-1/2 top-1/2 h-[360px] w-[360px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E8C878]/10 shadow-[0_0_80px_rgba(232,200,120,.08)]" />
-
               <div className="hokm-glow absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full" />
 
               <Seat
-                name={
-                  players.find(
-                    (p) =>
-                      p.seat === 0
-                  )?.name ||
-                  "شما"
-                }
+                name={players.find((p) => p.seat === 0)?.name || "شما"}
                 reaction={
                   reactions.find(
-                    (r) =>
-                      r.playerId ===
-                      players.find(
-                        (p) =>
-                          p.seat ===
-                          0
-                      )?.id
+                    (r) => r.playerId === players.find((p) => p.seat === 0)?.id
                   )?.sticker
                 }
                 className="bottom-4 left-1/2 -translate-x-1/2"
               />
-
               <Seat
-                name={
-                  players.find(
-                    (p) =>
-                      p.seat === 1
-                  )?.name ||
-                  "در انتظار"
-                }
+                name={players.find((p) => p.seat === 1)?.name || "در انتظار"}
                 reaction={
                   reactions.find(
-                    (r) =>
-                      r.playerId ===
-                      players.find(
-                        (p) =>
-                          p.seat ===
-                          1
-                      )?.id
+                    (r) => r.playerId === players.find((p) => p.seat === 1)?.id
                   )?.sticker
                 }
                 className="right-3 top-1/2 -translate-y-1/2"
               />
-
               <Seat
-                name={
-                  players.find(
-                    (p) =>
-                      p.seat === 2
-                  )?.name ||
-                  "در انتظار"
-                }
+                name={players.find((p) => p.seat === 2)?.name || "در انتظار"}
                 reaction={
                   reactions.find(
-                    (r) =>
-                      r.playerId ===
-                      players.find(
-                        (p) =>
-                          p.seat ===
-                          2
-                      )?.id
+                    (r) => r.playerId === players.find((p) => p.seat === 2)?.id
                   )?.sticker
                 }
                 className="left-1/2 top-4 -translate-x-1/2"
               />
-
               <Seat
-                name={
-                  players.find(
-                    (p) =>
-                      p.seat === 3
-                  )?.name ||
-                  "در انتظار"
-                }
+                name={players.find((p) => p.seat === 3)?.name || "در انتظار"}
                 reaction={
                   reactions.find(
-                    (r) =>
-                      r.playerId ===
-                      players.find(
-                        (p) =>
-                          p.seat ===
-                          3
-                      )?.id
+                    (r) => r.playerId === players.find((p) => p.seat === 3)?.id
                   )?.sticker
                 }
                 className="left-3 top-1/2 -translate-y-1/2"
@@ -1954,49 +1418,37 @@ export default function HokmGame({
               <div className="absolute left-1/2 top-1/2 z-10 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
                 <div className="hokm-scoreboard mb-2 flex items-center gap-1 rounded-2xl border border-white/10 bg-black/20 p-1 text-[9px] font-black shadow-lg backdrop-blur-md">
                   <span className="rounded-xl bg-white/10 px-3 py-1.5">
-                    تیم شما <b className="ml-1 text-[#FFD98A]">{teamScores["0"]}</b>
+                    تیم شما{" "}
+                    <b className="ml-1 text-[#FFD98A]">{teamScores["0"]}</b>
                   </span>
                   <span className="h-4 w-px bg-white/10" />
                   <span className="rounded-xl bg-white/10 px-3 py-1.5">
-                    تیم رقیب <b className="ml-1 text-[#FFD98A]">{teamScores["1"]}</b>
+                    تیم رقیب{" "}
+                    <b className="ml-1 text-[#FFD98A]">{teamScores["1"]}</b>
                   </span>
                 </div>
 
                 <div
                   className={`hokm-trick-zone relative mb-2 h-36 w-64 sm:h-44 sm:w-80 ${
-                    currentTrick.length === 4
-                      ? "hokm-trick-resolving"
-                      : ""
+                    currentTrick.length === 4 ? "hokm-trick-resolving" : ""
                   }`}
                 >
                   <div className="pointer-events-none absolute inset-1 rounded-full border border-white/[0.06]" />
-                  {currentTrick.map(
-                    (
-                      played,
-                      index
-                    ) => (
-                      <span
-                        key={`${played.seat}-${index}`}
-                        className={`hokm-trick-card hokm-trick-seat-${played.seat} rounded-xl border border-[#D8C28A]/60 bg-gradient-to-br from-white via-[#FBFAF3] to-[#E9E7DB] px-3 py-2 text-sm font-black shadow-[0_8px_18px_rgba(0,0,0,.3)] ${
-                          played.card.suit ===
-                            "♥" ||
-                          played.card.suit ===
-                            "♦"
-                            ? "text-[#D9574A]"
-                            : "text-[#183B2A]"
-                        }`}
-                      >
-                        {
-                          played.card
-                            .rank
-                        }
-                        {
-                          played.card
-                            .suit
-                        }
-                      </span>
-                    )
-                  )}
+                  {currentTrick.map((played, index) => (
+                    <span
+                      key={`${played.seat}-${index}`}
+                      className={`hokm-trick-card hokm-trick-seat-${
+                        played.seat
+                      } rounded-xl border border-[#D8C28A]/60 bg-gradient-to-br from-white via-[#FBFAF3] to-[#E9E7DB] px-3 py-2 text-sm font-black shadow-[0_8px_18px_rgba(0,0,0,.3)] ${
+                        played.card.suit === "♥" || played.card.suit === "♦"
+                          ? "text-[#D9574A]"
+                          : "text-[#183B2A]"
+                      }`}
+                    >
+                      {played.card.rank}
+                      {played.card.suit}
+                    </span>
+                  ))}
                 </div>
 
                 <div className="hokm-center-badge flex h-20 w-20 items-center justify-center rounded-full border border-[#E8C878]/45 shadow-[0_0_45px_rgba(232,200,120,.18)]">
@@ -2005,42 +1457,25 @@ export default function HokmGame({
                   </div>
                 </div>
 
-                {matchPhase ===
-                  "choosing_hakem" && (
+                {matchPhase === "choosing_hakem" && (
                   <>
                     <div className="my-1 grid grid-cols-4 gap-1">
-                      {hakemDraws.map(
-                        (draw) => (
-                          <div
-                            key={
-                              draw.seat
-                            }
-                            className={`hakem-draw-card rounded-xl border-2 bg-white px-2 py-2 text-center text-xs font-black ${
-                              draw.card.suit ===
-                                "♥" ||
-                              draw.card.suit ===
-                                "♦"
-                                ? "text-[#D9574A]"
-                                : "text-[#183B2A]"
-                            }`}
-                          >
-                            <span className="block text-[9px] text-black/40">
-                              بازیکن{" "}
-                              {draw.seat +
-                                1}
-                            </span>
-
-                            {
-                              draw.card
-                                .rank
-                            }
-                            {
-                              draw.card
-                                .suit
-                            }
-                          </div>
-                        )
-                      )}
+                      {hakemDraws.map((draw) => (
+                        <div
+                          key={draw.seat}
+                          className={`hakem-draw-card rounded-xl border-2 bg-white px-2 py-2 text-center text-xs font-black ${
+                            draw.card.suit === "♥" || draw.card.suit === "♦"
+                              ? "text-[#D9574A]"
+                              : "text-[#183B2A]"
+                          }`}
+                        >
+                          <span className="block text-[9px] text-black/40">
+                            بازیکن {draw.seat + 1}
+                          </span>
+                          {draw.card.rank}
+                          {draw.card.suit}
+                        </div>
+                      ))}
                     </div>
 
                     <span className="rounded-full bg-[#FFD98A] px-3 py-1 text-[10px] font-black text-[#503517]">
@@ -2056,8 +1491,7 @@ export default function HokmGame({
                   </>
                 )}
 
-                {matchPhase ===
-                  "choosing_trump" && (
+                {matchPhase === "choosing_trump" && (
                   <>
                     <span
                       className={`rounded-full px-3 py-1 text-[10px] font-black transition-all ${
@@ -2067,47 +1501,29 @@ export default function HokmGame({
                       }`}
                     >
                       حاکم:{" "}
-                      {hakemSeat ===
-                      mySeat
+                      {hakemSeat === mySeat
                         ? "شما"
-                        : players.find(
-                            (p) =>
-                              p.seat ===
-                              hakemSeat
-                          )?.name ||
+                        : players.find((p) => p.seat === hakemSeat)?.name ||
                           "در حال تعیین"}{" "}
-                      · ⏱️{" "}
-                      {trumpSeconds} ثانیه
+                      · ⏱️ {trumpSeconds} ثانیه
                     </span>
 
-                    {hakemSeat ===
-                    mySeat ? (
+                    {hakemSeat === mySeat ? (
                       <div className="grid grid-cols-4 gap-1 rounded-2xl bg-black/25 p-2">
-                        {SUITS.map(
-                          (suit) => (
-                            <button
-                              key={
-                                suit
-                              }
-                              type="button"
-                              onClick={() =>
-                                void chooseTrump(
-                                  suit
-                                )
-                              }
-                              className={`rounded-xl bg-white px-3 py-2 text-xl ${
-                                suit ===
-                                  "♥" ||
-                                suit ===
-                                  "♦"
-                                  ? "text-[#D9574A]"
-                                  : "text-[#183B2A]"
-                              }`}
-                            >
-                              {suit}
-                            </button>
-                          )
-                        )}
+                        {SUITS.map((suit) => (
+                          <button
+                            key={suit}
+                            type="button"
+                            onClick={() => void chooseTrump(suit)}
+                            className={`rounded-xl bg-white px-3 py-2 text-xl ${
+                              suit === "♥" || suit === "♦"
+                                ? "text-[#D9574A]"
+                                : "text-[#183B2A]"
+                            }`}
+                          >
+                            {suit}
+                          </button>
+                        ))}
                       </div>
                     ) : (
                       <span className="rounded-full bg-black/25 px-3 py-1 text-[10px]">
@@ -2117,130 +1533,82 @@ export default function HokmGame({
                   </>
                 )}
 
-                {matchPhase ===
-                  "playing" && (
+                {matchPhase === "playing" && (
                   <>
                     <span className="hokm-trump-badge rounded-full border border-[#FFD98A]/30 bg-[#082719]/75 px-4 py-1.5 text-[11px] font-black shadow-[0_0_25px_rgba(255,217,138,.12)]">
                       حکم <span className="mx-1 text-[#FFD98A]">◆</span>{" "}
-                      {trump ||
-                        "در حال انتخاب"}
+                      {trump || "در حال انتخاب"}
                     </span>
 
-                    <span className={`rounded-full bg-[#FFD98A] px-3 py-1 text-[9px] font-black text-[#503517] ${
-                      turnSeat === mySeat ? "hokm-turn-pulse" : ""
-                    }`}>
-                      {turnSeat ===
-                      mySeat
-                        ? "نوبت شماست"
-                        : "نوبت بازیکن بعدی"}
+                    <span
+                      className={`rounded-full bg-[#FFD98A] px-3 py-1 text-[9px] font-black text-[#503517] ${
+                        turnSeat === mySeat ? "hokm-turn-pulse" : ""
+                      }`}
+                    >
+                      {turnSeat === mySeat ? "نوبت شماست" : "نوبت بازیکن بعدی"}
                     </span>
                   </>
                 )}
 
-                {matchPhase ===
-                  "finished" && (
+                {matchPhase === "round_end" && (
+                  <span className="rounded-full bg-[#FFD98A] px-3 py-1 text-[10px] font-black text-[#503517]">
+                    ⏳ در حال آماده‌سازی راند بعدی...
+                  </span>
+                )}
+
+                {matchPhase === "finished" && (
                   <span className="rounded-full bg-[#FFD98A] px-3 py-1 text-[10px] font-black text-[#503517]">
                     بازی تمام شد
                   </span>
                 )}
               </div>
 
-              <div className={`hokm-hand absolute bottom-5 left-1/2 z-20 flex w-[96%] -translate-x-1/2 items-end justify-start gap-1 overflow-x-auto overflow-y-visible px-2 pb-3 sm:bottom-7 sm:justify-center sm:gap-2 ${
-                    dealAnimation ? "hokm-dealing" : ""
-                  }`}>
-                {hand.map(
-                  (
-                    card,
-                    index
-                  ) => {
-                    const legal =
-                      getLegalCards(
-                        hand,
-                        leadSuit
-                      ).some(
-                        (item) =>
-                          item.id ===
-                          card.id
-                      );
+              <div
+                className={`hokm-hand absolute bottom-5 left-1/2 z-20 flex w-[96%] -translate-x-1/2 items-end justify-start gap-1 overflow-x-auto overflow-y-visible px-2 pb-3 sm:bottom-7 sm:justify-center sm:gap-2 ${
+                  dealAnimation ? "hokm-dealing" : ""
+                }`}
+              >
+                {hand.map((card, index) => {
+                  const legal = getLegalCards(hand, leadSuit).some(
+                    (item) => item.id === card.id
+                  );
 
-                    return (
-                      <button
-                        key={
-                          card.id
-                        }
-                        type="button"
-                        disabled={
-                          turnSeat !==
-                            mySeat ||
-                          matchPhase !==
-                            "playing"
-                        }
-                        onClick={() => {
-                          if (
-                            turnSeat !==
-                              mySeat ||
-                            matchPhase !==
-                              "playing"
-                          ) {
-                            return;
-                          }
-
-                          setSelectedCardIndex(
-                            index
-                          );
-
-                          window.setTimeout(
-                            () => {
-                              setSelectedCardIndex(
-                                null
-                              );
-
-                              void playCard(
-                                index
-                              );
-                            },
-                            250
-                          );
-                        }}
-                        className={`hokm-card group shrink-0 ${
-                          selectedCardIndex ===
-                          index
-                            ? "hokm-card-selected"
-                            : ""
-                        } w-[56px] min-w-[56px] rounded-2xl border-2 border-[#E7EFE8] bg-gradient-to-br from-white to-[#F1F6F1] px-2 py-3 text-center text-sm font-black shadow-[0_12px_20px_rgba(0,0,0,.22)] first:ml-0 sm:w-[64px] sm:min-w-[64px] ${
-                          legal
-                            ? ""
-                            : "opacity-45"
-                        } ${
-                          card.suit ===
-                            "♥" ||
-                          card.suit ===
-                            "♦"
-                            ? "text-[#D9574A]"
-                            : "text-[#183B2A]"
-                        }`}
-                      >
-                        <span className="block text-[10px] text-black/30">
-                          {
-                            card.suit
-                          }
-                        </span>
-
-                        {
-                          card.rank
+                  return (
+                    <button
+                      key={card.id}
+                      type="button"
+                      disabled={turnSeat !== mySeat || matchPhase !== "playing"}
+                      onClick={() => {
+                        if (turnSeat !== mySeat || matchPhase !== "playing") {
+                          return;
                         }
 
-                        <br />
+                        setSelectedCardIndex(index);
 
-                        <span className="text-lg">
-                          {
-                            card.suit
-                          }
-                        </span>
-                      </button>
-                    );
-                  }
-                )}
+                        window.setTimeout(() => {
+                          setSelectedCardIndex(null);
+                          void playCard(index);
+                        }, 250);
+                      }}
+                      className={`hokm-card group shrink-0 ${
+                        selectedCardIndex === index ? "hokm-card-selected" : ""
+                      } w-[56px] min-w-[56px] rounded-2xl border-2 border-[#E7EFE8] bg-gradient-to-br from-white to-[#F1F6F1] px-2 py-3 text-center text-sm font-black shadow-[0_12px_20px_rgba(0,0,0,.22)] first:ml-0 sm:w-[64px] sm:min-w-[64px] ${
+                        legal ? "" : "opacity-45"
+                      } ${
+                        card.suit === "♥" || card.suit === "♦"
+                          ? "text-[#D9574A]"
+                          : "text-[#183B2A]"
+                      }`}
+                    >
+                      <span className="block text-[10px] text-black/30">
+                        {card.suit}
+                      </span>
+                      {card.rank}
+                      <br />
+                      <span className="text-lg">{card.suit}</span>
+                    </button>
+                  );
+                })}
               </div>
 
               {ruleMessage && (
@@ -2250,83 +1618,47 @@ export default function HokmGame({
               )}
 
               <div className="absolute bottom-1 left-1/2 z-30 flex -translate-x-1/2 gap-1 rounded-full border border-white/10 bg-black/30 p-1">
-                {STICKERS.map(
-                  (sticker) => (
-                    <button
-                      key={sticker}
-                      type="button"
-                      onClick={() =>
-                        void sendReaction(
-                          sticker
-                        )
-                      }
-                      className="rounded-full px-2 py-1 text-base transition hover:scale-125"
-                      aria-label={`ارسال واکنش ${sticker}`}
-                    >
-                      {sticker}
-                    </button>
-                  )
-                )}
+                {STICKERS.map((sticker) => (
+                  <button
+                    key={sticker}
+                    type="button"
+                    onClick={() => void sendReaction(sticker)}
+                    className="rounded-full px-2 py-1 text-base transition hover:scale-125"
+                    aria-label={`ارسال واکنش ${sticker}`}
+                  >
+                    {sticker}
+                  </button>
+                ))}
               </div>
             </section>
 
             <aside className="flex min-h-[360px] flex-col rounded-[26px] bg-white p-4 text-[#183B2A]">
-              <h2 className="font-black">
-                💬 گفت‌وگوی میز
-              </h2>
-
+              <h2 className="font-black">💬 گفت‌وگوی میز</h2>
               <p className="mt-1 text-[10px] text-[#7A8D7D]">
                 پیام‌ها با نام نمایشی شما ارسال می‌شوند.
               </p>
 
               <div className="mt-3 min-h-[220px] flex-1 space-y-2 overflow-y-auto rounded-2xl bg-[#F3F8F2] p-3">
-                {messages.length ===
-                0 ? (
+                {messages.length === 0 ? (
                   <p className="text-center text-xs text-[#7A8D7D]">
                     هنوز پیامی نیست؛ به هم‌تیمی‌ها سلام کن.
                   </p>
                 ) : (
-                  messages.map(
-                    (item) => (
-                      <p
-                        key={
-                          item.id
-                        }
-                        className="text-xs"
-                      >
-                        <b>
-                          {
-                            item.name
-                          }
-                          :
-                        </b>{" "}
-                        {item.text}
-                      </p>
-                    )
-                  )
+                  messages.map((item) => (
+                    <p key={item.id} className="text-xs">
+                      <b>{item.name}:</b> {item.text}
+                    </p>
+                  ))
                 )}
               </div>
 
-              <form
-                onSubmit={
-                  sendMessage
-                }
-                className="mt-3 flex gap-2"
-              >
+              <form onSubmit={sendMessage} className="mt-3 flex gap-2">
                 <input
                   value={message}
-                  onChange={(
-                    e
-                  ) =>
-                    setMessage(
-                      e.target
-                        .value
-                    )
-                  }
+                  onChange={(e) => setMessage(e.target.value)}
                   placeholder="پیام بنویس..."
                   className="min-w-0 flex-1 rounded-xl border border-[#D7EBDD] px-3 py-2 text-xs outline-none focus:border-[#1E8151]"
                 />
-
                 <button className="rounded-xl bg-[#1E8151] px-3 text-xs font-bold text-white">
                   ارسال
                 </button>
@@ -2337,12 +1669,7 @@ export default function HokmGame({
       </div>
 
       {winner && (
-        <VictoryOverlay
-          name={winner}
-          onClose={() =>
-            setWinner(null)
-          }
-        />
+        <VictoryOverlay name={winner} onClose={() => setWinner(null)} />
       )}
 
       <style jsx>{`
@@ -2353,19 +1680,20 @@ export default function HokmGame({
           gap: 6px;
           padding: 5px 10px;
           border-radius: 999px;
-          border: 1px solid rgba(255,226,155,.34);
-          background: rgba(0,0,0,.16);
-          color: rgba(255,255,255,.86);
+          border: 1px solid rgba(255, 226, 155, .34);
+          background: rgba(0, 0, 0, .16);
+          color: rgba(255, 255, 255, .86);
           font-size: 10px;
           font-weight: 900;
         }
 
-        .hokm-first-trick-banner {
+        .hokm-first-trick-banner,
+        .hokm-round-summary {
           position: fixed;
           left: 50%;
           top: 50%;
           transform: translate(-50%, -50%);
-          z-index: 100;
+          z-index: 120;
           pointer-events: none;
           border: 1px solid rgba(255, 226, 155, .72);
           background: linear-gradient(135deg, rgba(17, 51, 37, .97), rgba(28, 67, 48, .96));
@@ -2376,68 +1704,65 @@ export default function HokmGame({
           box-shadow: 0 18px 70px rgba(0,0,0,.45), 0 0 35px rgba(255,215,130,.16);
           animation: hokmFirstTrickBanner 2s ease both;
         }
-        .hokm-first-trick-banner .title {
+
+        .hokm-round-summary {
+          min-width: 300px;
+          animation: hokmRoundSummary 3.4s ease both;
+        }
+
+        .hokm-first-trick-banner .title,
+        .hokm-round-summary .title {
           font-size: 25px;
           line-height: 1.15;
           font-weight: 1000;
           letter-spacing: -.02em;
         }
-        .hokm-first-trick-banner .subtitle {
+
+        .hokm-first-trick-banner .subtitle,
+        .hokm-round-summary .subtitle {
           margin-top: 7px;
-          color: rgba(255,255,255,.82);
+          color: rgba(255, 255, 255, .82);
           font-size: 11px;
           font-weight: 800;
         }
+
         .hokm-first-trick-banner .crown {
           display: block;
           margin-bottom: 5px;
           font-size: 25px;
           animation: hokmCrownPulse 900ms ease-in-out infinite alternate;
         }
+
+        .hokm-round-summary .scoreboard {
+          margin-top: 10px;
+          font-size: 13px;
+          font-weight: 900;
+          color: #ffd98a;
+        }
+
+        .hokm-round-summary .hakem {
+          margin-top: 6px;
+          font-size: 11px;
+          color: rgba(255, 255, 255, .7);
+        }
+
         @keyframes hokmFirstTrickBanner {
           0% { opacity: 0; transform: translate(-50%,-50%) scale(.82); }
           15% { opacity: 1; transform: translate(-50%,-50%) scale(1.03); }
           25%,78% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
           100% { opacity: 0; transform: translate(-50%,-50%) scale(.96); }
         }
+
+        @keyframes hokmRoundSummary {
+          0% { opacity: 0; transform: translate(-50%,-50%) scale(.82); }
+          10% { opacity: 1; transform: translate(-50%,-50%) scale(1.03); }
+          20%,82% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+          100% { opacity: 0; transform: translate(-50%,-50%) scale(.96); }
+        }
+
         @keyframes hokmCrownPulse {
           from { transform: translateY(0) scale(1); }
           to { transform: translateY(-3px) scale(1.08); }
-        }
-
-        .hokm-final-dealing { position: relative; overflow: visible; }
-        .hokm-final-dealing::after {
-          content: "۸ کارت نهایی در حال پخش...";
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 40;
-          white-space: nowrap;
-          border: 1px solid rgba(255, 217, 138, .45);
-          background: rgba(20, 49, 37, .94);
-          color: #ffe6a8;
-          border-radius: 999px;
-          padding: 8px 14px;
-          font-size: 11px;
-          font-weight: 900;
-          box-shadow: 0 10px 35px rgba(0,0,0,.35);
-          animation: hokmDealBadge 2.6s ease-in-out both;
-        }
-        .hokm-final-card {
-          animation: hokmFinalCardDeal 2.35s cubic-bezier(.2,.8,.2,1) both;
-          animation-delay: calc(var(--deal-index) * 85ms);
-        }
-        @keyframes hokmFinalCardDeal {
-          0% { opacity: 0; transform: translateY(-16px) scale(.82) rotate(-3deg); }
-          35% { opacity: 1; transform: translateY(0) scale(1.04) rotate(0); }
-          65% { transform: translateY(0) scale(.98); }
-          100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes hokmDealBadge {
-          0%,12% { opacity: 0; transform: translate(-50%,-50%) scale(.9); }
-          25%,78% { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-          100% { opacity: 0; transform: translate(-50%,-50%) scale(.96); }
         }
 
         .pasour-entry,
@@ -2454,55 +1779,33 @@ export default function HokmGame({
         }
 
         .pasour-logo {
-          background: linear-gradient(
-            145deg,
-            #f4dc99,
-            #9e6b2a
-          );
+          background: linear-gradient(145deg, #f4dc99, #9e6b2a);
           box-shadow:
-            0 0 0 6px
-              rgba(232, 200, 120, 0.08),
-            0 20px 45px
-              rgba(0, 0, 0, 0.35);
+            0 0 0 6px rgba(232, 200, 120, 0.08),
+            0 20px 45px rgba(0, 0, 0, 0.35);
         }
 
         .pasour-primary {
-          background: linear-gradient(
-            135deg,
-            #f1d487,
-            #b8792d
-          );
+          background: linear-gradient(135deg, #f1d487, #b8792d);
           color: #2d1e11;
-          box-shadow: 0 12px 30px
-            rgba(207, 153, 64, 0.25);
-          transition:
-            transform 0.25s,
-            box-shadow 0.25s;
+          box-shadow: 0 12px 30px rgba(207, 153, 64, 0.25);
+          transition: transform 0.25s, box-shadow 0.25s;
         }
 
         .pasour-primary:hover {
           transform: translateY(-3px);
-          box-shadow: 0 18px 36px
-            rgba(207, 153, 64, 0.4);
+          box-shadow: 0 18px 36px rgba(207, 153, 64, 0.4);
         }
 
         .floating-card {
           position: absolute;
-          border: 1px solid
-            rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 16px;
           padding: 18px 14px;
-          background: rgba(
-            255,
-            255,
-            255,
-            0.08
-          );
+          background: rgba(255, 255, 255, 0.08);
           font-size: 22px;
-          box-shadow: 0 15px 35px
-            rgba(0, 0, 0, 0.2);
-          animation: floatCard 5s
-            ease-in-out infinite;
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+          animation: floatCard 5s ease-in-out infinite;
         }
 
         .floating-card-one {
@@ -2521,12 +1824,7 @@ export default function HokmGame({
         }
 
         .match-seat {
-          border-color: rgba(
-            232,
-            200,
-            120,
-            0.35
-          );
+          border-color: rgba(232, 200, 120, 0.35);
           background: linear-gradient(
             145deg,
             rgba(232, 200, 120, 0.15),
@@ -2534,34 +1832,16 @@ export default function HokmGame({
           );
         }
 
-        .match-seat-ready {
-          animation: seatReady
-            0.7s ease both;
-        }
+        .match-seat-ready { animation: seatReady 0.7s ease both; }
 
         @keyframes floatCard {
-          0%,
-          100% {
-            margin-top: 0;
-          }
-
-          50% {
-            margin-top: -12px;
-          }
+          0%, 100% { margin-top: 0; }
+          50% { margin-top: -12px; }
         }
 
         @keyframes seatReady {
-          from {
-            opacity: 0;
-            transform: scale(0.8)
-              translateY(15px);
-          }
-
-          to {
-            opacity: 1;
-            transform: scale(1)
-              translateY(0);
-          }
+          from { opacity: 0; transform: scale(0.8) translateY(15px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
 
         .hokm-table {
@@ -2609,13 +1889,8 @@ export default function HokmGame({
           transform: translateY(0) rotate(var(--trick-rotation, 0deg));
         }
 
-        .hokm-trick-card:nth-child(odd) {
-          --trick-rotation: -3deg;
-        }
-
-        .hokm-trick-card:nth-child(even) {
-          --trick-rotation: 3deg;
-        }
+        .hokm-trick-card:nth-child(odd) { --trick-rotation: -3deg; }
+        .hokm-trick-card:nth-child(even) { --trick-rotation: 3deg; }
 
         .hokm-trick-zone .hokm-trick-card {
           position: absolute;
@@ -2626,21 +1901,10 @@ export default function HokmGame({
           transform-origin: center;
         }
 
-        .hokm-trick-zone .hokm-trick-seat-0 {
-          transform: translate(-50%, 22px) rotate(-3deg);
-        }
-
-        .hokm-trick-zone .hokm-trick-seat-1 {
-          transform: translate(24px, -50%) rotate(4deg);
-        }
-
-        .hokm-trick-zone .hokm-trick-seat-2 {
-          transform: translate(-50%, -82px) rotate(2deg);
-        }
-
-        .hokm-trick-zone .hokm-trick-seat-3 {
-          transform: translate(-82px, -50%) rotate(-4deg);
-        }
+        .hokm-trick-zone .hokm-trick-seat-0 { transform: translate(-50%, 22px) rotate(-3deg); }
+        .hokm-trick-zone .hokm-trick-seat-1 { transform: translate(24px, -50%) rotate(4deg); }
+        .hokm-trick-zone .hokm-trick-seat-2 { transform: translate(-50%, -82px) rotate(2deg); }
+        .hokm-trick-zone .hokm-trick-seat-3 { transform: translate(-82px, -50%) rotate(-4deg); }
 
         .hokm-hakem-reveal {
           background:
@@ -2735,63 +1999,10 @@ export default function HokmGame({
           animation-delay: .05s;
         }
 
-        .hokm-trick-resolving .hokm-trick-seat-0 {
-          --resolve-x: 0px;
-          --resolve-y: 0px;
-        }
-
-        .hokm-trick-resolving .hokm-trick-seat-1 {
-          --resolve-x: 0px;
-          --resolve-y: 0px;
-        }
-
-        .hokm-trick-resolving .hokm-trick-seat-2 {
-          --resolve-x: 0px;
-          --resolve-y: 0px;
-        }
-
-        .hokm-trick-resolving .hokm-trick-seat-3 {
-          --resolve-x: 0px;
-          --resolve-y: 0px;
-        }
-
-        .hokm-trick-count {
-          animation: scoreboardIn .45s ease both;
-        }
-
-        .hokm-seat {
-
-
-          transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease;
-        }
-
-        .hokm-seat:hover {
-          border-color: rgba(232,200,120,.55);
-          box-shadow: 0 14px 35px rgba(0,0,0,.42);
-        }
-
-        .hokm-turn-pulse {
-          animation: turnPulse 1.6s ease-in-out infinite;
-        }
-
-        .hokm-scoreboard {
-          animation: scoreboardIn .45s ease both;
-        }
-
-        .hokm-sound-button { opacity: .78; }
-        .hokm-sound-button:hover {
-          opacity: 1;
-          border-color: rgba(232,200,120,.55);
-          box-shadow: 0 0 22px rgba(232,200,120,.18);
-        }
-
-        .hokm-trick-zone {
-          animation: trickZoneBreath 3s ease-in-out infinite;
-        }
-
-        .hokm-trump-badge {
-          animation: trumpBadgePulse 2.4s ease-in-out infinite;
-        }
+        .hokm-scoreboard { animation: scoreboardIn .45s ease both; }
+        .hokm-turn-pulse { animation: turnPulse 1.6s ease-in-out infinite; }
+        .hokm-trick-zone { animation: trickZoneBreath 3s ease-in-out infinite; }
+        .hokm-trump-badge { animation: trumpBadgePulse 2.4s ease-in-out infinite; }
 
         .hokm-trick-zone::after {
           content: "";
@@ -2808,107 +2019,44 @@ export default function HokmGame({
         }
 
         .hokm-glow {
-          background: radial-gradient(
-            circle,
-            rgba(
-                255,
-                218,
-                125,
-                0.22
-              ),
-            transparent 70%
-          );
-          animation: tableGlow
-            3s ease-in-out infinite;
+          background: radial-gradient(circle, rgba(255, 218, 125, 0.22), transparent 70%);
+          animation: tableGlow 3s ease-in-out infinite;
         }
 
         .hokm-card {
-          transform: translateY(12px)
-            rotate(
-              var(--card-rotation, 0deg)
-            );
-          transition:
-            transform 0.25s ease,
-            box-shadow 0.25s ease;
+          transform: translateY(12px) rotate(var(--card-rotation, 0deg));
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
         }
 
-        .hokm-card:hover:not(
-            :disabled
-          ) {
-          transform: translateY(-18px)
-            rotate(0deg) scale(1.05);
+        .hokm-card:hover:not(:disabled) {
+          transform: translateY(-18px) rotate(0deg) scale(1.05);
           z-index: 40;
         }
 
         .hokm-card-selected {
-          transform: translateY(-34px)
-            rotate(0deg) scale(1.08);
+          transform: translateY(-34px) rotate(0deg) scale(1.08);
           z-index: 50;
           box-shadow:
-            0 0 0 3px
-              rgba(255, 217, 138, 0.8),
-            0 18px 30px
-              rgba(0, 0, 0, 0.35);
+            0 0 0 3px rgba(255, 217, 138, 0.8),
+            0 18px 30px rgba(0, 0, 0, 0.35);
         }
 
-        .hakem-draw-card {
-          animation: drawReveal
-            0.45s ease both;
-        }
-
-        .hakem-draw-card:nth-child(
-            2
-          ) {
-          animation-delay: 0.12s;
-        }
-
-        .hakem-draw-card:nth-child(
-            3
-          ) {
-          animation-delay: 0.24s;
-        }
-
-        .hakem-draw-card:nth-child(
-            4
-          ) {
-          animation-delay: 0.36s;
-        }
+        .hakem-draw-card { animation: drawReveal 0.45s ease both; }
+        .hakem-draw-card:nth-child(2) { animation-delay: 0.12s; }
+        .hakem-draw-card:nth-child(3) { animation-delay: 0.24s; }
+        .hakem-draw-card:nth-child(4) { animation-delay: 0.36s; }
 
         @keyframes drawReveal {
-          from {
-            opacity: 0;
-            transform:
-              translateY(-18px)
-              rotateY(90deg);
-          }
-
-          to {
-            opacity: 1;
-            transform:
-              translateY(0)
-              rotateY(0);
-          }
+          from { opacity: 0; transform: translateY(-18px) rotateY(90deg); }
+          to { opacity: 1; transform: translateY(0) rotateY(0); }
         }
 
-        .hokm-card:nth-child(
-            odd
-          ) {
-          --card-rotation: -2deg;
-        }
-
-        .hokm-card:nth-child(
-            even
-          ) {
-          --card-rotation: 2deg;
-        }
+        .hokm-card:nth-child(odd) { --card-rotation: -2deg; }
+        .hokm-card:nth-child(even) { --card-rotation: 2deg; }
 
         @keyframes trickResolve {
-          0% {
-            filter: brightness(1);
-          }
-          45% {
-            filter: brightness(1.18);
-          }
+          0% { filter: brightness(1); }
+          45% { filter: brightness(1.18); }
           100% {
             opacity: .05;
             transform: translate(-50%, -50%) scale(.72) rotate(0deg);
@@ -2932,57 +2080,30 @@ export default function HokmGame({
         }
 
         @keyframes turnPulse {
-          0%, 100% {
-            box-shadow: 0 0 0 0 rgba(255, 217, 138, .15);
-          }
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255, 217, 138, .15); }
           50% {
-            box-shadow: 0 0 0 7px rgba(255, 217, 138, .08), 0 0 24px rgba(255, 217, 138, .25);
+            box-shadow: 0 0 0 7px rgba(255, 217, 138, .08),
+                        0 0 24px rgba(255, 217, 138, .25);
           }
         }
 
         @keyframes centerPulse {
-          0%, 100% {
-            box-shadow: 0 0 25px rgba(232,200,120,.10);
-          }
-          50% {
-            box-shadow: 0 0 45px rgba(232,200,120,.24);
-          }
+          0%, 100% { box-shadow: 0 0 25px rgba(232,200,120,.10); }
+          50% { box-shadow: 0 0 45px rgba(232,200,120,.24); }
         }
 
         @keyframes trickCardIn {
-          from {
-            opacity: 0;
-            transform: translateY(18px) scale(.78) rotate(0deg);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1) rotate(var(--trick-rotation, 0deg));
-          }
+          from { opacity: 0; transform: translateY(18px) scale(.78) rotate(0deg); }
+          to { opacity: 1; transform: translateY(0) scale(1) rotate(var(--trick-rotation, 0deg)); }
         }
 
         @keyframes tableGlow {
-          0%,
-          100% {
-            opacity: 0.55;
-            transform: scale(0.9);
-          }
-
-          50% {
-            opacity: 1;
-            transform: scale(1.15);
-          }
+          0%, 100% { opacity: 0.55; transform: scale(0.9); }
+          50% { opacity: 1; transform: scale(1.15); }
         }
 
         @media (max-width: 640px) {
-          .hokm-shell {
-            padding: 10px !important;
-            border-radius: 22px !important;
-          }
-
-          .hokm-table {
-            min-height: 590px !important;
-          }
-
+          .hokm-table { min-height: 590px !important; }
           .hokm-card {
             width: 52px !important;
             min-width: 52px !important;
@@ -2990,50 +2111,22 @@ export default function HokmGame({
             padding: 9px 6px !important;
             font-size: 12px !important;
           }
-
-          .hokm-hand {
-            width: 98% !important;
-            bottom: 34px !important;
-          }
-
-          .hokm-trick-zone {
-            height: 128px !important;
-            width: 224px !important;
-          }
-
+          .hokm-hand { width: 98% !important; bottom: 34px !important; }
+          .hokm-trick-zone { height: 128px !important; width: 224px !important; }
           .hokm-trick-zone .hokm-trick-card {
             min-width: 48px !important;
             padding: 7px 8px !important;
             font-size: 12px !important;
           }
-
-          .hokm-trick-zone .hokm-trick-seat-0 {
-            transform: translate(-50%, 18px) rotate(-3deg);
-          }
-
-          .hokm-trick-zone .hokm-trick-seat-1 {
-            transform: translate(12px, -50%) rotate(4deg);
-          }
-
-          .hokm-trick-zone .hokm-trick-seat-2 {
-            transform: translate(-50%, -62px) rotate(2deg);
-          }
-
-          .hokm-trick-zone .hokm-trick-seat-3 {
-            transform: translate(-60px, -50%) rotate(-4deg);
-          }
-
-          .hakem-draw-card {
-            padding: 6px 3px !important;
-            font-size: 10px !important;
-          }
+          .hokm-trick-zone .hokm-trick-seat-0 { transform: translate(-50%, 18px) rotate(-3deg); }
+          .hokm-trick-zone .hokm-trick-seat-1 { transform: translate(12px, -50%) rotate(4deg); }
+          .hokm-trick-zone .hokm-trick-seat-2 { transform: translate(-50%, -62px) rotate(2deg); }
+          .hokm-trick-zone .hokm-trick-seat-3 { transform: translate(-60px, -50%) rotate(-4deg); }
+          .hakem-draw-card { padding: 6px 3px !important; font-size: 10px !important; }
         }
 
         @media (min-width: 641px) and (max-width: 1024px) {
-          .hokm-table {
-            min-height: 610px !important;
-          }
-
+          .hokm-table { min-height: 610px !important; }
           .hokm-card {
             width: 60px !important;
             min-width: 60px !important;
@@ -3049,7 +2142,6 @@ export default function HokmGame({
           .hokm-turn-pulse,
           .hokm-trick-zone,
           .hokm-trick-card,
-          .hokm-trick-count,
           .hokm-dealing > *,
           .hokm-trump-reveal,
           .hokm-trump-announcement,
@@ -3057,10 +2149,7 @@ export default function HokmGame({
           .hokm-hakem-card {
             animation: none !important;
           }
-
-          .hokm-card {
-            transition: none;
-          }
+          .hokm-card { transition: none; }
         }
       `}</style>
     </main>
@@ -3079,9 +2168,7 @@ function VictoryOverlay({
       <div className="victory-card relative w-full max-w-sm overflow-hidden rounded-[32px] border border-[#FFE19A] bg-gradient-to-br from-[#FFF8D8] via-white to-[#FFE9B6] p-8 text-center text-[#503517] shadow-[0_0_70px_rgba(255,211,105,.5)]">
         <div className="confetti" />
 
-        <div className="relative z-10 text-7xl">
-          🏆
-        </div>
+        <div className="relative z-10 text-7xl">🏆</div>
 
         <p className="relative z-10 mt-3 text-xs font-bold text-[#B27720]">
           یک برد شیرین در جم
@@ -3110,100 +2197,46 @@ function VictoryOverlay({
           content: "✨";
           position: absolute;
           font-size: 32px;
-          animation: sparkle
-            1.6s ease-in-out infinite;
+          animation: sparkle 1.6s ease-in-out infinite;
         }
 
-        .victory-card::before {
-          left: 24px;
-          top: 28px;
-        }
-
-        .victory-card::after {
-          right: 24px;
-          top: 80px;
-          animation-delay: 0.5s;
-        }
+        .victory-card::before { left: 24px; top: 28px; }
+        .victory-card::after { right: 24px; top: 80px; animation-delay: 0.5s; }
 
         .confetti {
           position: absolute;
           inset: 0;
           opacity: 0.7;
           background-image:
-            radial-gradient(
-              #e28d2e 1.5px,
-              transparent 1.5px
-            ),
-            radial-gradient(
-              #d9574a 1.5px,
-              transparent 1.5px
-            ),
-            radial-gradient(
-              #1e8151 1.5px,
-              transparent 1.5px
-            );
-          background-size:
-            32px 32px,
-            42px 42px,
-            28px 28px;
-          animation: confettiMove
-            8s linear infinite;
+            radial-gradient(#e28d2e 1.5px, transparent 1.5px),
+            radial-gradient(#d9574a 1.5px, transparent 1.5px),
+            radial-gradient(#1e8151 1.5px, transparent 1.5px);
+          background-size: 32px 32px, 42px 42px, 28px 28px;
+          animation: confettiMove 8s linear infinite;
         }
 
         @keyframes sparkle {
-          0%,
-          100% {
-            transform:
-              scale(0.8)
-              rotate(-10deg);
-            opacity: 0.4;
-          }
-
-          50% {
-            transform:
-              scale(1.2)
-              rotate(10deg);
-            opacity: 1;
-          }
+          0%, 100% { transform: scale(0.8) rotate(-10deg); opacity: 0.4; }
+          50% { transform: scale(1.2) rotate(10deg); opacity: 1; }
         }
 
         @keyframes confettiMove {
-          from {
-            background-position:
-              0 0,
-              10px 0,
-              20px 0;
-          }
-
-          to {
-            background-position:
-              0 180px,
-              10px 220px,
-              20px 160px;
-          }
+          from { background-position: 0 0, 10px 0, 20px 0; }
+          to { background-position: 0 180px, 10px 220px, 20px 160px; }
         }
       `}</style>
     </div>
   );
 }
 
-function LobbyCard({
-  onJoin,
-}: {
-  onJoin: () => void;
-}) {
+function LobbyCard({ onJoin }: { onJoin: () => void }) {
   return (
     <main
       dir="rtl"
       className="pasour-entry min-h-[680px] overflow-hidden rounded-[32px] p-5 text-white sm:p-10"
     >
-      <div className="floating-card floating-card-one">
-        A♠
-      </div>
-
-      <div className="floating-card floating-card-two">
-        K♥
-      </div>
+      <div className="floating-card floating-card-one">A♠</div>
+      <div className="floating-card floating-card-two">K♥</div>
 
       <div className="mx-auto flex min-h-[640px] max-w-md flex-col items-center justify-center text-center">
         <div className="pasour-logo mb-5 flex h-24 w-24 items-center justify-center rounded-[30px] text-5xl">
@@ -3214,13 +2247,9 @@ function LobbyCard({
           PASOUR JAM
         </p>
 
-        <h1 className="mt-3 text-4xl font-black tracking-tight">
-          پاسور جم
-        </h1>
+        <h1 className="mt-3 text-4xl font-black tracking-tight">پاسور جم</h1>
 
-        <p className="mt-3 text-sm text-white/60">
-          حکم ایرانی، این بار آنلاین
-        </p>
+        <p className="mt-3 text-sm text-white/60">حکم ایرانی، این بار آنلاین</p>
 
         <button
           type="button"
@@ -3234,18 +2263,15 @@ function LobbyCard({
           <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/75">
             👥 بازی با دوستان
           </div>
-
           <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/75">
             🤖 بازی با ربات
           </div>
-
           <Link
             href="/games/hokm/leaderboard"
             className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/75 transition hover:border-[#E8C878]/50 hover:bg-[#E8C878]/10"
           >
             🏆 رتبه‌بندی
           </Link>
-
           <Link
             href="/profile"
             className="rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs text-white/75 transition hover:border-[#E8C878]/50 hover:bg-[#E8C878]/10"
@@ -3271,22 +2297,14 @@ function LobbyCard({
         }
 
         .pasour-logo {
-          background: linear-gradient(
-            145deg,
-            #f4dc99,
-            #9e6b2a
-          );
+          background: linear-gradient(145deg, #f4dc99, #9e6b2a);
           box-shadow:
             0 0 0 6px rgba(232, 200, 120, 0.08),
             0 20px 45px rgba(0, 0, 0, 0.35);
         }
 
         .pasour-primary {
-          background: linear-gradient(
-            135deg,
-            #f1d487,
-            #b8792d
-          );
+          background: linear-gradient(135deg, #f1d487, #b8792d);
           color: #2d1e11;
           box-shadow: 0 12px 30px rgba(207, 153, 64, 0.25);
           transition: transform 0.25s, box-shadow 0.25s;
@@ -3324,12 +2342,8 @@ function LobbyCard({
         }
 
         @keyframes floatCard {
-          0%, 100% {
-            margin-top: 0;
-          }
-          50% {
-            margin-top: -12px;
-          }
+          0%, 100% { margin-top: 0; }
+          50% { margin-top: -12px; }
         }
       `}</style>
     </main>
@@ -3352,33 +2366,19 @@ function WaitingRoom({
     >
       <div className="mb-7 flex items-center justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-right">
         <div>
-          <p className="text-[10px] text-white/45">
-            بازیکن آماده
-          </p>
-
-          <p className="mt-1 font-black text-white">
-            همشهری جم
-          </p>
+          <p className="text-[10px] text-white/45">بازیکن آماده</p>
+          <p className="mt-1 font-black text-white">همشهری جم</p>
         </div>
-
         <div className="text-right">
-          <p className="text-[10px] text-white/45">
-            امتیاز
-          </p>
-
-          <p className="mt-1 font-black text-[#E8C878]">
-            ⭐ ۱۰۰۰
-          </p>
+          <p className="text-[10px] text-white/45">امتیاز</p>
+          <p className="mt-1 font-black text-[#E8C878]">⭐ ۱۰۰۰</p>
         </div>
-
         <div className="rounded-xl bg-[#D7B36A]/15 px-3 py-2 text-xs font-black text-[#E8C878]">
           Lv. ۱
         </div>
       </div>
 
-      <div className="text-5xl">
-        🃏
-      </div>
+      <div className="text-5xl">🃏</div>
 
       <h2 className="mt-4 text-2xl font-black text-white">
         در حال پیدا کردن بازیکنان...
@@ -3404,11 +2404,9 @@ function WaitingRoom({
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-2xl">
                 {player ? "👤" : "❔"}
               </div>
-
               <p className="mt-2 text-xs font-black text-white">
                 {player ? player.name : "در انتظار"}
               </p>
-
               <p className="mt-1 text-[9px] text-white/50">
                 {player ? "آماده بازی" : "جایگاه خالی"}
               </p>
@@ -3420,9 +2418,7 @@ function WaitingRoom({
       <div className="mx-auto mt-7 h-2 max-w-md overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full bg-gradient-to-l from-[#E8C878] to-[#9C6B2F] transition-all"
-          style={{
-            width: `${Math.min(100, (players.length / 4) * 100)}%`,
-          }}
+          style={{ width: `${Math.min(100, (players.length / 4) * 100)}%` }}
         />
       </div>
 
@@ -3464,19 +2460,11 @@ function WaitingRoom({
           );
         }
 
-        .match-seat-ready {
-          animation: seatReady 0.7s ease both;
-        }
+        .match-seat-ready { animation: seatReady 0.7s ease both; }
 
         @keyframes seatReady {
-          from {
-            opacity: 0;
-            transform: scale(0.8) translateY(15px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
+          from { opacity: 0; transform: scale(0.8) translateY(15px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
         }
       `}</style>
     </section>
@@ -3498,14 +2486,12 @@ function Seat({
     >
       <span className="relative block text-lg">
         👤
-
         {reaction && (
           <span className="absolute -left-5 -top-5 animate-bounce text-2xl">
             {reaction}
           </span>
         )}
       </span>
-
       {name}
     </div>
   );
