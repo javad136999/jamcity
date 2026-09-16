@@ -484,11 +484,11 @@ export default function HomePage() {
   }
 
   return (
-    <div dir="rtl" className="home-shell space-y-3 rounded-[30px] pb-10 pt-1 sm:space-y-4">
+    <div dir="rtl" className="home-shell space-y-2 rounded-[30px] pb-8 pt-0 sm:space-y-3 sm:pb-10">
       {/* JAM CITY NEWS BAR — نئون: کل ردیف یه لینک واحده به /news */}
       <Link
         href="/news"
-        className="group relative mx-auto flex max-w-md items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.35),0_6px_24px_rgba(20,122,75,.15)]"
+        className="group relative mx-auto flex w-full max-w-md items-center gap-1.5 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.35),0_6px_24px_rgba(20,122,75,.15)]"
       >
         <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
         <div className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-[#39ff8f]/10 blur-2xl" />
@@ -528,7 +528,7 @@ export default function HomePage() {
       {cityEvents.length > 0 && (
         <section
           aria-label="آخرین رویدادهای جم"
-          className="group relative mx-auto flex max-w-[340px] items-center gap-2 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
+          className="group relative mx-auto flex w-full max-w-[340px] items-center gap-1.5 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
         >
           <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/15 blur-2xl" />
 
@@ -579,10 +579,10 @@ export default function HomePage() {
       <section className="home-hero relative overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.12),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.10),transparent_32%)]" />
 
-        <div className="relative p-3 sm:p-4">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-lg shadow-[0_0_14px_rgba(57,255,143,.30)] sm:h-12 sm:w-12 sm:text-2xl">🌴</span>
+        <div className="relative p-2.5 sm:p-4">
+          <div className="flex flex-wrap items-center gap-2.5 sm:flex-nowrap sm:gap-4 sm:justify-between">
+            <div className="min-w-0 flex-1 flex items-center gap-1.5 sm:gap-2.5">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#E3F3E9] text-base shadow-[0_0_14px_rgba(57,255,143,.30)] sm:h-12 sm:w-12 sm:text-2xl">🌴</span>
               <div className="min-w-0">
                 <h1 className="truncate text-[14px] font-black leading-tight text-[#1D2B1F] sm:text-2xl">
                   به شهر جم <span className="bg-gradient-to-l from-[#147A4B] to-[#2FAE72] bg-clip-text text-transparent">خوش آمدید</span>
@@ -590,7 +590,7 @@ export default function HomePage() {
                 <p className="mt-0.5 truncate text-[8px] text-[#8A968C] sm:text-[10px]">شهر دیجیتال خودت را بساز</p>
               </div>
             </div>
-            <Link href="/referral" aria-label="باشگاه معرفی جم‌سیتی" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#EBCB93] bg-gradient-to-l from-[#FFF0D0] via-white to-[#FFF9EA] px-4 py-3 text-[11px] font-black text-[#A96819] shadow-[0_8px_20px_rgba(217,143,43,.16)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(217,143,43,.24)] sm:w-auto sm:min-w-[220px]">
+            <Link href="/referral" aria-label="باشگاه معرفی جم‌سیتی" className="flex shrink-0 items-center justify-center gap-1.5 rounded-2xl border border-[#EBCB93] bg-gradient-to-l from-[#FFF0D0] via-white to-[#FFF9EA] px-2.5 py-2 text-[9px] font-black text-[#A96819] shadow-[0_8px_20px_rgba(217,143,43,.16)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_26px_rgba(217,143,43,.24)] sm:w-auto sm:min-w-[220px] sm:px-4 sm:py-3 sm:text-[11px]">
               <span className="text-xl">🎁</span><span>باشگاه معرفی جم‌سیتی</span><span className="text-sm">←</span>
             </Link>
           </div>
@@ -920,8 +920,8 @@ export default function HomePage() {
       )}
 
       {/* BIG CHAT CTA */}
-      <section className="relative overflow-hidden rounded-[28px] border border-[#CFE6D6] bg-gradient-to-l from-[#EAF7EE] to-[#F7F9F4] p-6 sm:p-8">
-        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <section className="relative overflow-hidden rounded-[28px] border border-[#CFE6D6] bg-gradient-to-l from-[#EAF7EE] to-[#F7F9F4] p-3.5 sm:p-8">
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-5">
           <div className="flex items-start gap-3">
             <span className="hidden h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-xl shadow-sm sm:flex">
               💬
@@ -939,7 +939,7 @@ export default function HomePage() {
 
           <Link
             href="/wall"
-            className="shrink-0 rounded-2xl bg-[#0f9a56] px-7 py-3.5 text-center text-xs font-black text-white shadow-[0_0_26px_rgba(57,255,143,.55)] transition hover:bg-[#0c8248] hover:shadow-[0_0_36px_rgba(57,255,143,.75)]"
+            className="shrink-0 rounded-2xl bg-[#0f9a56] px-4 py-2.5 text-center text-[10px] font-black sm:px-7 sm:py-3.5 sm:text-xs text-white shadow-[0_0_26px_rgba(57,255,143,.55)] transition hover:bg-[#0c8248] hover:shadow-[0_0_36px_rgba(57,255,143,.75)]"
           >
             💬 ورود به دیوار جم
           </Link>
@@ -947,7 +947,7 @@ export default function HomePage() {
       </section>
 
       {/* STATS */}
-      <section className="grid grid-cols-3 gap-3">
+      <section className="grid grid-cols-3 gap-1.5 sm:gap-3">
         <Stat icon="🏪" iconBg="#E3F3E9" value={businesses?.length ?? 0} text="کسب‌وکار" />
         <Stat icon="👑" iconBg="#FBEEDA" value={goldBusinesses.length} text="طلایی" />
         <Stat icon="🎁" iconBg="#FCE7E4" value={discounts.length} text="تخفیف فعال" />
@@ -1091,9 +1091,9 @@ function Stat({
   text: string;
 }) {
   return (
-    <div className="flex items-center justify-center gap-2.5 rounded-2xl border border-[#E3EBDE] bg-white p-4">
+    <div className="flex items-center justify-center gap-1.5 rounded-2xl border border-[#E3EBDE] bg-white p-2.5 sm:gap-2.5 sm:p-4">
       <span
-        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-base sm:h-9 sm:w-9 sm:text-lg"
         style={{ backgroundColor: iconBg }}
       >
         {icon}
