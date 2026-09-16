@@ -53,10 +53,10 @@ export default function Header() {
           <InstallAppButton />
           <Link
             href="/business/manage"
-            className="jam-panel-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-[#00D66B] px-3 py-2 text-[11px] font-black text-white ring-2 ring-red-500/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
+            className="jam-panel-glow group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-2xl border border-[#BFE8CE] bg-gradient-to-l from-[#147A4B] via-[#1AA463] to-[#2FAE72] px-3 py-2 text-[11px] font-black text-white shadow-[0_6px_18px_rgba(20,122,75,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(20,122,75,.32)] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-base"
           >
-            <span className="text-sm sm:text-2xl">🏬</span>
-            <span>پنل کسب و کار</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-white/15 text-sm transition group-hover:bg-[#FBEEDA] sm:h-8 sm:w-8 sm:text-xl">🏬</span>
+            <span>پنل کسب‌وکار</span>
           </Link>
         </div>
 
@@ -168,12 +168,12 @@ export default function Header() {
         @keyframes jamPanelGlow {
           0%,
           100% {
-            box-shadow: 0 0 10px 2px rgba(255, 45, 85, 0.5),
-              0 0 0 1px rgba(255, 45, 85, 0.35);
+            box-shadow: 0 6px 18px rgba(20, 122, 75, 0.24),
+              0 0 0 1px rgba(191, 232, 206, 0.55);
           }
           50% {
-            box-shadow: 0 0 24px 8px rgba(255, 45, 85, 0.85),
-              0 0 0 1px rgba(255, 45, 85, 0.6);
+            box-shadow: 0 8px 24px rgba(20, 122, 75, 0.38),
+              0 0 0 2px rgba(240, 220, 180, 0.55);
           }
         }
         .jam-panel-glow {
