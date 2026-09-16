@@ -809,10 +809,10 @@ export default function HomePage() {
 
       {/* GOLD SHOWCASE — کسب‌وکار ثابت در سمت راست، محصولات قابل اسکرول در سمت چپ */}
       {goldProductGroups.length > 0 && (
-        <section className="gold-showcase space-y-2.5 rounded-[26px] border border-[#EFD49B] bg-gradient-to-l from-[#FFF8E6] via-white to-[#FFFCF3] p-3 shadow-[0_8px_26px_rgba(180,119,21,.12)] sm:space-y-3 sm:p-4">
-          <div className="flex items-center justify-between gap-2 px-1">
+        <section className="gold-showcase space-y-2 rounded-[26px] border border-[#EFD49B] bg-gradient-to-l from-[#FFF8E6] via-white to-[#FFFCF3] p-2.5 shadow-[0_8px_26px_rgba(180,119,21,.12)] sm:space-y-2.5 sm:p-3.5">
+          <div className="flex items-center justify-between gap-2 px-0.5">
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-base shadow-sm">👑</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-sm shadow-sm sm:h-8 sm:w-8 sm:text-base">👑</span>
               <div>
                 <h2 className="text-[11px] font-black text-[#704817] sm:text-sm">کسب‌وکارهای طلایی جم</h2>
                 <p className="text-[8px] font-bold text-[#AE8750] sm:text-[9px]">محصولات منتخب کسب‌وکارهای ویژه</p>
@@ -822,17 +822,17 @@ export default function HomePage() {
           </div>
 
           {goldProductGroups.map(({ business, products: groupProducts }) => (
-            <div key={business.id} className="flex min-w-0 items-stretch gap-2.5 rounded-2xl border border-[#F0DDB2] bg-white/70 p-2" dir="rtl">
-              <Link href={`/business/${business.id}`} className="gold-business-label group flex w-[92px] shrink-0 flex-col items-center justify-center gap-1 rounded-xl border border-[#F0D27F] bg-gradient-to-b from-[#FFF8DF] to-[#FFF0C4] px-1.5 py-2 text-center transition hover:shadow-[0_8px_18px_rgba(180,119,21,.16)] sm:w-[132px] sm:px-2.5">
-                <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border-2 border-[#F0D27F] bg-white text-xl shadow-sm sm:h-12 sm:w-12 sm:text-2xl">
+            <div key={business.id} className="flex min-w-0 items-stretch gap-2 rounded-2xl border border-[#F0DDB2] bg-white/70 p-1.5 sm:gap-2.5 sm:p-2" dir="rtl">
+              <Link href={`/business/${business.id}`} className="gold-business-label group flex w-[72px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#F0D27F] bg-gradient-to-b from-[#FFF8DF] to-[#FFF0C4] px-1 py-1.5 text-center transition hover:shadow-[0_8px_18px_rgba(180,119,21,.16)] sm:w-[104px] sm:gap-1 sm:px-2 sm:py-2">
+                <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border-2 border-[#F0D27F] bg-white text-base shadow-sm sm:h-10 sm:w-10 sm:text-xl">
                   {business.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover" />
                   ) : (business.icon || "🏪")}
-                  <span className="absolute -bottom-0.5 -left-0.5 text-[10px]">👑</span>
+                  <span className="absolute -bottom-0.5 -left-0.5 text-[8px]">👑</span>
                 </span>
-                <span className="w-full truncate text-[9px] font-black text-[#34271F] sm:text-[10px]">{business.name}</span>
-                <span className="text-[8px] font-bold text-[#BD8B35]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "منتخب جم"}</span>
+                <span className="w-full truncate text-[8px] font-black text-[#34271F] sm:text-[9px]">{business.name}</span>
+                <span className="truncate text-[7px] font-bold text-[#BD8B35] sm:text-[8px]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "منتخب جم"}</span>
               </Link>
 
               <div
@@ -847,8 +847,8 @@ export default function HomePage() {
               >
                 <div className="gold-home-track flex w-max items-stretch gap-2.5" dir="rtl">
                   {[...groupProducts, ...groupProducts, ...groupProducts, ...groupProducts].map((product, index) => (
-                    <Link key={`${product.id}-${index}`} href={`/business/${business.id}`} className="group flex w-[176px] shrink-0 items-center gap-2 rounded-xl border border-[#F0DDB2] bg-white p-2 transition hover:-translate-y-0.5 hover:border-[#D9A63A] hover:shadow-[0_8px_18px_rgba(180,119,21,.14)] sm:w-[210px]">
-                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-[#FFF6DC] sm:h-14 sm:w-14">
+                    <Link key={`${product.id}-${index}`} href={`/business/${business.id}`} className="group flex w-[172px] shrink-0 items-center gap-2 rounded-xl border border-[#F0DDB2] bg-white p-1.5 transition hover:-translate-y-0.5 hover:border-[#D9A63A] hover:shadow-[0_8px_18px_rgba(180,119,21,.14)] sm:w-[208px] sm:p-2">
+                      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#FFF6DC] sm:h-14 sm:w-14">
                         {product.image_url ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
