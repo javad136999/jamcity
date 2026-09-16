@@ -659,26 +659,6 @@ export default function HomePage() {
           will-change: transform;
         }
 
-        @keyframes jamLoopQuarter {
-          from {
-            transform: translateX(-25%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-
-        .gold-home-track,
-        .discount-home-track {
-          animation: jamLoopQuarter 52s linear infinite;
-          will-change: transform;
-        }
-
-        .gold-home-track:hover,
-        .discount-home-track:hover {
-          animation-play-state: paused;
-        }
-
         .jam-popular-track:hover {
           animation-play-state: paused;
         }
@@ -730,9 +710,7 @@ export default function HomePage() {
             animation: none;
           }
           .jam-popular-track,
-          .jam-discount-track,
-          .gold-home-track,
-          .discount-home-track {
+          .jam-discount-track {
             animation: none;
           }
         }
@@ -760,69 +738,63 @@ export default function HomePage() {
             <span className="text-base transition group-hover:-translate-x-1">←</span>
           </Link>
         </div>
-      </section>
+        <div className="relative mt-2 grid grid-cols-3 gap-2 border-t border-[#f5dfe3] pt-2 text-center sm:mt-4 sm:pt-3">
+          <div><p className="text-base font-black text-[#c6264c]">زنده</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">گفتگوی لحظه‌ای</p></div>
+          <div className="border-x border-[#f5dfe3]"><p className="text-base font-black text-[#b57a1d]">محلی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">ویژه شهر جم</p></div>
+          <div><p className="text-base font-black text-[#147a4b]">صمیمی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">برای همشهری‌ها</p></div>
+        </div>
 
-      {/* GOLD SHOWCASE — کسب‌وکار ثابت در سمت راست، محصولات قابل اسکرول در سمت چپ */}
-      {goldProductGroups.length > 0 && (
-        <section className="gold-showcase space-y-2 rounded-[26px] border border-[#EFD49B] bg-gradient-to-l from-[#FFF8E6] via-white to-[#FFFCF3] p-2.5 shadow-[0_8px_26px_rgba(180,119,21,.12)] sm:space-y-2.5 sm:p-3.5">
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-sm shadow-sm sm:h-8 sm:w-8 sm:text-base">👑</span>
-              <div>
-                <h2 className="text-[11px] font-black text-[#704817] sm:text-sm">کسب‌وکارهای طلایی جم</h2>
-                <p className="text-[8px] font-bold text-[#AE8750] sm:text-[9px]">محصولات منتخب کسب‌وکارهای ویژه</p>
-              </div>
-            </div>
-            <Link href="/businesses" className="rounded-full bg-white px-2.5 py-1.5 text-[8px] font-black text-[#A66B19] shadow-sm transition hover:bg-[#FFF3CF]">مشاهده همه ←</Link>
-          </div>
-
-          {goldProductGroups.map(({ business, products: groupProducts }) => (
-            <div key={business.id} className="flex min-w-0 items-stretch gap-2 rounded-2xl border border-[#F0DDB2] bg-white/70 p-1.5 sm:gap-2.5 sm:p-2" dir="rtl">
-              <Link href={`/business/${business.id}`} className="gold-business-label group flex w-[72px] shrink-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#F0D27F] bg-gradient-to-b from-[#FFF8DF] to-[#FFF0C4] px-1 py-1.5 text-center transition hover:shadow-[0_8px_18px_rgba(180,119,21,.16)] sm:w-[104px] sm:gap-1 sm:px-2 sm:py-2">
-                <span className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg border-2 border-[#F0D27F] bg-white text-base shadow-sm sm:h-10 sm:w-10 sm:text-xl">
-                  {business.image_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover" />
-                  ) : (business.icon || "🏪")}
-                  <span className="absolute -bottom-0.5 -left-0.5 text-[8px]">👑</span>
-                </span>
-                <span className="w-full truncate text-[8px] font-black text-[#34271F] sm:text-[9px]">{business.name}</span>
-                <span className="truncate text-[7px] font-bold text-[#BD8B35] sm:text-[8px]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "منتخب جم"}</span>
-              </Link>
-
-              <div
-                className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-xl bg-white/65 px-1 py-1.5"
-                dir="ltr"
-                onPointerDown={prepareGoldLoopDrag}
-                onPointerMove={moveStripDrag}
-                onPointerUp={endStripDrag}
-                onPointerCancel={endStripDrag}
-                onWheel={scrollGoldWithWheel}
-                onScroll={keepGoldLoop}
-              >
-                <div className="gold-home-track flex w-max items-stretch gap-2.5" dir="rtl">
-                  {[...groupProducts, ...groupProducts, ...groupProducts, ...groupProducts].map((product, index) => (
-                    <Link key={`${product.id}-${index}`} href={`/business/${business.id}`} className="group flex w-[172px] shrink-0 items-center gap-2 rounded-xl border border-[#F0DDB2] bg-white p-1.5 transition hover:-translate-y-0.5 hover:border-[#D9A63A] hover:shadow-[0_8px_18px_rgba(180,119,21,.14)] sm:w-[208px] sm:p-2">
-                      <div className="h-11 w-11 shrink-0 overflow-hidden rounded-xl bg-[#FFF6DC] sm:h-14 sm:w-14">
-                        {product.image_url ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img loading="lazy" decoding="async" src={product.image_url} alt={product.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
-                        ) : <div className="flex h-full w-full items-center justify-center text-xl">{business.icon || "🛍️"}</div>}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-[9px] font-black text-[#34271F] sm:text-[10px]">{product.name}</p>
-                        {product.price !== null && <p className="mt-1 truncate text-[9px] font-black text-[#A66B19] sm:text-[10px]">{formatPrice(product.price)}</p>}
-                        {product.discount_percent ? <span className="mt-1 inline-block rounded-full bg-[#EAF7EE] px-1.5 py-0.5 text-[7px] font-black text-[#147A4B]">{product.discount_percent}% تخفیف</span> : <p className="mt-1 text-[8px] text-[#9F8B72]">مشاهده ←</p>}
-                      </div>
-                    </Link>
-                  ))}
+        {goldBusinesses.length > 0 && (
+          <div className="relative mt-4 overflow-hidden rounded-2xl border border-[#efd49b] bg-gradient-to-l from-[#fff7df] via-white to-[#fffaf0] p-3 sm:p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#ffe29a] to-[#c88b24] text-base shadow-sm">👑</span>
+                <div>
+                  <h3 className="text-[11px] font-black text-[#704817] sm:text-sm">ویترین طلایی کنار دیوار</h3>
+                  <p className="text-[8px] font-bold text-[#ae8750] sm:text-[9px]">کسب‌وکارها و محصولات منتخب جم</p>
                 </div>
               </div>
+              <Link href="/businesses" className="rounded-full bg-white px-2.5 py-1.5 text-[8px] font-black text-[#a66b19] shadow-sm transition hover:bg-[#fff3cf]">مشاهده همه ←</Link>
             </div>
-          ))}
-        </section>
-      )}
 
+            <div
+              className="gold-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/55 px-1 py-1.5"
+              dir="ltr"
+              onPointerDown={prepareGoldLoopDrag}
+              onPointerMove={moveStripDrag}
+              onPointerUp={endStripDrag}
+              onPointerCancel={endStripDrag}
+              onWheel={scrollGoldWithWheel}
+              onScroll={keepGoldLoop}
+            >
+              <div className="gold-home-track flex w-max gap-2.5" dir="rtl">
+              {[...goldBusinesses, ...goldBusinesses, ...goldBusinesses, ...goldBusinesses].map((business, index) => {
+                const group = goldProductGroups.find((item) => item.business.id === business.id);
+                const firstProduct = group?.products[0];
+                return (
+                  <Link key={business.id} href={`/business/${business.id}`} className="priority-gold-card group flex min-w-[190px] shrink-0 items-center gap-2 rounded-2xl border border-[#f0ddb2] bg-white/90 p-2 transition hover:-translate-y-1 hover:shadow-[0_10px_22px_rgba(180,119,21,.16)]">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 border-[#f0d27f] bg-[#fff6dc] shadow-sm">
+                      {business.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img loading="lazy" decoding="async" src={business.image_url} alt={business.name} className="h-full w-full object-cover transition duration-500 group-hover:scale-110" />
+                      ) : <div className="flex h-full w-full items-center justify-center text-2xl">{business.icon || "🏪"}</div>}
+                      <span className="absolute -bottom-0.5 -left-0.5 text-xs">👑</span>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[10px] font-black text-[#34271f]">{business.name}</p>
+                      <p className="mt-1 text-[8px] font-bold text-[#bd8b35]">{business.rating_count > 0 ? `⭐ ${business.rating_avg.toFixed(1)}` : "کسب‌وکار منتخب"}</p>
+                      {firstProduct ? (
+                        <p className="mt-1 truncate text-[8px] font-bold text-[#147a4b]">{firstProduct.name}</p>
+                      ) : <p className="mt-1 text-[8px] text-[#9f8b72]">مشاهده محصولات ←</p>}
+                    </div>
+                  </Link>
+                );
+              })}
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* MAP */}
       <section>
@@ -876,7 +848,7 @@ export default function HomePage() {
               <span className="mt-1.5 rounded-full bg-white/80 px-2 py-1 text-[7px] font-black text-[#D65349] sm:text-[8px]">فرصت محدود</span>
             </div>
 
-            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" dir="ltr" onPointerDown={prepareGoldLoopDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
+            <div className="discount-home-viewport min-w-0 flex-1 overflow-x-auto overflow-y-hidden rounded-2xl bg-white/45 px-1 py-1.5" dir="ltr" onPointerDown={beginStripDrag} onPointerMove={moveStripDrag} onPointerUp={endStripDrag} onPointerCancel={endStripDrag} onWheel={scrollGoldWithWheel} onScroll={keepGoldLoop}>
               <div className="discount-home-track flex w-max items-stretch gap-2.5" dir="rtl">
                 {[...discounts, ...discounts, ...discounts, ...discounts].map((product, index) => {
                   const business = findBusiness(product.business_id);
