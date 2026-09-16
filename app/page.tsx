@@ -484,11 +484,11 @@ export default function HomePage() {
   }
 
   return (
-    <div dir="rtl" className="home-shell space-y-2 rounded-[30px] pb-8 pt-0 sm:space-y-3 sm:pb-10">
+    <div dir="rtl" className="home-shell space-y-1 rounded-[30px] pb-8 pt-0 sm:space-y-3 sm:pb-10">
       {/* JAM CITY NEWS BAR — نئون: کل ردیف یه لینک واحده به /news */}
       <Link
         href="/news"
-        className="group relative mx-auto flex w-full max-w-md items-center gap-1.5 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.35),0_6px_24px_rgba(20,122,75,.15)]"
+        className="group relative mx-auto -mt-1 flex w-full max-w-md items-center gap-1.5 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.35),0_6px_24px_rgba(20,122,75,.15)]"
       >
         <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/20 blur-2xl" />
         <div className="pointer-events-none absolute -left-10 -bottom-10 h-24 w-24 rounded-full bg-[#39ff8f]/10 blur-2xl" />
@@ -528,7 +528,7 @@ export default function HomePage() {
       {cityEvents.length > 0 && (
         <section
           aria-label="آخرین رویدادهای جم"
-          className="group relative mx-auto flex w-full max-w-[340px] items-center gap-1.5 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
+          className="group relative mx-auto -mt-1 flex w-full max-w-[340px] items-center gap-1.5 overflow-hidden rounded-full border border-[#39ff8f]/60 bg-white px-3.5 py-1.5 shadow-[0_0_0_1px_rgba(57,255,143,.15),0_6px_24px_rgba(20,122,75,.12)] transition hover:shadow-[0_0_0_1px_rgba(57,255,143,.35),0_0_24px_rgba(57,255,143,.30),0_6px_24px_rgba(20,122,75,.15)]"
         >
           <div className="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-[#39ff8f]/15 blur-2xl" />
 
@@ -576,7 +576,7 @@ export default function HomePage() {
       {/* =====================================================
           HERO — جمع‌وجور، بدون فضای الکی، آیکون چت عمومی نئونی
       ====================================================== */}
-      <section className="home-hero relative overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
+      <section className="home-hero relative -mt-1 overflow-hidden rounded-[20px] border border-[#E3EBDE] bg-white shadow-[0_10px_28px_rgba(20,60,40,.06)] sm:rounded-[24px]">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_85%_0%,rgba(57,255,143,.12),transparent_35%),radial-gradient(circle_at_0%_100%,rgba(255,183,77,.10),transparent_32%)]" />
 
         <div className="relative p-2.5 sm:p-4">
@@ -720,9 +720,9 @@ export default function HomePage() {
       <section className="wall-home-feature relative overflow-hidden rounded-[28px] border border-[#f1c1cb] bg-white p-3 shadow-[0_16px_38px_rgba(198,38,76,.12)] sm:p-5">
         <div className="absolute -left-10 -top-12 h-40 w-40 rounded-full bg-[#ffd9e1]/70 blur-3xl" />
         <div className="absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-[#ffe8ae]/55 blur-3xl" />
-        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3">
-            <span className="wall-home-feature-icon flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-3xl shadow-[0_10px_24px_rgba(198,38,76,.28)] sm:h-16 sm:w-16 sm:text-4xl">💬</span>
+        <div className="relative flex flex-row items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1 flex items-start gap-2 sm:gap-3">
+            <span className="wall-home-feature-icon flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-2xl shadow-[0_10px_24px_rgba(198,38,76,.28)] sm:h-16 sm:w-16 sm:text-4xl">💬</span>
             <div>
               <div className="mb-1 flex items-center gap-2">
                 <span className="rounded-full bg-[#c6264c] px-2 py-1 text-[8px] font-black text-white">محور اصلی شهر</span>
@@ -732,13 +732,13 @@ export default function HomePage() {
               <p className="mt-1 max-w-xl text-[10px] leading-6 text-[#80636b] sm:text-xs">صدای شهروندان جم را ببینید، با همسایه‌ها گفتگو کنید و پیشنهادها و خبرهای مهم شهر را در یک فضای زنده دنبال کنید.</p>
             </div>
           </div>
-          <Link href="/wall" className="wall-entry-cta group flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l from-[#c6264c] to-[#ef476f] px-4 py-3 text-xs font-black text-white shadow-[0_10px_22px_rgba(198,38,76,.28)] transition hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(198,38,76,.36)] sm:px-5">
+          <Link href="/wall" className="wall-entry-cta group flex w-auto max-w-[112px] shrink-0 items-center justify-center gap-1 rounded-2xl bg-gradient-to-l from-[#c6264c] to-[#ef476f] px-2 py-2 text-[9px] leading-4 font-black text-white shadow-[0_10px_22px_rgba(198,38,76,.28)] transition hover:-translate-y-1 hover:shadow-[0_14px_28px_rgba(198,38,76,.36)] sm:max-w-none sm:gap-2 sm:px-5 sm:py-3 sm:text-xs">
             <span className="wall-entry-icon" aria-hidden="true">💬</span>
             <span>ورود به دیوار جم</span>
             <span className="text-base transition group-hover:-translate-x-1">←</span>
           </Link>
         </div>
-        <div className="relative mt-4 grid grid-cols-3 gap-2 border-t border-[#f5dfe3] pt-3 text-center">
+        <div className="relative mt-2 grid grid-cols-3 gap-2 border-t border-[#f5dfe3] pt-2 text-center sm:mt-4 sm:pt-3">
           <div><p className="text-base font-black text-[#c6264c]">زنده</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">گفتگوی لحظه‌ای</p></div>
           <div className="border-x border-[#f5dfe3]"><p className="text-base font-black text-[#b57a1d]">محلی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">ویژه شهر جم</p></div>
           <div><p className="text-base font-black text-[#147a4b]">صمیمی</p><p className="mt-0.5 text-[8px] font-bold text-[#987780]">برای همشهری‌ها</p></div>
