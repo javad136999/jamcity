@@ -52,6 +52,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
+  const markerRefs = useRef<L.Marker[]>([]);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [activeCategory, setActiveCategory] = useState("");
@@ -153,6 +154,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       const currentMap = mapRef.current;
       layerRef.current = null;
       mapRef.current = null;
+      markerRefs.current = [];
       if (currentMap) {
         try {
           currentMap.stop();
@@ -174,6 +176,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       const layer = layerRef.current;
       if (cancelled || !map || !layer) return;
       layer.clearLayers();
+      markerRefs.current = [];
 
       const makeIcon = (marker: MapMarker) => {
         const theme = markerTheme(marker);
@@ -221,27 +224,71 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
         marker.on("click", () => marker.openTooltip());
         marker.addTo(layer);
+        markerRefs.current.push(marker);
       });
 
       let syncTimer: ReturnType<typeof setTimeout> | null = null;
-      const syncTooltips = () => {
+      let fadeTimer: ReturnType<typeof setTimeout> | null = null;
+
+      const closeBusinessTooltips = (fade = false) => {
+        markerRefs.current.forEach((marker) => {
+          const tooltip = marker.getTooltip();
+          const element = tooltip?.getElement();
+          if (fade && element) element.classList.add("jam-tooltip-fading");
+          marker.closeTooltip();
+        });
+      };
+
+      const findMarkerNearMapCenter = () => {
+        const centerPoint = map.getSize().divideBy(2);
+        let closest: L.Marker | null = null;
+        let closestDistance = Number.POSITIVE_INFINITY;
+
+        markerRefs.current.forEach((marker) => {
+          const point = map.latLngToContainerPoint(marker.getLatLng());
+          const distance = point.distanceTo(centerPoint);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closest = marker;
+          }
+        });
+
+        return closestDistance <= 72 ? closest : null;
+      };
+
+      const showZoomedBusiness = () => {
         if (syncTimer) clearTimeout(syncTimer);
-        const zoomedIn = (map.getZoom() ?? 0) >= 16;
-        if (!zoomedIn) {
-          layer.eachLayer((item) => (item as L.Marker).closeTooltip());
-          return;
-        }
+        closeBusinessTooltips();
+
+        if ((map.getZoom() ?? 0) < 16) return;
+
         syncTimer = setTimeout(() => {
           if (cancelled) return;
-          layer.eachLayer((item) => (item as L.Marker).openTooltip());
-        }, 140);
+          const nearest = findMarkerNearMapCenter();
+          if (nearest) nearest.openTooltip();
+        }, 120);
       };
-      map.on("zoomend", syncTooltips);
-      syncTooltips();
+
+      const handleMoveStart = () => {
+        if (fadeTimer) clearTimeout(fadeTimer);
+        closeBusinessTooltips(true);
+        fadeTimer = setTimeout(() => {
+          markerRefs.current.forEach((marker) => {
+            const element = marker.getTooltip()?.getElement();
+            element?.classList.remove("jam-tooltip-fading");
+          });
+        }, 220);
+      };
+
+      map.on("zoomend", showZoomedBusiness);
+      map.on("movestart", handleMoveStart);
+      showZoomedBusiness();
 
       return () => {
         if (syncTimer) clearTimeout(syncTimer);
-        map.off("zoomend", syncTooltips);
+        if (fadeTimer) clearTimeout(fadeTimer);
+        map.off("zoomend", showZoomedBusiness);
+        map.off("movestart", handleMoveStart);
       };
     })();
     return () => { cancelled = true; };
@@ -323,7 +370,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-marker-pulse { position:absolute; inset:2px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
         .jam-marker-rating { position:absolute; z-index:6; bottom:-5px; left:-8px; border:1px solid #fff; border-radius:999px; background:var(--marker-main); color:#fff; padding:1px 3px; font:900 7px Vazirmatn,sans-serif; direction:ltr; }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
-        .jam-business-tooltip { z-index:1000 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; pointer-events:auto; }
+        .jam-business-tooltip { z-index:1000 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; pointer-events:auto; transition:opacity .18s ease, transform .18s ease; }
+        .jam-business-tooltip.jam-tooltip-fading { opacity:0 !important; transform:translateY(5px); }
         .jam-business-tooltip::before { border-top-color:#fff !important; }
         .jam-marker-tooltip { min-width:112px; max-width:150px; padding:7px 8px 6px; border:1px solid #eadfd4; border-radius:11px; background:#fff; box-shadow:0 7px 18px rgba(72,48,29,.18); color:#3e3028; font-family:Vazirmatn,sans-serif; text-align:right; transform:translateZ(0); }
         .jam-marker-tooltip-title { overflow:hidden; color:#3c2d24; font-size:10px; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
