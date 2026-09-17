@@ -295,8 +295,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .home-shell > section:has(select[aria-label="فیلتر دسته‌بندی کسب‌وکارها"]) > div:first-child { display:none !important; }
         @media (max-width:640px) {
           .jam-map-category-bar { padding:6px 8px; }
-          .jam-map-category-button { min-height:40px; padding:5px 8px 5px 9px; border-radius:15px; }
-          .jam-map-category-copy b { max-width:170px; font-size:9px; }
+          .jam-map-category-button { min-height:40px; max-width:215px; padding:5px 8px 5px 9px; border-radius:15px; }
+          .jam-map-category-copy b { max-width:145px; font-size:9px; }
           .jam-map-category-copy small { font-size:6.5px; }
           .jam-map-category-menu { width:min(300px,calc(100vw - 24px)); max-height:220px; grid-template-columns:repeat(2,minmax(0,1fr)); }
           .jam-map-canvas { height:300px; }
