@@ -44,7 +44,7 @@ export default function HomeReferralPlacement() {
       href="/referral"
       dir="rtl"
       aria-label="معرفی کن جایزه بگیر"
-      className="absolute left-6 top-2 z-[1300] flex min-h-[42px] w-[290px] max-w-[58%] items-center gap-2 rounded-2xl border border-[#E8D39A] bg-gradient-to-l from-[#FFF8DD] via-white to-[#FBEEDA] px-2.5 py-1.5 transition hover:-translate-y-0.5 sm:left-6 sm:top-2 sm:w-[290px] sm:max-w-[45%] sm:px-2.5 sm:py-1.5 referral-sun-glow"
+      className="absolute left-0 top-2 z-[1300] flex min-h-[42px] w-[290px] max-w-[58%] items-center gap-2 rounded-2xl border border-[#E8D39A] bg-gradient-to-l from-[#FFF8DD] via-white to-[#FBEEDA] px-2.5 py-1.5 transition hover:-translate-y-0.5 sm:left-6 sm:top-2 sm:w-[290px] sm:max-w-[45%] sm:px-2.5 sm:py-1.5 referral-sun-glow"
     >
       <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[11px] bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-sm shadow-[0_0_9px_rgba(218,165,55,.48)] sm:h-[31px] sm:w-[31px] sm:text-sm">🎁</span>
       <span className="min-w-0 flex-1">
