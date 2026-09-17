@@ -7,6 +7,8 @@ type BeforeInstallPromptEvent = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+const INSTALL_STATE_KEY = "jamcity:pwa-installed";
+
 function isIOS() {
   if (typeof window === "undefined") return false;
   return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
@@ -20,6 +22,23 @@ function isStandalone() {
   );
 }
 
+function hasSavedInstallState() {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(INSTALL_STATE_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function saveInstallState() {
+  try {
+    window.localStorage.setItem(INSTALL_STATE_KEY, "true");
+  } catch {
+    // Ignore storage errors; standalone/appinstalled checks still protect the UI.
+  }
+}
+
 export default function InstallAppButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showButton, setShowButton] = useState(false);
@@ -27,7 +46,7 @@ export default function InstallAppButton() {
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone()) {
+    if (isStandalone() || hasSavedInstallState()) {
       setAlreadyInstalled(true);
       return;
     }
@@ -35,11 +54,19 @@ export default function InstallAppButton() {
     // اندروید/کروم/دسکتاپ: مرورگر رویداد beforeinstallprompt را می‌فرستد
     function handleBeforeInstallPrompt(e: Event) {
       e.preventDefault();
+
+      // اگر نصب قبلاً ثبت شده، حتی در صورت ارسال مجدد رویداد هم دکمه نمایش داده نشود.
+      if (isStandalone() || hasSavedInstallState()) {
+        setAlreadyInstalled(true);
+        return;
+      }
+
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowButton(true);
     }
 
     function handleAppInstalled() {
+      saveInstallState();
       setAlreadyInstalled(true);
       setShowButton(false);
       setDeferredPrompt(null);
@@ -49,7 +76,7 @@ export default function InstallAppButton() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     // آیفون/سافاری هیچ‌وقت beforeinstallprompt نمی‌فرستد؛
-    // پس دکمه را نشان بده و راهنمای دستی «افزودن به صفحه اصلی» را نمایش بده
+    // راهنمای دستی فقط تا زمانی نمایش داده می‌شود که نصب ثبت نشده باشد.
     if (isIOS()) {
       setShowButton(true);
     }
@@ -65,13 +92,20 @@ export default function InstallAppButton() {
       setShowIOSGuide(true);
       return;
     }
+
     if (!deferredPrompt) return;
+
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted" || outcome === "dismissed") {
-      setDeferredPrompt(null);
-      setShowButton(false);
+
+    // بعد از تأیید نصب، وضعیت را دائمی ذخیره می‌کنیم تا با رفرش دوباره دکمه برنگردد.
+    if (outcome === "accepted") {
+      saveInstallState();
+      setAlreadyInstalled(true);
     }
+
+    setDeferredPrompt(null);
+    setShowButton(false);
   }
 
   if (alreadyInstalled || !showButton) return null;
