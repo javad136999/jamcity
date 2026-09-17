@@ -239,7 +239,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         });
       };
 
-      const findMarkerNearMapCenter = (): L.Marker | null => {
+      const findClosestMarker = (): L.Marker | null => {
         const centerPoint = map.getSize().divideBy(2);
         let closest: L.Marker | null = null;
         let closestDistance = Number.POSITIVE_INFINITY;
@@ -253,24 +253,30 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           }
         }
 
-        return closestDistance <= 72 ? closest : null;
+        return closest;
       };
 
       const showZoomedBusiness = () => {
         if (syncTimer) clearTimeout(syncTimer);
         closeBusinessTooltips();
 
-        if ((map.getZoom() ?? 0) < 16) return;
+        // در زوم‌های نزدیک، نزدیک‌ترین کسب‌وکار به مرکز نقشه خودکار باز شود.
+        // محدودیت فاصله قبلی باعث می‌شد در بسیاری از زوم‌ها کاربر مجبور به کلیک باشد.
+        if ((map.getZoom() ?? 0) < 15 || markerRefs.current.length === 0) return;
 
         syncTimer = setTimeout(() => {
           if (cancelled) return;
-          const nearest = findMarkerNearMapCenter();
-          if (nearest) nearest.openTooltip();
-        }, 120);
+          const nearest = findClosestMarker();
+          if (nearest) {
+            nearest.openTooltip();
+            nearest.getElement()?.classList.add("jam-marker-active");
+          }
+        }, 80);
       };
 
       const handleMoveStart = () => {
         if (fadeTimer) clearTimeout(fadeTimer);
+        markerRefs.current.forEach((marker) => marker.getElement()?.classList.remove("jam-marker-active"));
         closeBusinessTooltips(true);
         fadeTimer = setTimeout(() => {
           markerRefs.current.forEach((marker) => {
@@ -281,6 +287,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       };
 
       map.on("zoomend", showZoomedBusiness);
+      map.on("moveend", showZoomedBusiness);
       map.on("movestart", handleMoveStart);
       showZoomedBusiness();
 
@@ -288,6 +295,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         if (syncTimer) clearTimeout(syncTimer);
         if (fadeTimer) clearTimeout(fadeTimer);
         map.off("zoomend", showZoomedBusiness);
+        map.off("moveend", showZoomedBusiness);
         map.off("movestart", handleMoveStart);
       };
     })();
@@ -369,6 +377,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-marker-body span { transform:translateY(-1px); }
         .jam-marker-pulse { position:absolute; inset:2px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
         .jam-marker-rating { position:absolute; z-index:6; bottom:-5px; left:-8px; border:1px solid #fff; border-radius:999px; background:var(--marker-main); color:#fff; padding:1px 3px; font:900 7px Vazirmatn,sans-serif; direction:ltr; }
+        .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.08); box-shadow:0 0 0 3px var(--marker-ring), 0 5px 12px rgba(72,48,29,.22), inset 0 2px 5px rgba(255,255,255,.9); }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
         .jam-business-tooltip { z-index:1000 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; pointer-events:auto; transition:opacity .18s ease, transform .18s ease; }
         .jam-business-tooltip.jam-tooltip-fading { opacity:0 !important; transform:translateY(5px); }
