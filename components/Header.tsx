@@ -34,10 +34,6 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-red-100 bg-white">
-      {/* =====================================================
-          نوار بالای بالای هدر — تم سفید نئونی قرمز/سبز
-          راست: تماس با مدیر · وسط: نصب اپلیکیشن (نئونی سبز) + پنل کسب و کار (نئونی قرمز) · چپ: ورود/کاربر
-      ====================================================== */}
       <div className="grid max-w-6xl grid-cols-3 items-center gap-2 mx-auto px-3 py-2 sm:px-4">
         <div className="flex justify-start">
           <a
@@ -53,8 +49,8 @@ export default function Header() {
           <InstallAppButton />
           <Link
             href="/referrals"
-            aria-label="باشگاه معرفی"
-            title="باشگاه معرفی"
+            aria-label="کارت شارژ رایگان"
+            title="کارت شارژ رایگان"
             className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#E8D39A] bg-gradient-to-br from-[#FFF8DD] via-[#FBEEDA] to-[#E9C96A] text-lg shadow-[0_5px_16px_rgba(180,135,35,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(180,135,35,.34)] sm:h-11 sm:w-11 sm:text-xl"
           >
             <span className="transition group-hover:scale-110">🎁</span>
@@ -121,7 +117,7 @@ export default function Header() {
                     className="block px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
                     onClick={() => setMenuOpen(false)}
                   >
-                    باشگاه معرفی
+                    کارت شارژ رایگان
                   </Link>
                   <Link
                     href="/settings"
@@ -149,7 +145,6 @@ export default function Header() {
         </div>
       </div>
 
-      {/* ردیف پایینی هدر — فقط ناوبری دسکتاپ، جمع‌وجور */}
       <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
         <Link href="/" className="transition hover:text-red-500">
           خانه
