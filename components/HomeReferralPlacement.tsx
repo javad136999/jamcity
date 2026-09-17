@@ -44,14 +44,14 @@ export default function HomeReferralPlacement() {
       href="/referral"
       dir="rtl"
       aria-label="معرفی کن جایزه بگیر"
-      className="absolute left-0 top-2 z-[1300] flex min-h-[42px] w-[290px] max-w-[58%] items-center gap-2 rounded-2xl border border-[#E8D39A] bg-gradient-to-l from-[#FFF8DD] via-white to-[#FBEEDA] px-2.5 py-1.5 transition hover:-translate-y-0.5 sm:left-6 sm:top-2 sm:w-[290px] sm:max-w-[45%] sm:px-2.5 sm:py-1.5 referral-sun-glow"
+      className="absolute left-[-4px] top-2 z-[1300] flex min-h-[38px] w-[270px] max-w-[54%] items-center gap-1.5 rounded-2xl border border-[#E8D39A] bg-gradient-to-l from-[#FFF8DD] via-white to-[#FBEEDA] px-2 py-1 transition hover:-translate-y-0.5 sm:left-6 sm:top-2 sm:w-[290px] sm:max-w-[45%] sm:px-2.5 sm:py-1.5 referral-sun-glow"
     >
-      <span className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[11px] bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-sm shadow-[0_0_9px_rgba(218,165,55,.48)] sm:h-[31px] sm:w-[31px] sm:text-sm">🎁</span>
+      <span className="flex h-[27px] w-[27px] shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-[#FFE29A] to-[#C88B24] text-[13px] shadow-[0_0_9px_rgba(218,165,55,.48)] sm:h-[31px] sm:w-[31px] sm:text-sm">🎁</span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-[9px] font-black text-[#704817] sm:text-[10px]">معرفی کن جایزه بگیر</span>
-        <span className="mt-0.5 block truncate text-[6.5px] font-bold text-[#A66B19] sm:text-[7px]">دوستت را به جم‌سیتی معرفی کن و جایزه بگیر</span>
+        <span className="block truncate text-[8px] font-black text-[#704817] sm:text-[10px]">معرفی کن جایزه بگیر</span>
+        <span className="mt-0.5 block truncate text-[6px] font-bold text-[#A66B19] sm:text-[7px]">دوستت را به جم‌سیتی معرفی کن و جایزه بگیر</span>
       </span>
-      <span className="shrink-0 rounded-full bg-[#FFF0C4] px-1.5 py-0.5 text-[6.5px] font-black text-[#8B5A13] sm:px-1.5 sm:py-0.5 sm:text-[7px]">ورود ←</span>
+      <span className="shrink-0 rounded-full bg-[#FFF0C4] px-1.5 py-0.5 text-[6px] font-black text-[#8B5A13] sm:px-1.5 sm:py-0.5 sm:text-[7px]">ورود ←</span>
       <style jsx>{`
         .referral-sun-glow {
           border-color: rgba(232,211,154,.95);
