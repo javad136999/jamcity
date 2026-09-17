@@ -24,7 +24,6 @@
   .home-shell > .wall-home-feature + div { grid-column:2; grid-row:auto; height:100%; margin-top:0; }
 }
 
-/* Gold business showcase: horizontal, slow rightward motion with manual drag/scroll. */
 .gold-home-viewport {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
@@ -40,115 +39,147 @@
   -webkit-animation: jamGoldShowcaseRight 48s linear infinite !important;
   will-change: transform;
 }
-@keyframes jamGoldShowcaseRight {
-  from { transform: translateX(-25%); }
-  to { transform: translateX(0); }
-}
+@keyframes jamGoldShowcaseRight { from { transform: translateX(-25%); } to { transform: translateX(0); } }
 .gold-home-viewport.is-manual { cursor: grabbing; }
 .gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused !important; -webkit-animation-play-state: paused !important; }
-
-/* Make the gold cards denser so more businesses are visible in one row. */
 .gold-home-viewport > .gold-home-track { gap: 7px !important; }
-.gold-home-viewport .gold-home-track > * {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  flex: 0 0 clamp(132px, 15vw, 172px) !important;
-  min-width: 0 !important;
-}
-.gold-home-viewport img {
-  max-height: 86px;
-  object-fit: cover;
-}
-
-/* Vehicle/product cards: compact image, name, then price directly underneath. */
+.gold-home-viewport .gold-home-track > * { margin-left:0 !important; margin-right:0 !important; flex:0 0 clamp(132px,15vw,172px) !important; min-width:0 !important; }
+.gold-home-viewport img { max-height:86px; object-fit:cover; }
 .gold-home-viewport .gold-home-track a,
-.gold-home-viewport .gold-home-track > div {
-  border-radius: 14px !important;
-}
+.gold-home-viewport .gold-home-track > div { border-radius:14px !important; }
 .gold-home-viewport .gold-home-track p,
-.gold-home-viewport .gold-home-track span {
-  line-height: 1.35 !important;
-}
+.gold-home-viewport .gold-home-track span { line-height:1.35 !important; }
 .gold-home-viewport .gold-home-track .text-\[10px\],
-.gold-home-viewport .gold-home-track .text-\[11px\] {
-  line-height: 1.3 !important;
-}
-
-/* The gold business/category identity stays small and is visually anchored to the right. */
+.gold-home-viewport .gold-home-track .text-\[11px\] { line-height:1.3 !important; }
 .gold-home-viewport .gold-home-track .gold-business-icon,
-.gold-home-viewport .gold-home-track [class*="business-icon"] {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  font-size: 12px !important;
-  border-radius: 8px !important;
-}
+.gold-home-viewport .gold-home-track [class*="business-icon"] { width:24px !important; height:24px !important; min-width:24px !important; font-size:12px !important; border-radius:8px !important; }
 .gold-home-viewport .gold-home-track [class*="business-header"],
-.gold-home-viewport .gold-home-track [class*="business-title"] {
-  min-width: 0 !important;
-}
+.gold-home-viewport .gold-home-track [class*="business-title"] { min-width:0 !important; }
 
-/* Under-map golden business/product strip: manual-only, spacious, fixed business identity. */
 .gold-products-manual-viewport {
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-x;
-  scrollbar-width: none;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  cursor: grab;
-  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-x;
+  scrollbar-width:none;
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  cursor:grab;
+  overscroll-behavior-x:contain;
+  padding:7px 5px 10px !important;
+  border-radius:22px !important;
+  background:linear-gradient(180deg,#fffdf7 0%,#fff8e7 100%) !important;
+  box-shadow:inset 0 0 0 1px rgba(205,153,37,.16), inset 0 -8px 24px rgba(194,143,28,.06) !important;
 }
 .gold-products-manual-viewport::-webkit-scrollbar { display:none; }
 .gold-products-manual-viewport .gold-products-manual-track,
 .gold-products-manual-viewport [class*="gold-products-manual-track"] {
-  animation: none !important;
-  -webkit-animation: none !important;
-  transform: none !important;
+  animation:none !important;
+  -webkit-animation:none !important;
+  transform:none !important;
+  gap:9px !important;
+  align-items:stretch !important;
 }
-.gold-products-manual-viewport.is-manual { cursor: grabbing; }
+.gold-products-manual-viewport.is-manual { cursor:grabbing; }
 .gold-products-manual-viewport .gold-business-icon,
 .gold-products-manual-viewport [class*="business-icon"] {
-  width: 24px !important;
-  height: 24px !important;
-  min-width: 24px !important;
-  font-size: 12px !important;
-  border-radius: 8px !important;
+  width:26px !important;
+  height:26px !important;
+  min-width:26px !important;
+  font-size:13px !important;
+  border-radius:9px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:linear-gradient(145deg,#fff7c7,#e6b83d) !important;
+  border:1px solid rgba(157,111,12,.28) !important;
+  box-shadow:0 3px 10px rgba(174,126,24,.22), inset 0 1px 0 rgba(255,255,255,.85) !important;
 }
-.gold-products-manual-viewport img { object-fit: cover; }
+.gold-products-manual-viewport img {
+  object-fit:cover !important;
+  display:block !important;
+}
 
-/* Popular and hot-discount rows move slowly to the right but remain manually scrollable. */
-.jam-popular-viewport .jam-popular-track {
-  animation: jamPopularRight 42s linear infinite !important;
-  -webkit-animation: jamPopularRight 42s linear infinite !important;
-  will-change: transform;
+/* Premium product cards: larger product image, clean name, price immediately below image. */
+.gold-products-manual-viewport .gold-products-manual-track > *,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > * {
+  flex:0 0 clamp(142px,16vw,176px) !important;
+  min-width:142px !important;
+  overflow:hidden !important;
+  position:relative !important;
+  border-radius:18px !important;
+  border:1px solid rgba(197,145,27,.28) !important;
+  background:linear-gradient(155deg,#fff 0%,#fffdf7 58%,#fff4cc 100%) !important;
+  box-shadow:0 7px 18px rgba(119,84,17,.12), inset 0 1px 0 rgba(255,255,255,.95) !important;
+  transition:transform .2s ease, box-shadow .2s ease !important;
 }
-@keyframes jamPopularRight {
-  from { transform: translateX(-33.333%); }
-  to { transform: translateX(0); }
+.gold-products-manual-viewport .gold-products-manual-track > *:hover,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > *:hover {
+  transform:translateY(-2px) !important;
+  box-shadow:0 10px 24px rgba(119,84,17,.18),0 0 0 1px rgba(211,161,45,.18) !important;
 }
-.discount-home-viewport .discount-home-track {
-  animation: jamDiscountRight 42s linear infinite !important;
-  -webkit-animation: jamDiscountRight 42s linear infinite !important;
-  will-change: transform;
+.gold-products-manual-viewport .gold-products-manual-track > * img,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > * img {
+  width:100% !important;
+  height:112px !important;
+  min-height:112px !important;
+  max-height:112px !important;
+  border-radius:14px !important;
+  object-fit:cover !important;
+  background:linear-gradient(145deg,#fffdf5,#f7e7b0) !important;
 }
-@keyframes jamDiscountRight {
-  from { transform: translateX(-25%); }
-  to { transform: translateX(0); }
+.gold-products-manual-viewport .gold-products-manual-track > * p,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > * p {
+  margin:0 !important;
+  padding-inline:9px !important;
 }
+.gold-products-manual-viewport .gold-products-manual-track > * p:first-of-type,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > * p:first-of-type {
+  margin-top:7px !important;
+  color:#4a3a19 !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+  line-height:1.5 !important;
+  display:-webkit-box !important;
+  -webkit-line-clamp:2 !important;
+  -webkit-box-orient:vertical !important;
+  overflow:hidden !important;
+}
+/* The final price line is intentionally prominent and gold-toned. */
+.gold-products-manual-viewport .gold-products-manual-track > * p:last-of-type,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > * p:last-of-type {
+  margin-top:4px !important;
+  margin-bottom:8px !important;
+  color:#9a6b00 !important;
+  font-size:10px !important;
+  font-weight:1000 !important;
+  line-height:1.45 !important;
+  white-space:nowrap !important;
+}
+.gold-products-manual-viewport .gold-products-manual-track > * span,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] > * span {
+  line-height:1.35 !important;
+}
+
+/* Gold section edge accents keep the product row visually premium without affecting other home sections. */
+.gold-products-manual-viewport::before {
+  content:"✦";
+  position:absolute;
+  pointer-events:none;
+  color:#c79622;
+  font-size:11px;
+  opacity:.55;
+}
+
+.jam-popular-viewport .jam-popular-track { animation:jamPopularRight 42s linear infinite !important; -webkit-animation:jamPopularRight 42s linear infinite !important; will-change:transform; }
+@keyframes jamPopularRight { from { transform:translateX(-33.333%); } to { transform:translateX(0); } }
+.discount-home-viewport .discount-home-track { animation:jamDiscountRight 42s linear infinite !important; -webkit-animation:jamDiscountRight 42s linear infinite !important; will-change:transform; }
+@keyframes jamDiscountRight { from { transform:translateX(-25%); } to { transform:translateX(0); } }
 .jam-popular-viewport.is-manual .jam-popular-track,
-.discount-home-viewport.is-manual .discount-home-track {
-  animation-play-state: paused !important;
-  -webkit-animation-play-state: paused !important;
-}
+.discount-home-viewport.is-manual .discount-home-track { animation-play-state:paused !important; -webkit-animation-play-state:paused !important; }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion:reduce) {
   .gold-home-viewport .gold-home-track,
   .jam-popular-viewport .jam-popular-track,
-  .discount-home-viewport .discount-home-track {
-    animation: none !important;
-    -webkit-animation: none !important;
-    transform: none !important;
-  }
+  .discount-home-viewport .discount-home-track { animation:none !important; -webkit-animation:none !important; transform:none !important; }
 }
 
 @media (max-width:640px) {
@@ -174,11 +205,18 @@
   .gold-home-viewport { padding-inline:2px !important; }
   .gold-home-viewport .gold-home-track > * { flex-basis:126px !important; }
   .gold-home-viewport img { max-height:72px; }
-  .gold-products-manual-viewport { padding-inline:3px !important; }
+  .gold-products-manual-viewport { padding:6px 3px 9px !important; }
   .gold-products-manual-viewport > * { min-width:0 !important; }
+  .gold-products-manual-viewport .gold-products-manual-track > *,
+  .gold-products-manual-viewport [class*="gold-products-manual-track"] > * { flex-basis:138px !important; min-width:138px !important; border-radius:16px !important; }
+  .gold-products-manual-viewport .gold-products-manual-track > * img,
+  .gold-products-manual-viewport [class*="gold-products-manual-track"] > * img { height:98px !important; min-height:98px !important; max-height:98px !important; border-radius:12px !important; }
+  .gold-products-manual-viewport .gold-products-manual-track > * p:first-of-type,
+  .gold-products-manual-viewport [class*="gold-products-manual-track"] > * p:first-of-type { margin-top:5px !important; padding-inline:7px !important; font-size:9px !important; }
+  .gold-products-manual-viewport .gold-products-manual-track > * p:last-of-type,
+  .gold-products-manual-viewport [class*="gold-products-manual-track"] > * p:last-of-type { margin-top:3px !important; margin-bottom:7px !important; padding-inline:7px !important; font-size:9px !important; }
 }
 
-/* Map zoom card: existing business icon stays untouched; card shows only name. */
 .jam-business-tooltip .jam-marker-tooltip { position:relative !important; min-width:92px !important; max-width:145px !important; padding:6px 9px !important; border-radius:10px !important; border:1px solid rgba(47,118,87,.16) !important; box-shadow:0 6px 16px rgba(55,45,35,.16) !important; }
 .jam-business-tooltip .jam-marker-tooltip-title { margin:0 !important; color:#2f7657 !important; font-size:10px !important; font-weight:900 !important; line-height:1.35 !important; text-align:center !important; }
 .jam-business-tooltip .jam-marker-tooltip-subtitle { display:none !important; }
