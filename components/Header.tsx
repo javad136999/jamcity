@@ -105,13 +105,6 @@ export default function Header() {
                     🏷️ تخفیف‌ها
                   </Link>
                   <Link
-                    href="/referral"
-                    className="block px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
-                    onClick={() => setMenuOpen(false)}
-                  >
-                    کارت شارژ رایگان
-                  </Link>
-                  <Link
                     href="/settings"
                     className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50"
                     onClick={() => setMenuOpen(false)}
