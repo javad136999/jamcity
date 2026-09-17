@@ -239,19 +239,19 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         });
       };
 
-      const findMarkerNearMapCenter = () => {
+      const findMarkerNearMapCenter = (): L.Marker | null => {
         const centerPoint = map.getSize().divideBy(2);
         let closest: L.Marker | null = null;
         let closestDistance = Number.POSITIVE_INFINITY;
 
-        markerRefs.current.forEach((marker) => {
+        for (const marker of markerRefs.current) {
           const point = map.latLngToContainerPoint(marker.getLatLng());
           const distance = point.distanceTo(centerPoint);
           if (distance < closestDistance) {
             closestDistance = distance;
             closest = marker;
           }
-        });
+        }
 
         return closestDistance <= 72 ? closest : null;
       };
