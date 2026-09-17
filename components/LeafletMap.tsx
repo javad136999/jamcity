@@ -59,25 +59,16 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
   useEffect(() => {
     const readCategories = () => {
-      const select = document.querySelector<HTMLSelectElement>(
-        'select[aria-label="فیلتر دسته‌بندی کسب‌وکارها"]'
-      );
+      const select = document.querySelector<HTMLSelectElement>('select[aria-label="فیلتر دسته‌بندی کسب‌وکارها"]');
       if (!select) return false;
-      const options = Array.from(select.options)
-        .filter((option) => option.value)
-        .map((option) => {
-          const match = option.textContent?.trim().match(/^(\S+)\s+(.+)$/);
-          return {
-            slug: option.value,
-            icon: match?.[1] ?? "🏪",
-            name: match?.[2] ?? option.textContent?.trim() ?? option.value,
-          };
-        });
+      const options = Array.from(select.options).filter((option) => option.value).map((option) => {
+        const match = option.textContent?.trim().match(/^(\S+)\s+(.+)$/);
+        return { slug: option.value, icon: match?.[1] ?? "🏪", name: match?.[2] ?? option.textContent?.trim() ?? option.value };
+      });
       setCategoryOptions(options);
       setActiveCategory(select.value);
       return true;
     };
-
     if (readCategories()) return;
     const timer = window.setTimeout(readCategories, 100);
     return () => window.clearTimeout(timer);
@@ -92,9 +83,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
   }, []);
 
   function chooseCategory(slug: string) {
-    const select = document.querySelector<HTMLSelectElement>(
-      'select[aria-label="فیلتر دسته‌بندی کسب‌وکارها"]'
-    );
+    const select = document.querySelector<HTMLSelectElement>('select[aria-label="فیلتر دسته‌بندی کسب‌وکارها"]');
     if (!select) return;
     select.value = slug;
     select.dispatchEvent(new Event("change", { bubbles: true }));
@@ -105,13 +94,11 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
   useEffect(() => {
     let cancelled = false;
     let map: L.Map | null = null;
-
     (async () => {
       const L = (await import("leaflet")).default;
       if (cancelled || !containerRef.current || mapRef.current) return;
       const container = containerRef.current;
       if ((container as HTMLDivElement & { _leaflet_id?: number })._leaflet_id) return;
-
       map = L.map(container, {
         center: JAM_CENTER,
         zoom: 14,
@@ -130,25 +117,14 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         fadeAnimation: true,
         markerZoomAnimation: true,
       });
-
-      if (cancelled) {
-        map.remove();
-        map = null;
-        return;
-      }
-
+      if (cancelled) { map.remove(); map = null; return; }
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "&copy; OpenStreetMap contributors",
-        maxZoom: 19,
-      }).addTo(map);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
       map.fitBounds(JAM_BOUNDS, { animate: false, padding: [18, 18] });
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
-
       window.setTimeout(() => map?.invalidateSize({ animate: false }), 80);
     })();
-
     return () => {
       cancelled = true;
       const currentMap = mapRef.current;
@@ -156,13 +132,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       mapRef.current = null;
       markerRefs.current = [];
       if (currentMap) {
-        try {
-          currentMap.stop();
-          currentMap.off();
-          currentMap.remove();
-        } catch {
-          // نقشه قبلاً پاک شده است.
-        }
+        try { currentMap.stop(); currentMap.off(); currentMap.remove(); } catch { /* نقشه قبلاً پاک شده است. */ }
       }
       map = null;
     };
@@ -184,11 +154,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         const rating = marker.rating && marker.rating > 0 ? marker.rating.toFixed(1) : "";
         return L.divIcon({
           className: "jam-fantasy-marker",
-          html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};">
-            <div class="jam-marker-pulse"></div>
-            <div class="jam-marker-body"><span>${emoji}</span></div>
-            ${rating ? `<div class="jam-marker-rating">★ ${rating}</div>` : ""}
-          </div>`,
+          html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div>${rating ? `<div class="jam-marker-rating">★ ${rating}</div>` : ""}</div>`,
           iconSize: [36, 36],
           iconAnchor: [18, 18],
           tooltipAnchor: [0, -18],
@@ -201,27 +167,18 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         const title = escapeHtml(markerData.title);
         const subtitle = escapeHtml(markerData.subtitle || theme.label);
         const href = markerData.href ? escapeHtml(markerData.href) : "#";
-        const marker = L.marker([markerData.lat, markerData.lng], {
-          icon: makeIcon(markerData),
-          keyboard: false,
-          riseOnHover: true,
-        });
-
-        const tooltipHtml = `<div class="jam-marker-tooltip" dir="rtl">
-          <div class="jam-marker-tooltip-title">${title}</div>
-          <div class="jam-marker-tooltip-subtitle">${subtitle}</div>
-          <a class="jam-marker-more" href="${href}">بیشتر <b>←</b></a>
-        </div>`;
+        const marker = L.marker([markerData.lat, markerData.lng], { icon: makeIcon(markerData), keyboard: false, riseOnHover: true });
+        const tooltipHtml = `<div class="jam-marker-tooltip" dir="rtl"><div class="jam-marker-tooltip-title">${title}</div><div class="jam-marker-tooltip-subtitle">${subtitle}</div><a class="jam-marker-more" href="${href}">بیشتر <b>←</b></a></div>`;
 
         marker.bindTooltip(tooltipHtml, {
           permanent: false,
-          direction: "top",
-          offset: [0, -3],
+          // کارت مشخصات دقیقاً کنار همان آیکون کسب‌وکار قرار می‌گیرد، نه بالای آن.
+          direction: "right",
+          offset: [7, 0],
           opacity: 1,
           className: "jam-business-tooltip",
           interactive: Boolean(markerData.href),
         });
-
         marker.on("click", () => marker.openTooltip());
         marker.addTo(layer);
         markerRefs.current.push(marker);
@@ -229,7 +186,6 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
       let syncTimer: ReturnType<typeof setTimeout> | null = null;
       let fadeTimer: ReturnType<typeof setTimeout> | null = null;
-
       const closeBusinessTooltips = (fade = false) => {
         markerRefs.current.forEach((marker) => {
           const tooltip = marker.getTooltip();
@@ -238,32 +194,21 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           marker.closeTooltip();
         });
       };
-
       const findClosestMarker = (): L.Marker | null => {
         const centerPoint = map.getSize().divideBy(2);
         let closest: L.Marker | null = null;
         let closestDistance = Number.POSITIVE_INFINITY;
-
         for (const marker of markerRefs.current) {
           const point = map.latLngToContainerPoint(marker.getLatLng());
           const distance = point.distanceTo(centerPoint);
-          if (distance < closestDistance) {
-            closestDistance = distance;
-            closest = marker;
-          }
+          if (distance < closestDistance) { closestDistance = distance; closest = marker; }
         }
-
         return closest;
       };
-
       const showZoomedBusiness = () => {
         if (syncTimer) clearTimeout(syncTimer);
         closeBusinessTooltips();
-
-        // در زوم‌های نزدیک، نزدیک‌ترین کسب‌وکار به مرکز نقشه خودکار باز شود.
-        // محدودیت فاصله قبلی باعث می‌شد در بسیاری از زوم‌ها کاربر مجبور به کلیک باشد.
         if ((map.getZoom() ?? 0) < 15 || markerRefs.current.length === 0) return;
-
         syncTimer = setTimeout(() => {
           if (cancelled) return;
           const nearest = findClosestMarker();
@@ -273,24 +218,18 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           }
         }, 80);
       };
-
       const handleMoveStart = () => {
         if (fadeTimer) clearTimeout(fadeTimer);
         markerRefs.current.forEach((marker) => marker.getElement()?.classList.remove("jam-marker-active"));
         closeBusinessTooltips(true);
         fadeTimer = setTimeout(() => {
-          markerRefs.current.forEach((marker) => {
-            const element = marker.getTooltip()?.getElement();
-            element?.classList.remove("jam-tooltip-fading");
-          });
+          markerRefs.current.forEach((marker) => marker.getTooltip()?.getElement()?.classList.remove("jam-tooltip-fading"));
         }, 220);
       };
-
       map.on("zoomend", showZoomedBusiness);
       map.on("moveend", showZoomedBusiness);
       map.on("movestart", handleMoveStart);
       showZoomedBusiness();
-
       return () => {
         if (syncTimer) clearTimeout(syncTimer);
         if (fadeTimer) clearTimeout(fadeTimer);
@@ -304,44 +243,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
 
   return (
     <div className="jam-map-frame">
-      <div className="jam-map-category-bar" dir="rtl">
-        <div className="jam-map-category-wrap">
-          <button
-            type="button"
-            className={`jam-map-category-button ${categoryOpen ? "is-open" : ""}`}
-            aria-expanded={categoryOpen}
-            aria-label="انتخاب دسته‌بندی کسب‌وکارها"
-            onClick={() => setCategoryOpen((value) => !value)}
-          >
-            <span className="jam-map-category-icon">✨</span>
-            <span className="jam-map-category-copy">
-              <b>{activeCategory ? categoryOptions.find((item) => item.slug === activeCategory)?.name : "دسته‌بندی کسب‌وکارها"}</b>
-              <small>{activeCategory ? "فیلتر فعال است" : "کافه، رستوران، باشگاه و..."}</small>
-            </span>
-            <span className="jam-map-category-chevron">⌄</span>
-          </button>
-
-          {categoryOpen && (
-            <div className="jam-map-category-menu" role="listbox" aria-label="دسته‌بندی کسب‌وکارها">
-              <button type="button" className={`jam-map-category-item ${!activeCategory ? "active" : ""}`} onClick={() => chooseCategory("")}>
-                <span>✨</span><b>همه کسب‌وکارها</b>
-              </button>
-              {categoryOptions.map((category) => (
-                <button
-                  key={category.slug}
-                  type="button"
-                  className={`jam-map-category-item ${activeCategory === category.slug ? "active" : ""}`}
-                  onClick={() => chooseCategory(category.slug)}
-                >
-                  <span>{category.icon}</span>
-                  <b>{category.name}</b>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
+      <div className="jam-map-category-bar" dir="rtl"><div className="jam-map-category-wrap"><button type="button" className={`jam-map-category-button ${categoryOpen ? "is-open" : ""}`} aria-expanded={categoryOpen} aria-label="انتخاب دسته‌بندی کسب‌وکارها" onClick={() => setCategoryOpen((value) => !value)}><span className="jam-map-category-icon">✨</span><span className="jam-map-category-copy"><b>{activeCategory ? categoryOptions.find((item) => item.slug === activeCategory)?.name : "دسته‌بندی کسب‌وکارها"}</b><small>{activeCategory ? "فیلتر فعال است" : "کافه، رستوران، باشگاه و..."}</small></span><span className="jam-map-category-chevron">⌄</span></button>{categoryOpen && (<div className="jam-map-category-menu" role="listbox" aria-label="دسته‌بندی کسب‌وکارها"><button type="button" className={`jam-map-category-item ${!activeCategory ? "active" : ""}`} onClick={() => chooseCategory("")}><span>✨</span><b>همه کسب‌وکارها</b></button>{categoryOptions.map((category) => (<button key={category.slug} type="button" className={`jam-map-category-item ${activeCategory === category.slug ? "active" : ""}`} onClick={() => chooseCategory(category.slug)}><span>{category.icon}</span><b>{category.name}</b></button>))}</div>)}</div></div>
       <div ref={containerRef} className="jam-map-canvas" />
       <div className="jam-map-legend"><span><i className="legend-dot gold" /> طلایی</span><span><i className="legend-dot silver" /> نقره‌ای</span><span><i className="legend-dot green" /> سایر مکان‌ها</span><span className="legend-zoom">+ / − برای زوم</span></div>
       <style jsx global>{`
