@@ -46,7 +46,7 @@ export default function InstallAppButton() {
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone() || hasSavedInstallState()) {
+    if (isStandalone()) {
       setAlreadyInstalled(true);
       return;
     }
@@ -56,7 +56,7 @@ export default function InstallAppButton() {
       e.preventDefault();
 
       // اگر نصب قبلاً ثبت شده، حتی در صورت ارسال مجدد رویداد هم دکمه نمایش داده نشود.
-      if (isStandalone() || hasSavedInstallState()) {
+      if (isStandalone()) {
         setAlreadyInstalled(true);
         return;
       }
@@ -75,11 +75,9 @@ export default function InstallAppButton() {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    // آیفون/سافاری هیچ‌وقت beforeinstallprompt نمی‌فرستد؛
-    // راهنمای دستی فقط تا زمانی نمایش داده می‌شود که نصب ثبت نشده باشد.
-    if (isIOS()) {
-      setShowButton(true);
-    }
+    // دکمه نصب در هدر همیشه برای مرورگرهای غیر Standalone قابل مشاهده باشد.
+    // در اندروید، اگر beforeinstallprompt موجود باشد با همان رویداد نصب انجام می‌شود.
+    // در آیفون، راهنمای دستی باز می‌شود.
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -93,7 +91,12 @@ export default function InstallAppButton() {
       return;
     }
 
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      if (typeof window !== "undefined") {
+        window.alert("برای نصب جم‌سیتی، از منوی مرورگر گزینه «افزودن به صفحه اصلی» یا «Install app» را انتخاب کنید.");
+      }
+      return;
+    }
 
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
