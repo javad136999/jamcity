@@ -66,6 +66,13 @@ export default function HomeReferralPlacement() {
           }
         }
       `}</style>
+      <style jsx global>{`
+        @media (max-width: 640px) {
+          .jam-map-category-bar .jam-map-category-icon {
+            transform: translate(3px, -3px);
+          }
+        }
+      `}</style>
     </a>,
     target,
   );
