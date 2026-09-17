@@ -48,14 +48,6 @@ export default function Header() {
         <div className="flex min-w-0 items-center justify-center gap-1.5 sm:gap-3">
           <InstallAppButton />
           <Link
-            href="/referral"
-            aria-label="کارت شارژ رایگان"
-            title="کارت شارژ رایگان"
-            className="jam-referral-glow group flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#E8D39A] bg-gradient-to-br from-[#FFF8DD] via-[#FBEEDA] to-[#E9C96A] text-lg shadow-[0_5px_16px_rgba(180,135,35,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(180,135,35,.34)] sm:h-11 sm:w-11 sm:text-xl"
-          >
-            <span className="transition group-hover:scale-110">🎁</span>
-          </Link>
-          <Link
             href="/business/manage"
             className="jam-panel-glow group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-2xl border border-[#BFE8CE] bg-gradient-to-l from-[#147A4B] via-[#1AA463] to-[#2FAE72] px-3 py-2 text-[11px] font-black text-white shadow-[0_6px_18px_rgba(20,122,75,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(20,122,75,.32)] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-base"
           >
@@ -181,23 +173,6 @@ export default function Header() {
         }
         .jam-panel-glow {
           animation: jamPanelGlow 2.1s ease-in-out infinite;
-        }
-
-        @keyframes jamReferralGlow {
-          0%,
-          100% {
-            box-shadow: 0 5px 16px rgba(180, 135, 35, 0.24),
-              0 0 0 1px rgba(232, 211, 154, 0.45),
-              0 0 10px rgba(245, 211, 102, 0.35);
-          }
-          50% {
-            box-shadow: 0 7px 22px rgba(180, 135, 35, 0.42),
-              0 0 0 2px rgba(245, 211, 102, 0.75),
-              0 0 24px rgba(245, 211, 102, 0.85);
-          }
-        }
-        .jam-referral-glow {
-          animation: jamReferralGlow 1.7s ease-in-out infinite;
         }
       `}</style>
     </header>
