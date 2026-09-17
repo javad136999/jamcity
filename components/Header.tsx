@@ -48,10 +48,10 @@ export default function Header() {
         <div className="flex min-w-0 items-center justify-center gap-1.5 sm:gap-3">
           <InstallAppButton />
           <Link
-            href="/referrals"
+            href="/referral"
             aria-label="کارت شارژ رایگان"
             title="کارت شارژ رایگان"
-            className="group flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#E8D39A] bg-gradient-to-br from-[#FFF8DD] via-[#FBEEDA] to-[#E9C96A] text-lg shadow-[0_5px_16px_rgba(180,135,35,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(180,135,35,.34)] sm:h-11 sm:w-11 sm:text-xl"
+            className="jam-referral-glow group flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-[#E8D39A] bg-gradient-to-br from-[#FFF8DD] via-[#FBEEDA] to-[#E9C96A] text-lg shadow-[0_5px_16px_rgba(180,135,35,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(180,135,35,.34)] sm:h-11 sm:w-11 sm:text-xl"
           >
             <span className="transition group-hover:scale-110">🎁</span>
           </Link>
@@ -113,7 +113,7 @@ export default function Header() {
                     🏷️ تخفیف‌ها
                   </Link>
                   <Link
-                    href="/referrals"
+                    href="/referral"
                     className="block px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-50"
                     onClick={() => setMenuOpen(false)}
                   >
@@ -181,6 +181,23 @@ export default function Header() {
         }
         .jam-panel-glow {
           animation: jamPanelGlow 2.1s ease-in-out infinite;
+        }
+
+        @keyframes jamReferralGlow {
+          0%,
+          100% {
+            box-shadow: 0 5px 16px rgba(180, 135, 35, 0.24),
+              0 0 0 1px rgba(232, 211, 154, 0.45),
+              0 0 10px rgba(245, 211, 102, 0.35);
+          }
+          50% {
+            box-shadow: 0 7px 22px rgba(180, 135, 35, 0.42),
+              0 0 0 2px rgba(245, 211, 102, 0.75),
+              0 0 24px rgba(245, 211, 102, 0.85);
+          }
+        }
+        .jam-referral-glow {
+          animation: jamReferralGlow 1.7s ease-in-out infinite;
         }
       `}</style>
     </header>
