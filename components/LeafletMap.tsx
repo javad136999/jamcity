@@ -24,7 +24,7 @@ const JAM_BOUNDS: [[number, number], [number, number]] = [
 ];
 
 function escapeHtml(value: string) {
-  return value.replace(/[&<>'\"]/g, (character) => ({
+  return value.replace(/[&<>'\\"]/g, (character) => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -295,7 +295,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         @media (max-width:640px) {
           .jam-map-category-bar { padding:6px 8px; }
           .jam-map-category-button { min-height:40px; max-width:215px; padding:5px 8px 5px 9px; border-radius:15px; }
-          .jam-map-category-icon { width:26px; height:26px; border-radius:9px; font-size:14px; }
+          .jam-map-category-icon { width:23px; height:23px; border-radius:8px; font-size:13px; }
           .jam-map-category-copy b { max-width:145px; font-size:9px; }
           .jam-map-category-copy small { font-size:6.5px; }
           .jam-map-category-menu { width:min(300px,calc(100vw - 24px)); max-height:220px; grid-template-columns:repeat(2,minmax(0,1fr)); }
