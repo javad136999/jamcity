@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import VisitTracker from "@/components/VisitTracker";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import HomeReferralPlacement from "@/components/HomeReferralPlacement";
 
 export const metadata: Metadata = {
   title: "جم‌سیتی | همه‌چیز برای زندگی بهتر در جم",
@@ -68,6 +69,7 @@ export default function RootLayout({
           <VisitTracker />
 
           <Header />
+          <HomeReferralPlacement />
 
           <main className="mx-auto min-h-[70vh] max-w-6xl px-4 pb-24 pt-6 md:pb-10">
             {children}
