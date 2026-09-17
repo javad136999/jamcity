@@ -7,14 +7,17 @@ import { useEffect, useState } from "react";
 const CATEGORY_LABEL = "فیلتر دسته‌بندی کسب‌وکارها";
 
 type Placement = { categoryBox: HTMLElement; section: HTMLElement };
+type Position = { left: number; top: number; width: number };
 
 export default function HomeReferralPlacement() {
   const pathname = usePathname();
   const [placement, setPlacement] = useState<Placement | null>(null);
+  const [position, setPosition] = useState<Position | null>(null);
 
   useEffect(() => {
     if (pathname !== "/") {
       setPlacement(null);
+      setPosition(null);
       return;
     }
 
@@ -40,14 +43,13 @@ export default function HomeReferralPlacement() {
     return () => {
       cancelled = true;
       observer?.disconnect();
-      setPlacement(null);
     };
   }, [pathname]);
 
   useEffect(() => {
     if (!placement || pathname !== "/") return;
 
-    const position = () => {
+    const updatePosition = () => {
       const { categoryBox, section } = placement;
       if (!document.body.contains(categoryBox) || !document.body.contains(section)) return;
 
@@ -58,40 +60,33 @@ export default function HomeReferralPlacement() {
       const width = isMobile ? sectionRect.width : Math.max(0, (sectionRect.width - gap) / 2);
 
       categoryBox.style.width = isMobile ? "100%" : `${width}px`;
-      if (!isMobile) {
-        categoryBox.style.marginLeft = "0";
-        categoryBox.style.marginRight = "auto";
-      } else {
-        categoryBox.style.marginLeft = "";
-        categoryBox.style.marginRight = "";
-      }
+      categoryBox.style.marginLeft = isMobile ? "" : "0";
+      categoryBox.style.marginRight = isMobile ? "" : "auto";
+
+      setPosition({
+        left: isMobile ? sectionRect.left : sectionRect.left + width + gap,
+        top: isMobile ? categoryRect.bottom + gap : categoryRect.top,
+        width,
+      });
     };
 
-    position();
-    window.addEventListener("resize", position);
-    window.addEventListener("scroll", position, { passive: true });
-    const resizeObserver = new ResizeObserver(position);
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, { passive: true });
+    const resizeObserver = new ResizeObserver(updatePosition);
     resizeObserver.observe(placement.section);
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", position);
-      window.removeEventListener("scroll", position);
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition);
     };
   }, [placement, pathname]);
 
-  if (!placement || pathname !== "/") return null;
+  if (!placement || !position || pathname !== "/") return null;
 
   return createPortal(
-    <div
-      dir="rtl"
-      className="pointer-events-auto fixed z-50"
-      style={{
-        left: placement.section.getBoundingClientRect().left + (window.innerWidth >= 768 ? (placement.section.getBoundingClientRect().width + 8) / 2 : 0),
-        top: placement.section.getBoundingClientRect().top + (window.innerWidth >= 768 ? 0 : placement.categoryBox.getBoundingClientRect().height + 8),
-        width: window.innerWidth >= 768 ? Math.max(0, (placement.section.getBoundingClientRect().width - 8) / 2) : placement.section.getBoundingClientRect().width,
-      }}
-    >
+    <div dir="rtl" className="pointer-events-auto fixed z-50" style={position}>
       <a
         href="/referral"
         className="group flex w-full items-center gap-2 rounded-2xl border border-[#E8D39A] bg-gradient-to-l from-[#FFF8DD] via-white to-[#FBEEDA] px-3 py-2 shadow-[0_6px_20px_rgba(180,135,35,.18)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(180,135,35,.28)] sm:px-4 sm:py-2.5"
