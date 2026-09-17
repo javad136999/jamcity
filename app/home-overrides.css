@@ -24,7 +24,7 @@
   .home-shell > .wall-home-feature + div { grid-column:2; grid-row:auto; height:100%; margin-top:0; }
 }
 
-/* Gold business showcase: fixed/manual horizontal strip, never auto-scroll. */
+/* Gold business showcase: horizontal, slow rightward motion with manual drag/scroll. */
 .gold-home-viewport {
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x;
@@ -36,13 +36,16 @@
 }
 .gold-home-viewport::-webkit-scrollbar { display:none; }
 .gold-home-viewport .gold-home-track {
-  animation: none !important;
-  -webkit-animation: none !important;
-  transform: none !important;
-  will-change: auto !important;
+  animation: jamGoldShowcaseRight 48s linear infinite !important;
+  -webkit-animation: jamGoldShowcaseRight 48s linear infinite !important;
+  will-change: transform;
+}
+@keyframes jamGoldShowcaseRight {
+  from { transform: translateX(-25%); }
+  to { transform: translateX(0); }
 }
 .gold-home-viewport.is-manual { cursor: grabbing; }
-.gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused !important; }
+.gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused !important; -webkit-animation-play-state: paused !important; }
 
 /* Make the gold cards denser so more businesses are visible in one row. */
 .gold-home-viewport > .gold-home-track { gap: 7px !important; }
@@ -74,15 +77,78 @@
 /* The gold business/category identity stays small and is visually anchored to the right. */
 .gold-home-viewport .gold-home-track .gold-business-icon,
 .gold-home-viewport .gold-home-track [class*="business-icon"] {
-  width: 28px !important;
-  height: 28px !important;
-  min-width: 28px !important;
-  font-size: 14px !important;
-  border-radius: 9px !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
 }
 .gold-home-viewport .gold-home-track [class*="business-header"],
 .gold-home-viewport .gold-home-track [class*="business-title"] {
   min-width: 0 !important;
+}
+
+/* Under-map golden business/product strip: manual-only, spacious, fixed business identity. */
+.gold-products-manual-viewport {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  cursor: grab;
+  overscroll-behavior-x: contain;
+}
+.gold-products-manual-viewport::-webkit-scrollbar { display:none; }
+.gold-products-manual-viewport .gold-products-manual-track,
+.gold-products-manual-viewport [class*="gold-products-manual-track"] {
+  animation: none !important;
+  -webkit-animation: none !important;
+  transform: none !important;
+}
+.gold-products-manual-viewport.is-manual { cursor: grabbing; }
+.gold-products-manual-viewport .gold-business-icon,
+.gold-products-manual-viewport [class*="business-icon"] {
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  font-size: 12px !important;
+  border-radius: 8px !important;
+}
+.gold-products-manual-viewport img { object-fit: cover; }
+
+/* Popular and hot-discount rows move slowly to the right but remain manually scrollable. */
+.jam-popular-viewport .jam-popular-track {
+  animation: jamPopularRight 42s linear infinite !important;
+  -webkit-animation: jamPopularRight 42s linear infinite !important;
+  will-change: transform;
+}
+@keyframes jamPopularRight {
+  from { transform: translateX(-33.333%); }
+  to { transform: translateX(0); }
+}
+.discount-home-viewport .discount-home-track {
+  animation: jamDiscountRight 42s linear infinite !important;
+  -webkit-animation: jamDiscountRight 42s linear infinite !important;
+  will-change: transform;
+}
+@keyframes jamDiscountRight {
+  from { transform: translateX(-25%); }
+  to { transform: translateX(0); }
+}
+.jam-popular-viewport.is-manual .jam-popular-track,
+.discount-home-viewport.is-manual .discount-home-track {
+  animation-play-state: paused !important;
+  -webkit-animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gold-home-viewport .gold-home-track,
+  .jam-popular-viewport .jam-popular-track,
+  .discount-home-viewport .discount-home-track {
+    animation: none !important;
+    -webkit-animation: none !important;
+    transform: none !important;
+  }
 }
 
 @media (max-width:640px) {
@@ -108,9 +174,9 @@
   .gold-home-viewport { padding-inline:2px !important; }
   .gold-home-viewport .gold-home-track > * { flex-basis:126px !important; }
   .gold-home-viewport img { max-height:72px; }
+  .gold-products-manual-viewport { padding-inline:3px !important; }
+  .gold-products-manual-viewport > * { min-width:0 !important; }
 }
-
-.jam-popular-viewport.is-manual .jam-popular-track, .discount-home-viewport.is-manual .discount-home-track { animation-play-state:paused !important; }
 
 /* Map zoom card: existing business icon stays untouched; card shows only name. */
 .jam-business-tooltip .jam-marker-tooltip { position:relative !important; min-width:92px !important; max-width:145px !important; padding:6px 9px !important; border-radius:10px !important; border:1px solid rgba(47,118,87,.16) !important; box-shadow:0 6px 16px rgba(55,45,35,.16) !important; }
