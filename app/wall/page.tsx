@@ -20,6 +20,8 @@ type WallMessage = {
   image_url: string | null;
   audio_url?: string | null;
   is_promo: boolean;
+  is_pinned: boolean;
+  pinned_at: string | null;
   business_id: string | null;
   category: "car" | "realestate" | null;
   created_at: string;
@@ -177,6 +179,7 @@ export default function WallPage() {
   const router = useRouter();
   const { user, profile, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
+  const [pinnedMessage, setPinnedMessage] = useState<WallMessage | null>(null);
   const [replyingTo, setReplyingTo] = useState<WallMessage | null>(null);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
@@ -416,7 +419,7 @@ export default function WallPage() {
       const { data: rawMessages, error: msgError } = await supabase
         .from("wall_messages")
         // reply_to در تایپ فعلی دیتابیس وجود ندارد؛ آن را از select حذف می‌کنیم.
-        .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at")
+        .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
         .order("created_at", { ascending: false })
         .limit(30);
       if (msgError) {
@@ -444,6 +447,25 @@ export default function WallPage() {
         rows.forEach((r) => {
           r.profiles = profileMap.get(r.user_id) ?? null;
         });
+      }
+
+      const { data: pinnedRow } = await supabase
+        .from("wall_messages")
+        .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+        .eq("is_pinned", true)
+        .order("pinned_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pinnedRow) {
+        const pinnedProfile = await supabase
+          .from("profiles")
+          .select("display_name, avatar_url")
+          .eq("id", pinnedRow.user_id)
+          .maybeSingle();
+        setPinnedMessage({ ...(pinnedRow as WallMessage), reply_to: null, profiles: pinnedProfile.data ?? null });
+      } else {
+        setPinnedMessage(null);
       }
 
       setMessages(rows);
@@ -476,6 +498,18 @@ rows.forEach((r) => {
 
     const channel = supabase
       .channel("wall-messages")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "wall_messages" },
+        (payload) => {
+          const next = payload.new as WallMessage;
+          setMessages((prev) => (prev ?? []).map((m) => m.id === next.id ? { ...m, ...next } : m));
+          setPinnedMessage((current) => {
+            if (next.is_pinned) return next;
+            return current?.id === next.id ? null : current;
+          });
+        }
+      )
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "wall_messages" },
@@ -876,6 +910,28 @@ function handleReply(message: WallMessage) {
               backgroundSize: "16px 16px",
             }}
           >
+            {pinnedMessage && (
+              <div className="mb-2 rounded-xl border border-[#E3EBDE] bg-white/65 px-3 py-2 shadow-sm backdrop-blur">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = document.getElementById("message-" + pinnedMessage.id);
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+                    else setMessages((prev) => [...(prev ?? []), pinnedMessage]);
+                    requestAnimationFrame(() => document.getElementById("message-" + pinnedMessage.id)?.scrollIntoView({ behavior: "smooth", block: "center" }));
+                  }}
+                  className="flex w-full items-center gap-2 text-right"
+                  aria-label="مشاهده آگهی سنجاق‌شده"
+                >
+                  <span className="shrink-0 text-[12px] opacity-70">📌</span>
+                  <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#8A968C]">
+                    {pinnedMessage.content?.split("\n")[0]?.replace(/^⭐\s*/, "") || "آگهی سنجاق‌شده"}
+                  </span>
+                  <span className="shrink-0 text-[9px] font-bold text-[#B0BAB1]">مشاهده ←</span>
+                </button>
+              </div>
+            )}
+
             {messages === null ? (
               <Spinner label="در حال بارگذاری پیام‌ها..." />
             ) : messages.length === 0 ? (
