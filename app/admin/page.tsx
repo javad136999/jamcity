@@ -457,7 +457,7 @@ export default function AdminPage() {
 
   async function loadWallAds() {
     setWallAdsLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("wall_messages")
       .select("id,content,image_url,is_promo,is_pinned,pinned_at,created_at,user_id")
       .not("content", "is", null)
@@ -491,15 +491,15 @@ export default function AdminPage() {
     setWallPinBusyId(id);
     try {
       if (currentlyPinned) {
-        const { error } = await supabase.from("wall_messages")
+        const { error } = await (supabase as any).from("wall_messages")
           .update({ is_pinned: false, pinned_at: null }).eq("id", id);
         if (error) throw error;
         alert("📌 پین آگهی برداشته شد.");
       } else {
-        const { error: clearError } = await supabase.from("wall_messages")
+        const { error: clearError } = await (supabase as any).from("wall_messages")
           .update({ is_pinned: false, pinned_at: null }).eq("is_pinned", true);
         if (clearError) throw clearError;
-        const { error } = await supabase.from("wall_messages")
+        const { error } = await (supabase as any).from("wall_messages")
           .update({ is_pinned: true, pinned_at: new Date().toISOString() }).eq("id", id);
         if (error) throw error;
         alert("📌 آگهی با موفقیت بالای دیوار سنجاق شد.");
