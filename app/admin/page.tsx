@@ -49,12 +49,6 @@ type Referrer = {
   paid_reward: number;
 };
 
-type WallAdminMessage = {
-  id: string; content: string | null; image_url: string | null; is_promo: boolean;
-  is_pinned: boolean; pinned_at: string | null; created_at: string;
-  profiles?: { display_name: string; avatar_url: string | null } | null;
-};
-
 type Reward = {
   id: string;
   referrer_id: string;
@@ -138,7 +132,7 @@ export default function AdminPage() {
   const supabase = useMemo(() => createClient() as any, []);
 
   const [view, setView] = useState<
-    "businesses" | "stats" | "reports" | "referrals" | "events" | "pinned"
+    "businesses" | "stats" | "reports" | "referrals" | "events"
   >("businesses");
 
   const [tab, setTab] =
@@ -178,9 +172,6 @@ export default function AdminPage() {
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
   const [eventMessage, setEventMessage] = useState<{ text: string; error?: boolean } | null>(null);
-  const [wallAds, setWallAds] = useState<WallAdminMessage[]>([]);
-  const [wallAdsLoading, setWallAdsLoading] = useState(false);
-  const [wallPinBusyId, setWallPinBusyId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAdmin || view !== "stats") return;
@@ -454,64 +445,6 @@ export default function AdminPage() {
     if (isAdmin && view === "events") loadEvents();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, view]);
-
-  async function loadWallAds() {
-    setWallAdsLoading(true);
-    const { data, error } = await supabase
-      .from("wall_messages")
-      .select("id,content,image_url,is_promo,is_pinned,pinned_at,created_at,user_id")
-      .not("content", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (error) {
-      console.error("WALL ADS LOAD ERROR:", error);
-      setWallAds([]);
-      setWallAdsLoading(false);
-      return;
-    }
-
-    const rows = (data ?? []) as Array<WallAdminMessage & { user_id: string }>;
-    const userIds = Array.from(new Set(rows.map((row) => row.user_id)));
-    const { data: profilesData } = userIds.length
-      ? await supabase.from("profiles").select("id,display_name,avatar_url").in("id", userIds)
-      : { data: [] };
-    const profileMap = new Map<string, { display_name: string; avatar_url: string | null }>((profilesData ?? []).map((p: any) => [p.id, { display_name: String(p.display_name ?? "کاربر"), avatar_url: p.avatar_url ?? null }]));
-    setWallAds(rows.map((row) => ({ ...row, profiles: profileMap.get(row.user_id) ?? null })));
-    setWallAdsLoading(false);
-  }
-
-  useEffect(() => {
-    if (isAdmin && view === "pinned") loadWallAds();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, view]);
-
-  async function toggleWallPin(id: string, currentlyPinned: boolean) {
-    if (wallPinBusyId) return;
-    setWallPinBusyId(id);
-    try {
-      if (currentlyPinned) {
-        const { error } = await supabase.from("wall_messages")
-          .update({ is_pinned: false, pinned_at: null }).eq("id", id);
-        if (error) throw error;
-        alert("📌 پین آگهی برداشته شد.");
-      } else {
-        const { error: clearError } = await supabase.from("wall_messages")
-          .update({ is_pinned: false, pinned_at: null }).eq("is_pinned", true);
-        if (clearError) throw clearError;
-        const { error } = await supabase.from("wall_messages")
-          .update({ is_pinned: true, pinned_at: new Date().toISOString() }).eq("id", id);
-        if (error) throw error;
-        alert("📌 آگهی با موفقیت بالای دیوار سنجاق شد.");
-      }
-      await loadWallAds();
-    } catch (error: any) {
-      console.error("WALL PIN ERROR:", error);
-      alert("❌ تغییر پین آگهی انجام نشد:\n" + (error?.message || "خطای نامشخص"));
-    } finally {
-      setWallPinBusyId(null);
-    }
-  }
 
   function openEventForm(event?: CityEvent) {
     setEventMessage(null);
@@ -1084,14 +1017,6 @@ export default function AdminPage() {
 
         <button
           type="button"
-          onClick={() => setView("pinned")}
-          className={`rounded-full px-4 py-2 text-sm font-bold transition ${view === "pinned" ? "bg-jam-green text-white shadow-glow" : "bg-black/5 text-slate-500 hover:bg-jam-green hover:text-white"}`}
-        >
-          📌 پین آگهی
-        </button>
-
-        <button
-          type="button"
           onClick={() => setView("referrals")}
           className={`rounded-full px-4 py-2 text-sm font-bold transition ${
             view === "referrals"
@@ -1600,44 +1525,6 @@ export default function AdminPage() {
           )}
         </div>
       )}
-        </div>
-      ) : view === "pinned" ? (
-        <div className="space-y-4">
-          <div className="rounded-xl2 border border-emerald-100 bg-emerald-50/60 p-4">
-            <p className="text-sm font-black text-slate-800">📌 سنجاق کردن آگهی دیوار جم</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">یک آگهی را انتخاب کنید تا مثل تلگرام در نوار بالای دیوار نمایش داده شود. فقط یک آگهی همزمان پین می‌ماند.</p>
-          </div>
-          {wallAdsLoading ? (
-            <Spinner label="در حال دریافت آگهی‌های دیوار..." />
-          ) : wallAds.length === 0 ? (
-            <EmptyState icon="📭" title="آگهی‌ای برای پین کردن پیدا نشد" />
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {wallAds.map((ad) => (
-                <div key={ad.id} className={"overflow-hidden rounded-xl2 border bg-white p-3 shadow-soft " + (ad.is_pinned ? "border-emerald-300 ring-2 ring-emerald-100" : "border-slate-200")}>
-                  {ad.image_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={ad.image_url} alt="" className="mb-3 h-40 w-full rounded-xl object-cover" />
-                  )}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="line-clamp-3 whitespace-pre-wrap text-sm font-bold leading-6 text-slate-800">{ad.content}</p>
-                      <p className="mt-2 text-[10px] text-slate-400">{ad.profiles?.display_name || "کاربر"} · {new Date(ad.created_at).toLocaleString("fa-IR")}</p>
-                    </div>
-                    {ad.is_pinned && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-black text-emerald-700">📌 پین شده</span>}
-                  </div>
-                  <button
-                    type="button"
-                    disabled={wallPinBusyId === ad.id}
-                    onClick={() => toggleWallPin(ad.id, ad.is_pinned)}
-                    className={"mt-3 w-full rounded-xl py-2.5 text-xs font-black text-white transition disabled:opacity-50 " + (ad.is_pinned ? "bg-slate-500" : "bg-jam-green shadow-glow")}
-                  >
-                    {wallPinBusyId === ad.id ? "در حال ثبت..." : ad.is_pinned ? "📍 برداشتن پین" : "📌 پین کردن این آگهی"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       ) : view === "reports" ? (
         <div className="space-y-4">
