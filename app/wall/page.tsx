@@ -818,24 +818,26 @@ async function deleteMessage(messageId: string) {
       "شاهین", "ساینا", "رانا", "پارس", "آریسان", "تارا", "206", "207",
       "405", "پارس خودرو",
     ];
-    const realEstateTerms = [
-      "املاک", "ملک", "آپارتمان", "خانه", "منزل", "زمین", "ویلا", "باغ",
-      "مغازه", "دفتر", "اجاره", "رهن", "رهن و اجاره", "فروش ملک", "خرید ملک",
-      "فروش آپارتمان", "اجاره آپارتمان", "رهن آپارتمان",
+    const realEstateTransactionTerms = ["خرید", "فروش", "رهن", "اجاره"];
+    const realEstatePropertyTerms = [
+      "آپارتمان", "اپارتمان", "واحد", "ویلایی", "ویلا",
     ];
     const filters =
       category === "car"
-        ? [
-            "and(category.eq.car,or(content.ilike.%خرید%,content.ilike.%فروش%))",
-            ...carTerms.flatMap((term) => [
+        ? carTerms
+            .flatMap((term) => [
               `and(content.ilike.%خرید%,content.ilike.%${term}%)`,
               `and(content.ilike.%فروش%,content.ilike.%${term}%)`,
-            ]),
-          ].join(",")
-        : [
-            `category.eq.${category}`,
-            ...realEstateTerms.map((term) => `content.ilike.%${term}%`),
-          ].join(",");
+            ])
+            .join(",")
+        : realEstatePropertyTerms
+            .flatMap((propertyTerm) =>
+              realEstateTransactionTerms.map(
+                (transactionTerm) =>
+                  `and(content.ilike.%${transactionTerm}%,content.ilike.%${propertyTerm}%)`
+              )
+            )
+            .join(",");
 
     const { data, error } = await supabase
       .from("wall_messages")
