@@ -476,7 +476,7 @@ export default function AdminPage() {
     const { data: profilesData } = userIds.length
       ? await supabase.from("profiles").select("id,display_name,avatar_url").in("id", userIds)
       : { data: [] };
-    const profileMap = new Map((profilesData ?? []).map((p: any) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }]));
+    const profileMap = new Map<string, { display_name: string; avatar_url: string | null }>((profilesData ?? []).map((p: any) => [p.id, { display_name: String(p.display_name ?? "کاربر"), avatar_url: p.avatar_url ?? null }]));
     setWallAds(rows.map((row) => ({ ...row, profiles: profileMap.get(row.user_id) ?? null })));
     setWallAdsLoading(false);
   }
