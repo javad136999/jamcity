@@ -69,11 +69,15 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         return;
       }
 
-      // اگر beforeinstallprompt دوباره صادر شده، مرورگر عملاً اعلام کرده
-      // که PWA دوباره قابل نصب است (مثلاً بعد از حذف از گوشی).
-      try {
-        window.localStorage.removeItem(INSTALL_STATE_KEY);
-      } catch {}
+      // اگر نصب قبلاً در این مرورگر ثبت شده، این رویداد به تنهایی
+      // نباید باعث نمایش مجدد دکمه در Refresh شود؛ بعضی مرورگرها
+      // beforeinstallprompt را حتی بعد از نصب هم دوباره ارسال می‌کنند.
+      if (hasSavedInstallState()) {
+        setAlreadyInstalled(true);
+        setShowButton(false);
+        setDeferredPrompt(null);
+        return;
+      }
 
       setAlreadyInstalled(false);
       setDeferredPrompt(e as BeforeInstallPromptEvent);
