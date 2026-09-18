@@ -39,17 +39,20 @@ function saveInstallState() {
   }
 }
 
-export default function InstallAppButton() {
+export default function InstallAppButton({ placement = "header" }: { placement?: "header" | "home" }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showButton, setShowButton] = useState(false);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone()) {
+    if (isStandalone() || hasSavedInstallState()) {
       setAlreadyInstalled(true);
       return;
     }
+    // در صفحه اصلی، دکمه باید از همان لحظه ورود در دید کاربر باشد؛
+    // اگر مرورگر رویداد نصب را بعداً ارسال کند، همان رویداد برای نصب استفاده می‌شود.
+    if (placement === "home") setShowButton(true);
 
     // اندروید/کروم/دسکتاپ: مرورگر رویداد beforeinstallprompt را می‌فرستد
     function handleBeforeInstallPrompt(e: Event) {
@@ -72,16 +75,23 @@ export default function InstallAppButton() {
       setDeferredPrompt(null);
     }
 
+    function handleVisibilityChange() {
+      if (isStandalone()) {
+        saveInstallState();
+        setAlreadyInstalled(true);
+        setShowButton(false);
+      }
+    }
+
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // دکمه نصب در هدر همیشه برای مرورگرهای غیر Standalone قابل مشاهده باشد.
-    // در اندروید، اگر beforeinstallprompt موجود باشد با همان رویداد نصب انجام می‌شود.
-    // در آیفون، راهنمای دستی باز می‌شود.
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
       window.removeEventListener("appinstalled", handleAppInstalled);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
@@ -118,11 +128,13 @@ export default function InstallAppButton() {
       <button
         type="button"
         onClick={handleClick}
-        className="jam-install-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-2 text-[11px] font-black text-[#0f9a56] ring-2 ring-emerald-400/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"
+        className={placement === "home"
+          ? "jam-install-home fixed left-1/2 top-[74px] z-[60] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[22px] border-2 border-emerald-300 bg-gradient-to-l from-white via-[#f4fff8] to-[#eafff3] px-6 py-3.5 text-base font-black text-[#0f9a56] shadow-[0_12px_40px_rgba(15,154,86,.28),0_0_0_5px_rgba(255,255,255,.78)] sm:top-[92px] sm:px-10 sm:py-4 sm:text-lg"
+          : "jam-install-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-2 text-[11px] font-black text-[#0f9a56] ring-2 ring-emerald-400/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"}
       >
-        <span className="text-sm sm:text-2xl">📲</span>
-        <span className="sm:hidden">نصب</span>
-        <span className="hidden sm:inline">نصب اپلیکیشن</span>
+        <span className={placement === "home" ? "text-2xl sm:text-3xl" : "text-sm sm:text-2xl"}>📲</span>
+        <span className={placement === "home" ? "text-base sm:text-lg" : "sm:hidden"}>نصب اپلیکیشن جم‌سیتی</span>
+        {placement !== "home" && <span className="hidden sm:inline">نصب اپلیکیشن</span>}
       </button>
 
       {showIOSGuide && (
@@ -154,6 +166,16 @@ export default function InstallAppButton() {
       )}
 
       <style jsx>{`
+        .jam-install-home { animation: jamInstallHome 2.2s ease-in-out infinite; }
+        @keyframes jamInstallHome {
+          0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 12px 40px rgba(15,154,86,.28), 0 0 0 5px rgba(255,255,255,.78); }
+          50% { transform: translateX(-50%) scale(1.045); box-shadow: 0 16px 48px rgba(15,154,86,.42), 0 0 0 7px rgba(255,255,255,.86), 0 0 28px rgba(57,255,143,.45); }
+        }
+        @media (max-width: 640px) {
+          .jam-install-home { top: 66px; max-width: calc(100vw - 28px); padding: 11px 18px; border-radius: 18px; }
+        }
+        @media (prefers-reduced-motion: reduce) { .jam-install-home { animation: none; } }
+
         @keyframes jamInstallGlow {
           0%,
           100% {
