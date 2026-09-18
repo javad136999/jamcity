@@ -1021,7 +1021,25 @@ function handleReply(message: WallMessage) {
               const m = browseResults[browseIndex];
               const cat = m.category ? CATEGORY_META[m.category] : null;
               return (
-                <div className="space-y-3 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <button
+                      onClick={() => setBrowseIndex((i) => Math.min(browseResults.length - 1, i + 1))}
+                      disabled={browseIndex >= browseResults.length - 1}
+                      className="rounded-full bg-[#147A4B] px-4 py-2 text-[11px] font-bold text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] disabled:opacity-40"
+                    >
+                      ▲ بعدی
+                    </button>
+                    <button
+                      onClick={() => setBrowseIndex((i) => Math.max(0, i - 1))}
+                      disabled={browseIndex <= 0}
+                      className="rounded-full border border-[#E3EBDE] bg-white px-4 py-2 text-[11px] font-bold text-[#66766A] disabled:opacity-40"
+                    >
+                      ▼ قبلی
+                    </button>
+                  </div>
+
+                  <div className="space-y-3 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
                   <button
                     onClick={() => openChatWith(m.user_id)}
                     className="flex items-center gap-2 text-[12px] font-bold text-[#147A4B]"
@@ -1041,31 +1059,15 @@ function handleReply(message: WallMessage) {
                   {m.content && <p className="whitespace-pre-wrap text-sm leading-7 text-[#1D2B1F]">{m.content}</p>}
                   <p className="text-[10px] text-[#B0BAB1]">{timeAgo(m.created_at)}</p>
 
-                  <div className="flex items-center justify-between border-t border-[#F0F3EE] pt-3">
+                  <div className="flex items-center justify-end border-t border-[#F0F3EE] pt-3">
                     <button
                       onClick={() => reportUser(m.user_id, m.content)}
                       className="text-[11px] font-bold text-[#B0BAB1]"
                     >
                       🚩 گزارش
                     </button>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setBrowseIndex((i) => Math.min(browseResults.length - 1, i + 1))}
-                        disabled={browseIndex >= browseResults.length - 1}
-                        className="rounded-full bg-[#147A4B] px-4 py-2 text-[11px] font-bold text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] disabled:opacity-40"
-                      >
-                        ▲ بعدی
-                      </button>
-                      <button
-                        onClick={() => setBrowseIndex((i) => Math.max(0, i - 1))}
-                        disabled={browseIndex <= 0}
-                        className="rounded-full border border-[#E3EBDE] bg-white px-4 py-2 text-[11px] font-bold text-[#66766A] disabled:opacity-40"
-                      >
-                        ▼ قبلی
-                      </button>
-                    </div>
                   </div>
-                </div>
+                  </div>
               );
             })()
           )}
