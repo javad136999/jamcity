@@ -129,7 +129,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         type="button"
         onClick={handleClick}
         className={placement === "home"
-          ? "jam-install-home fixed left-1/2 top-[156px] z-[9999] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[22px] border-2 border-emerald-300 bg-gradient-to-l from-white via-[#f4fff8] to-[#eafff3] px-8 py-5 text-lg font-black text-[#0f9a56] shadow-[0_12px_40px_rgba(15,154,86,.28),0_0_0_5px_rgba(255,255,255,.78)] sm:top-[170px] sm:px-12 sm:py-5 sm:text-xl"
+          ? "jam-install-home fixed left-1/2 top-[156px] z-[9999] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[22px] border-2 border-red-300 bg-gradient-to-l from-white via-[#fff4f4] to-[#ffe8e8] px-8 py-5 text-lg font-black text-red-600 shadow-[0_12px_40px_rgba(220,38,38,.30),0_0_0_5px_rgba(255,255,255,.78)] sm:top-[170px] sm:px-12 sm:py-5 sm:text-xl"
           : "jam-install-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-2 text-[11px] font-black text-[#0f9a56] ring-2 ring-emerald-400/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"}
       >
         <span className={placement === "home" ? "text-3xl sm:text-4xl" : "text-sm sm:text-2xl"}>📲</span>
@@ -168,8 +168,8 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
       <style jsx>{`
         .jam-install-home { animation: jamInstallHome 2.2s ease-in-out infinite; }
         @keyframes jamInstallHome {
-          0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 12px 40px rgba(15,154,86,.28), 0 0 0 5px rgba(255,255,255,.78); }
-          50% { transform: translateX(-50%) scale(1.045); box-shadow: 0 16px 48px rgba(15,154,86,.42), 0 0 0 7px rgba(255,255,255,.86), 0 0 28px rgba(57,255,143,.45); }
+          0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 12px 40px rgba(220,38,38,.30), 0 0 0 5px rgba(255,255,255,.78); }
+          50% { transform: translateX(-50%) scale(1.045); box-shadow: 0 16px 48px rgba(220,38,38,.46), 0 0 0 7px rgba(255,255,255,.86), 0 0 28px rgba(255,70,70,.55); }
         }
         @media (max-width: 640px) {
           .jam-install-home { top: 156px; max-width: calc(100vw - 28px); padding: 15px 24px; border-radius: 20px; }
