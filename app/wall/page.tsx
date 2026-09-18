@@ -1021,25 +1021,25 @@ function handleReply(message: WallMessage) {
               const m = browseResults[browseIndex];
               const cat = m.category ? CATEGORY_META[m.category] : null;
               return (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-center gap-2">
-                    <button
-                      onClick={() => setBrowseIndex((i) => Math.min(browseResults.length - 1, i + 1))}
-                      disabled={browseIndex >= browseResults.length - 1}
-                      className="rounded-full bg-[#147A4B] px-4 py-2 text-[11px] font-bold text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] disabled:opacity-40"
-                    >
-                      ▲ بعدی
-                    </button>
-                    <button
-                      onClick={() => setBrowseIndex((i) => Math.max(0, i - 1))}
-                      disabled={browseIndex <= 0}
-                      className="rounded-full border border-[#E3EBDE] bg-white px-4 py-2 text-[11px] font-bold text-[#66766A] disabled:opacity-40"
-                    >
-                      ▼ قبلی
-                    </button>
-                  </div>
-
-                  <div className="space-y-3 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
+                <div className="space-y-3 overflow-hidden rounded-[22px] border border-[#E3EBDE] bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setBrowseIndex((i) => Math.min(browseResults.length - 1, i + 1))}
+                        disabled={browseIndex >= browseResults.length - 1}
+                        className="rounded-full bg-[#147A4B] px-4 py-2 text-[11px] font-bold text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] disabled:opacity-40"
+                      >
+                        ▲ بعدی
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBrowseIndex((i) => Math.max(0, i - 1))}
+                        disabled={browseIndex <= 0}
+                        className="rounded-full border border-[#E3EBDE] bg-white px-4 py-2 text-[11px] font-bold text-[#66766A] disabled:opacity-40"
+                      >
+                        ▼ قبلی
+                      </button>
+                    </div>
                   <button
                     onClick={() => openChatWith(m.user_id)}
                     className="flex items-center gap-2 text-[12px] font-bold text-[#147A4B]"
@@ -1067,7 +1067,7 @@ function handleReply(message: WallMessage) {
                       🚩 گزارش
                     </button>
                   </div>
-                  </div>
+                </div>
               );
             })()
           )}
