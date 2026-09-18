@@ -449,7 +449,7 @@ export default function WallPage() {
         });
       }
 
-      const { data: pinnedRow } = await supabase
+      const { data: pinnedRow } = await (supabase as any)
         .from("wall_messages")
         .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
         .eq("is_pinned", true)
