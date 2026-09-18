@@ -213,6 +213,49 @@ export default function WallPage() {
     bottomRef.current?.scrollIntoView({ behavior, block: "end" });
   }
 
+  async function scrollToPinnedMessage(message: WallMessage) {
+    const existing = document.getElementById("message-" + message.id);
+    if (existing) {
+      existing.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
+    // اگر آگهی قدیمی‌تر از ۳۰ پیام اخیر باشد، خودِ همان رکورد را می‌گیریم
+    // و در جای زمانی خودش به لیست اضافه می‌کنیم؛ آگهی جابه‌جا یا کپی نمی‌شود.
+    const { data } = await supabase
+      .from("wall_messages")
+      .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+      .eq("id", message.id)
+      .maybeSingle();
+
+    if (data) {
+      const target = { ...(data as unknown as WallMessage), reply_to: null };
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .eq("id", target.user_id)
+        .maybeSingle();
+      target.profiles = p
+        ? { display_name: p.display_name, avatar_url: p.avatar_url }
+        : message.profiles ?? null;
+
+      setMessages((prev) => {
+        const next = [...(prev ?? []).filter((m) => m.id !== target.id), target];
+        return next.sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() =>
+          document
+            .getElementById("message-" + target.id)
+            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+        );
+      });
+    }
+  }
+
   function clearPinPressTimer() {
     if (pinPressTimerRef.current) {
       clearTimeout(pinPressTimerRef.current);
@@ -962,33 +1005,28 @@ function handleReply(message: WallMessage) {
           )}
         </div>
       ) : (
-        <div className="relative min-h-0 flex-1 overflow-hidden">
-            {pinnedMessage && (
-              <div className="mb-1.5 rounded-xl border border-[#E3EBDE] bg-white/65 px-3 py-2 shadow-sm backdrop-blur">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const el = document.getElementById("message-" + pinnedMessage.id);
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                    else setMessages((prev) => [...(prev ?? []), pinnedMessage]);
-                    requestAnimationFrame(() => document.getElementById("message-" + pinnedMessage.id)?.scrollIntoView({ behavior: "smooth", block: "center" }));
-                  }}
-                  className="flex w-full items-center gap-2 text-right"
-                  aria-label="مشاهده آگهی سنجاق‌شده"
-                >
-                  <span className="shrink-0 text-[12px] opacity-70">📌</span>
-                  <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#8A968C]">
-                    {pinnedMessage.content?.split("\n")[0]?.replace(/^⭐\s*/, "") || "آگهی سنجاق‌شده"}
-                  </span>
-                  <span className="shrink-0 text-[9px] font-bold text-[#B0BAB1]">مشاهده ←</span>
-                </button>
-              </div>
-            )}
+        <div className="relative min-h-0 flex flex-1 flex-col overflow-hidden">
+          {pinnedMessage && (
+            <div className="shrink-0 border-b border-[#E3EBDE] bg-white/55 px-2.5 py-1.5 backdrop-blur">
+              <button
+                type="button"
+                onClick={() => scrollToPinnedMessage(pinnedMessage)}
+                className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 text-right transition hover:bg-[#F7F9F4]"
+                aria-label="مشاهده آگهی سنجاق‌شده"
+              >
+                <span className="shrink-0 text-[11px] opacity-55">📌</span>
+                <span className="min-w-0 flex-1 truncate text-[9px] font-semibold text-[#9AA49C]">
+                  {pinnedMessage.content?.split("\n")[0]?.replace(/^⭐\s*/, "") || "آگهی سنجاق‌شده"}
+                </span>
+                <span className="shrink-0 text-[8px] font-semibold text-[#B8C0B9]">مشاهده ←</span>
+              </button>
+            </div>
+          )}
 
           <div
             ref={scrollAreaRef}
             onScroll={handleScrollArea}
-            className="h-full min-h-0 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-3 py-3"
+            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-3 py-3"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
