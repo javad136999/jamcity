@@ -46,7 +46,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone() || hasSavedInstallState()) {
+    if (isStandalone()) {
       setAlreadyInstalled(true);
       return;
     }
@@ -129,7 +129,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         type="button"
         onClick={handleClick}
         className={placement === "home"
-          ? "jam-install-home fixed left-1/2 top-[74px] z-[60] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[22px] border-2 border-emerald-300 bg-gradient-to-l from-white via-[#f4fff8] to-[#eafff3] px-6 py-3.5 text-base font-black text-[#0f9a56] shadow-[0_12px_40px_rgba(15,154,86,.28),0_0_0_5px_rgba(255,255,255,.78)] sm:top-[92px] sm:px-10 sm:py-4 sm:text-lg"
+          ? "jam-install-home fixed left-1/2 top-[118px] z-[9999] flex -translate-x-1/2 items-center gap-2 whitespace-nowrap rounded-[22px] border-2 border-emerald-300 bg-gradient-to-l from-white via-[#f4fff8] to-[#eafff3] px-6 py-3.5 text-base font-black text-[#0f9a56] shadow-[0_12px_40px_rgba(15,154,86,.28),0_0_0_5px_rgba(255,255,255,.78)] sm:top-[132px] sm:px-10 sm:py-4 sm:text-lg"
           : "jam-install-glow flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-2 text-[11px] font-black text-[#0f9a56] ring-2 ring-emerald-400/80 sm:gap-2 sm:px-7 sm:py-3 sm:text-base"}
       >
         <span className={placement === "home" ? "text-2xl sm:text-3xl" : "text-sm sm:text-2xl"}>📲</span>
@@ -172,7 +172,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
           50% { transform: translateX(-50%) scale(1.045); box-shadow: 0 16px 48px rgba(15,154,86,.42), 0 0 0 7px rgba(255,255,255,.86), 0 0 28px rgba(57,255,143,.45); }
         }
         @media (max-width: 640px) {
-          .jam-install-home { top: 66px; max-width: calc(100vw - 28px); padding: 11px 18px; border-radius: 18px; }
+          .jam-install-home { top: 118px; max-width: calc(100vw - 28px); padding: 11px 18px; border-radius: 18px; }
         }
         @media (prefers-reduced-motion: reduce) { .jam-install-home { animation: none; } }
 
