@@ -180,6 +180,8 @@ export default function WallPage() {
   const { user, profile, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<WallMessage | null>(null);
+  const [pinMenuMessage, setPinMenuMessage] = useState<WallMessage | null>(null);
+  const pinPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyingTo, setReplyingTo] = useState<WallMessage | null>(null);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
@@ -209,6 +211,58 @@ export default function WallPage() {
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
     bottomRef.current?.scrollIntoView({ behavior, block: "end" });
+  }
+
+  function clearPinPressTimer() {
+    if (pinPressTimerRef.current) {
+      clearTimeout(pinPressTimerRef.current);
+      pinPressTimerRef.current = null;
+    }
+  }
+
+  function startPinPress(e: React.PointerEvent, message: WallMessage) {
+    if (!profile?.is_admin) return;
+    const target = e.target as Element | null;
+    if (target?.closest("button,a,input,textarea")) return;
+    clearPinPressTimer();
+    pinPressTimerRef.current = setTimeout(() => {
+      setPinMenuMessage(message);
+      pinPressTimerRef.current = null;
+    }, 550);
+  }
+
+  async function handlePinMessage(message: WallMessage) {
+    if (!profile?.is_admin) return;
+    clearPinPressTimer();
+
+    try {
+      if (message.is_pinned) {
+        const { error } = await (supabase as any)
+          .from("wall_messages")
+          .update({ is_pinned: false, pinned_at: null })
+          .eq("id", message.id);
+        if (error) throw error;
+        setPinnedMessage((current) => current?.id === message.id ? null : current);
+      } else {
+        const { error: clearError } = await (supabase as any)
+          .from("wall_messages")
+          .update({ is_pinned: false, pinned_at: null })
+          .eq("is_pinned", true);
+        if (clearError) throw clearError;
+
+        const { error: pinError } = await (supabase as any)
+          .from("wall_messages")
+          .update({ is_pinned: true, pinned_at: new Date().toISOString() })
+          .eq("id", message.id);
+        if (pinError) throw pinError;
+
+        setPinnedMessage({ ...message, is_pinned: true, pinned_at: new Date().toISOString() });
+      }
+    } catch (error) {
+      console.error("wall pin error", error);
+    } finally {
+      setPinMenuMessage(null);
+    }
   }
 
   // =====================================================
@@ -969,7 +1023,23 @@ function handleReply(message: WallMessage) {
                 const bubbleTail = mine ? "rounded-br-md" : "rounded-bl-md";
 
                 return (
-                  <div key={m.id} id={`message-${m.id}`} className="min-w-0 max-w-full">
+                  <div
+                    key={m.id}
+                    id={`message-${m.id}`}
+                    className="min-w-0 max-w-full"
+                    onPointerDown={(e) => startPinPress(e, m)}
+                    onPointerUp={clearPinPressTimer}
+                    onPointerCancel={clearPinPressTimer}
+                    onPointerLeave={clearPinPressTimer}
+                    onContextMenu={(e) => {
+                      if (!profile?.is_admin) return;
+                      const target = e.target as Element | null;
+                      if (target?.closest("button,a,input,textarea")) return;
+                      e.preventDefault();
+                      clearPinPressTimer();
+                      setPinMenuMessage(m);
+                    }}
+                  >
                     {showDateDivider && (
                       <div className="my-3 flex items-center justify-center">
                         <span className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold text-[#8A968C] shadow-sm">
@@ -1257,6 +1327,37 @@ function handleReply(message: WallMessage) {
               ↓
             </button>
           )}
+        </div>
+      )}
+
+      {profile?.is_admin && pinMenuMessage && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/20 p-3 backdrop-blur-[1px]"
+          onClick={() => setPinMenuMessage(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-[#E3EBDE] bg-white p-3 shadow-[0_16px_40px_rgba(20,60,40,.18)]"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-2 px-2 text-[11px] font-black text-[#1D2B1F]">
+              {pinMenuMessage.is_pinned ? "این آگهی پین شده است" : "مدیریت آگهی"}
+            </p>
+            <button
+              type="button"
+              onClick={() => handlePinMessage(pinMenuMessage)}
+              className="w-full rounded-xl bg-[#147A4B] px-4 py-3 text-right text-[12px] font-black text-white"
+            >
+              {pinMenuMessage.is_pinned ? "📍 برداشتن پین" : "📌 پین کردن آگهی"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setPinMenuMessage(null)}
+              className="mt-1.5 w-full rounded-xl bg-[#F3F6F1] px-4 py-3 text-[12px] font-bold text-[#66766A]"
+            >
+              انصراف
+            </button>
+          </div>
         </div>
       )}
 
