@@ -46,9 +46,16 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone() || hasSavedInstallState()) {
+    if (isStandalone()) {
       setAlreadyInstalled(true);
       return;
+    }
+    // localStorage فقط برای جلوگیری از نمایش مجدد بین رفرش‌ها استفاده می‌شود؛
+    // اگر اپ حذف شده باشد، با نبودن حالت standalone باید دکمه دوباره قابل نمایش باشد.
+    if (hasSavedInstallState()) {
+      try {
+        window.localStorage.removeItem(INSTALL_STATE_KEY);
+      } catch {}
     }
     // در صفحه اصلی، دکمه باید از همان لحظه ورود در دید کاربر باشد؛
     // اگر مرورگر رویداد نصب را بعداً ارسال کند، همان رویداد برای نصب استفاده می‌شود.
