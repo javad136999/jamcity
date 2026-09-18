@@ -513,12 +513,23 @@ export default function WallPage() {
       // appear empty. Two plain queries are more robust.
       // فقط آخرین پیام‌ها را در لود اولیه بگیر؛ پیام‌های قدیمی باید با pagination لود شوند.
       // select محدود، حجم پاسخ و زمان parse/rerender موبایل را کم می‌کند.
-      const { data: rawMessages, error: msgError } = await supabase
-        .from("wall_messages")
-        // reply_to در تایپ فعلی دیتابیس وجود ندارد؛ آن را از select حذف می‌کنیم.
-        .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
-        .order("created_at", { ascending: false })
-        .limit(30);
+      // دو کوئری مستقل را هم‌زمان می‌فرستیم تا لود اولیه پشت سر هم منتظر شبکه نماند.
+      // فقط ۳۰ پیام آخر برای نمایش اولیه دریافت می‌شود؛ ظاهر و ترتیب دیوار حفظ می‌شود.
+      const [messagesResult, pinnedResult] = await Promise.all([
+        supabase
+          .from("wall_messages")
+          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+          .order("created_at", { ascending: false })
+          .limit(30),
+        (supabase as any)
+          .from("wall_messages")
+          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+          .eq("is_pinned", true)
+          .order("pinned_at", { ascending: false })
+          .limit(1),
+      ]);
+
+      const { data: rawMessages, error: msgError } = messagesResult;
       if (msgError) {
         console.error("wall load error", msgError);
         setMessages([]);
@@ -530,69 +541,56 @@ export default function WallPage() {
         .map((row) => ({ ...row, reply_to: null }))
         .reverse() as WallMessage[];
 
-      if (rows.length > 0) {
-        const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, display_name, avatar_url")
-          .in("id", userIds);
+      const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+      const likesPromise = rows.length > 0
+        ? supabase
+            .from("wall_message_likes")
+            .select("message_id, user_id")
+            .in("message_id", rows.map((r) => r.id))
+        : Promise.resolve({ data: [] as { message_id: string; user_id: string }[] });
 
-        const profileMap = new Map(
-          (profilesData ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
-        );
+      const profilesPromise = userIds.length > 0
+        ? supabase
+            .from("profiles")
+            .select("id, display_name, avatar_url")
+            .in("id", userIds)
+        : Promise.resolve({ data: [] as { id: string; display_name: string; avatar_url: string | null }[] });
 
-        rows.forEach((r) => {
-          r.profiles = profileMap.get(r.user_id) ?? null;
-        });
-      }
+      const [profilesResult, likesResult] = await Promise.all([profilesPromise, likesPromise]);
 
-      // The generated Supabase types in this project do not yet include the
-      // admin-added pin columns. Fetch the rows first and filter client-side so
-      // the production build does not depend on those generated types.
-      const { data: pinnedRows } = await supabase
-        .from("wall_messages")
-        .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
-        .limit(100);
+      const profileMap = new Map(
+        (profilesResult.data ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+      );
+      rows.forEach((r) => {
+        r.profiles = profileMap.get(r.user_id) ?? null;
+      });
 
-      const pinnedRow =
-        ((pinnedRows ?? []) as any[])
-          .filter((row) => row?.is_pinned === true)
-          .sort(
-            (a, b) =>
-              new Date(b?.pinned_at ?? 0).getTime() -
-              new Date(a?.pinned_at ?? 0).getTime()
-          )[0] ?? null;
+      const pinnedRows = (pinnedResult.data ?? []) as any[];
+      const pinnedRow = pinnedRows[0] ?? null;
 
       if (pinnedRow) {
-        const pinnedProfile = await supabase
-          .from("profiles")
-          .select("display_name, avatar_url")
-          .eq("id", pinnedRow.user_id)
-          .maybeSingle();
-        setPinnedMessage({ ...(pinnedRow as WallMessage), reply_to: null, profiles: pinnedProfile.data ?? null });
+        const pinnedProfile = rows.find((r) => r.user_id === pinnedRow.user_id)?.profiles;
+        setPinnedMessage({
+          ...(pinnedRow as WallMessage),
+          reply_to: null,
+          profiles: pinnedProfile ?? null,
+        });
       } else {
         setPinnedMessage(null);
       }
 
       setMessages(rows);
       const replies: Record<string, number> = {};
+      rows.forEach((r) => {
+        if (r.reply_to) {
+          replies[r.reply_to] = (replies[r.reply_to] ?? 0) + 1;
+        }
+      });
 
-rows.forEach((r) => {
-  if (r.reply_to) {
-    replies[r.reply_to] = (replies[r.reply_to] ?? 0) + 1;
-  }
-});
       if (rows.length > 0) {
-        const { data: likes } = await supabase
-          .from("wall_message_likes")
-          .select("message_id, user_id")
-          .in(
-            "message_id",
-            rows.map((r) => r.id)
-          );
         const counts: Record<string, number> = {};
         const mine = new Set<string>();
-        (likes ?? []).forEach((l) => {
+        (likesResult.data ?? []).forEach((l) => {
           counts[l.message_id] = (counts[l.message_id] ?? 0) + 1;
           if (l.user_id === user!.id) mine.add(l.message_id);
         });
