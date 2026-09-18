@@ -909,18 +909,8 @@ function handleReply(message: WallMessage) {
         </div>
       ) : (
         <div className="relative min-h-0 flex-1 overflow-hidden">
-          <div
-            ref={scrollAreaRef}
-            onScroll={handleScrollArea}
-            className="h-full min-h-0 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-3 py-3"
-            style={{
-              backgroundImage:
-                "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
-              backgroundSize: "16px 16px",
-            }}
-          >
             {pinnedMessage && (
-              <div className="mb-2 rounded-xl border border-[#E3EBDE] bg-white/65 px-3 py-2 shadow-sm backdrop-blur">
+              <div className="mb-1.5 rounded-xl border border-[#E3EBDE] bg-white/65 px-3 py-2 shadow-sm backdrop-blur">
                 <button
                   type="button"
                   onClick={() => {
@@ -941,6 +931,16 @@ function handleReply(message: WallMessage) {
               </div>
             )}
 
+          <div
+            ref={scrollAreaRef}
+            onScroll={handleScrollArea}
+            className="h-full min-h-0 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-3 py-3"
+            style={{
+              backgroundImage:
+                "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
+              backgroundSize: "16px 16px",
+            }}
+          >
             {messages === null ? (
               <Spinner label="در حال بارگذاری پیام‌ها..." />
             ) : messages.length === 0 ? (
