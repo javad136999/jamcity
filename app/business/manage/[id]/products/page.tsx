@@ -107,7 +107,7 @@ export default function BusinessProductsPage() {
         .from("businesses")
         .select("id,owner_id,name,icon,category,subscription_status,subscription_tier")
         .eq("id", id)
-        .eq("owner_id", user.id)
+        .eq("owner_id", currentUser.id)
         .maybeSingle();
       if (cancelled) return;
       if (businessError || !data) {
