@@ -6,7 +6,6 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { ADMIN_CONTACT_EMAIL } from "@/lib/constants";
-import InstallAppButton from "@/components/InstallAppButton";
 
 export default function Header() {
   const { user, profile, unreadCount, isAdmin } = useAuth();
@@ -46,7 +45,6 @@ export default function Header() {
         </div>
 
         <div className="flex min-w-0 items-center justify-center gap-1.5 sm:gap-3">
-          <InstallAppButton />
           <Link
             href="/business/manage"
             className="jam-panel-glow group flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-2xl border border-[#BFE8CE] bg-gradient-to-l from-[#147A4B] via-[#1AA463] to-[#2FAE72] px-3 py-2 text-[11px] font-black text-white shadow-[0_6px_18px_rgba(20,122,75,.24)] transition hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(20,122,75,.32)] sm:gap-2 sm:px-6 sm:py-2.5 sm:text-base"
