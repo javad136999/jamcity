@@ -192,6 +192,8 @@ export default function WallPage() {
   const [navigating, setNavigating] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [browse, setBrowse] = useState<{ query: string; category: "car" | "realestate" | null } | null>(null);
+  const [browseResultsData, setBrowseResultsData] = useState<WallMessage[] | null>(null);
+  const [browseLoading, setBrowseLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [browseIndex, setBrowseIndex] = useState(0);
   const [replyTo, setReplyTo] = useState<WallMessage | null>(null);
@@ -801,7 +803,62 @@ async function deleteMessage(messageId: string) {
 
   function startBrowse(query: string, category: "car" | "realestate" | null) {
     setBrowse({ query: query.trim(), category });
+    setBrowseResultsData(null);
     setBrowseIndex(0);
+  }
+
+  async function startCategoryBrowse(category: "car" | "realestate") {
+    setBrowse({ query: "", category });
+    setBrowseIndex(0);
+    setBrowseLoading(true);
+    setBrowseResultsData(null);
+
+    const carTerms = [
+      "خودرو", "ماشین", "پژو", "پراید", "سمند", "دنا", "تیبا", "کوییک",
+      "شاهین", "ساینا", "رانا", "پارس", "آریسان", "تارا", "206", "207",
+      "405", "پارس خودرو", "فروش ماشین", "خرید ماشین", "فروش خودرو", "خرید خودرو",
+    ];
+    const realEstateTerms = [
+      "املاک", "ملک", "آپارتمان", "خانه", "منزل", "زمین", "ویلا", "باغ",
+      "مغازه", "دفتر", "اجاره", "رهن", "رهن و اجاره", "فروش ملک", "خرید ملک",
+      "فروش آپارتمان", "اجاره آپارتمان", "رهن آپارتمان",
+    ];
+    const terms = category === "car" ? carTerms : realEstateTerms;
+    const filters = [
+      `category.eq.${category}`,
+      ...terms.map((term) => `content.ilike.%${term}%`),
+    ].join(",");
+
+    const { data, error } = await supabase
+      .from("wall_messages")
+      .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+      .or(filters)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error("category browse error", error);
+      setBrowseResultsData([]);
+      setBrowseLoading(false);
+      return;
+    }
+
+    const rows = (data ?? []) as unknown as WallMessage[];
+    const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+    const { data: profiles } = userIds.length
+      ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds)
+      : { data: [] };
+
+    const profileMap = new Map(
+      (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+    );
+    rows.forEach((r) => {
+      r.reply_to = null;
+      r.profiles = profileMap.get(r.user_id) ?? null;
+    });
+
+    setBrowseResultsData(rows);
+    setBrowseLoading(false);
   }
 function handleReply(message: WallMessage) {
   setReplyTo(message);
@@ -812,7 +869,8 @@ function handleReply(message: WallMessage) {
   });
 }
   const browseResults =
-    browse && messages
+    browseResultsData ??
+    (browse && messages
       ? messages
           .filter(
             (m) =>
@@ -821,7 +879,7 @@ function handleReply(message: WallMessage) {
           )
           .slice()
           .reverse()
-      : [];
+      : []);
 
   if (authLoading) return <Spinner label="در حال بررسی ورود..." />;
 
@@ -909,14 +967,14 @@ function handleReply(message: WallMessage) {
         <div className="flex items-center gap-1.5 overflow-x-auto">
           <button
             type="button"
-            onClick={() => startBrowse("خودرو", null)}
+            onClick={() => startCategoryBrowse("car")}
             className="flex shrink-0 items-center gap-1 rounded-full bg-[#EAF2FF] px-2.5 py-1 text-[10px] font-bold text-[#2563EB] transition hover:bg-[#DCE9FF]"
           >
             🚗 آگهی‌های خودرو
           </button>
           <button
             type="button"
-            onClick={() => startBrowse("املاک", null)}
+            onClick={() => startCategoryBrowse("realestate")}
             className="flex shrink-0 items-center gap-1 rounded-full bg-[#F4EAFF] px-2.5 py-1 text-[10px] font-bold text-[#7E22CE] transition hover:bg-[#EBDCFF]"
           >
             🏠 آگهی‌های املاک
