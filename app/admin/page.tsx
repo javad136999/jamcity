@@ -1019,14 +1019,6 @@ export default function AdminPage() {
 
         <button
           type="button"
-          onClick={() => setView("pinned")}
-          className={`rounded-full px-4 py-2 text-sm font-bold transition ${view === "pinned" ? "bg-jam-green text-white shadow-glow" : "bg-black/5 text-slate-500 hover:bg-jam-green hover:text-white"}`}
-        >
-          📌 پین آگهی
-        </button>
-
-        <button
-          type="button"
           onClick={() => setView("referrals")}
           className={`rounded-full px-4 py-2 text-sm font-bold transition ${
             view === "referrals"
