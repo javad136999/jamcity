@@ -449,13 +449,22 @@ export default function WallPage() {
         });
       }
 
-      const { data: pinnedRow } = await (supabase as any)
+      // The generated Supabase types in this project do not yet include the
+      // admin-added pin columns. Fetch the rows first and filter client-side so
+      // the production build does not depend on those generated types.
+      const { data: pinnedRows } = await supabase
         .from("wall_messages")
         .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
-        .eq("is_pinned", true)
-        .order("pinned_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(100);
+
+      const pinnedRow =
+        ((pinnedRows ?? []) as any[])
+          .filter((row) => row?.is_pinned === true)
+          .sort(
+            (a, b) =>
+              new Date(b?.pinned_at ?? 0).getTime() -
+              new Date(a?.pinned_at ?? 0).getTime()
+          )[0] ?? null;
 
       if (pinnedRow) {
         const pinnedProfile = await supabase
