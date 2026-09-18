@@ -177,12 +177,9 @@ function WallGate() {
 export default function WallPage() {
   const supabase = createClient();
   const router = useRouter();
-  const { user, profile, isAdmin, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<WallMessage | null>(null);
-  const [adminWallAds, setAdminWallAds] = useState<WallMessage[]>([]);
-  const [adminWallAdsLoading, setAdminWallAdsLoading] = useState(false);
-  const [wallPinBusyId, setWallPinBusyId] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<WallMessage | null>(null);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
@@ -398,7 +395,7 @@ export default function WallPage() {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "site_stats" },
-        (payload) => setMemberCount(payload.new.member_co  useEffect(() => {\n    if (!user || !isAdmin) return;\n    async function loadAdminWallAds() {\n      setAdminWallAdsLoading(true);\n      const { data, error } = await supabase.from("wall_messages").select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at").not("content", "is", null).order("created_at", { ascending: false }).limit(100);\n      if (error) { console.error("ADMIN WALL ADS LOAD ERROR", error); setAdminWallAds([]); setAdminWallAdsLoading(false); return; }\n      setAdminWallAds((data ?? []).map((row) => ({ ...(row as WallMessage), reply_to: null })));\n      setAdminWallAdsLoading(false);\n    }\n    loadAdminWallAds();\n  }, [user, isAdmin, supabase]);\n\n  async function toggleWallPinFromWall(ad: WallMessage) {\n    if (!isAdmin || wallPinBusyId) return;\n    setWallPinBusyId(ad.id);\n    try {\n      if (ad.is_pinned) {\n        const { error } = await supabase.from("wall_messages").update({ is_pinned: false, pinned_at: null }).eq("id", ad.id);\n        if (error) throw error;\n        setPinnedMessage(null);\n      } else {\n        const { error: clearError } = await supabase.from("wall_messages").update({ is_pinned: false, pinned_at: null }).eq("is_pinned", true);\n        if (clearError) throw clearError;\n        const pinnedAt = new Date().toISOString();\n        const { data, error } = await supabase.from("wall_messages").update({ is_pinned: true, pinned_at: pinnedAt }).eq("id", ad.id).select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at").maybeSingle();\n        if (error) throw error;\n        if (data) setPinnedMessage({ ...(data as WallMessage), reply_to: null });\n      }\n      setAdminWallAds((prev) => prev.map((item) => ({ ...item, is_pinned: item.id === ad.id && !ad.is_pinned, pinned_at: item.id === ad.id && !ad.is_pinned ? new Date().toISOString() : null })));\n    } catch (error) { console.error("WALL PIN ERROR", error); alert("❌ تغییر پین آگهی انجام نشد. دوباره تلاش کنید."); }\n    finally { setWallPinBusyId(null); }\n  }\n\nunt as number)
+        (payload) => setMemberCount(payload.new.member_count as number)
       )
       .subscribe();
 
@@ -913,7 +910,7 @@ function handleReply(message: WallMessage) {
               backgroundSize: "16px 16px",
             }}
           >
-            {isAdmin && (\n              <div className="mb-2 rounded-xl border border-[#E3EBDE] bg-white/55 px-3 py-2 shadow-sm backdrop-blur">\n                <div className="mb-1 flex items-center justify-between gap-2"><span className="text-[10px] font-black text-[#66766A]">مدیریت پین آگهی</span><span className="text-[9px] text-[#B0BAB1]">فقط مدیر</span></div>\n                {adminWallAdsLoading ? <p className="text-[9px] text-[#8A968C]">در حال دریافت آگهی‌ها...</p> : (\n                  <select value={adminWallAds.find((ad) => ad.is_pinned)?.id ?? ""} onChange={(e) => { const ad = adminWallAds.find((item) => item.id === e.target.value); if (ad) void toggleWallPinFromWall(ad); }} disabled={!!wallPinBusyId} className="w-full rounded-lg border border-[#E3EBDE] bg-white px-2 py-2 text-[10px] font-bold text-[#1D2B1F] outline-none">\n                    <option value="">📌 انتخاب آگهی برای پین...</option>\n                    {adminWallAds.map((ad) => <option key={ad.id} value={ad.id}>{ad.is_pinned ? "📌 " : ""}{(ad.content ?? "آگهی بدون متن").split("\\n")[0].slice(0, 80)}</option>)}\n                  </select>\n                )}\n                {wallPinBusyId && <p className="mt-1 text-[9px] text-[#8A968C]">در حال ثبت پین...</p>}\n              </div>\n            )}\n\n            {pinnedMessage && (
+            {pinnedMessage && (
               <div className="mb-2 rounded-xl border border-[#E3EBDE] bg-white/65 px-3 py-2 shadow-sm backdrop-blur">
                 <button
                   type="button"
