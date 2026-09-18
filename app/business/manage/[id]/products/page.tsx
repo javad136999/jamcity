@@ -99,6 +99,7 @@ export default function BusinessProductsPage() {
 
   useEffect(() => {
     if (authLoading || !user || !id) return;
+    const currentUser = user;
     let cancelled = false;
     async function load() {
       setLoading(true);
@@ -298,7 +299,7 @@ export default function BusinessProductsPage() {
   </div>;
 }
 
-function ProductGrid({ products, onDelete, onDiscount }: { products: Product[]; onDelete: (id:string)=>void; onDiscount:(id:string,value:number|null)=>void }) {
+function ProductGrid({ products, onDelete, onDiscount }: { products: Product[]; onDelete: (id:string)=>void; onDiscount: (id:string,value:number|null)=>void }) {
   return <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
     {products.map(p => <div key={p.id} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
       {p.image_url && <img src={p.image_url} alt={p.name} className="h-32 w-full object-cover" />}
