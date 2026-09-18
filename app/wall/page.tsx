@@ -816,18 +816,26 @@ async function deleteMessage(messageId: string) {
     const carTerms = [
       "خودرو", "ماشین", "پژو", "پراید", "سمند", "دنا", "تیبا", "کوییک",
       "شاهین", "ساینا", "رانا", "پارس", "آریسان", "تارا", "206", "207",
-      "405", "پارس خودرو", "فروش ماشین", "خرید ماشین", "فروش خودرو", "خرید خودرو",
+      "405", "پارس خودرو",
     ];
     const realEstateTerms = [
       "املاک", "ملک", "آپارتمان", "خانه", "منزل", "زمین", "ویلا", "باغ",
       "مغازه", "دفتر", "اجاره", "رهن", "رهن و اجاره", "فروش ملک", "خرید ملک",
       "فروش آپارتمان", "اجاره آپارتمان", "رهن آپارتمان",
     ];
-    const terms = category === "car" ? carTerms : realEstateTerms;
-    const filters = [
-      `category.eq.${category}`,
-      ...terms.map((term) => `content.ilike.%${term}%`),
-    ].join(",");
+    const filters =
+      category === "car"
+        ? [
+            "and(category.eq.car,or(content.ilike.%خرید%,content.ilike.%فروش%))",
+            ...carTerms.flatMap((term) => [
+              `and(content.ilike.%خرید%,content.ilike.%${term}%)`,
+              `and(content.ilike.%فروش%,content.ilike.%${term}%)`,
+            ]),
+          ].join(",")
+        : [
+            `category.eq.${category}`,
+            ...realEstateTerms.map((term) => `content.ilike.%${term}%`),
+          ].join(",");
 
     const { data, error } = await supabase
       .from("wall_messages")
