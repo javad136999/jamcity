@@ -50,27 +50,32 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
       setAlreadyInstalled(true);
       return;
     }
-    // localStorage فقط برای جلوگیری از نمایش مجدد بین رفرش‌ها استفاده می‌شود؛
-    // اگر اپ حذف شده باشد، با نبودن حالت standalone باید دکمه دوباره قابل نمایش باشد.
-    if (hasSavedInstallState()) {
-      try {
-        window.localStorage.removeItem(INSTALL_STATE_KEY);
-      } catch {}
-    }
-    // در صفحه اصلی، دکمه باید از همان لحظه ورود در دید کاربر باشد؛
-    // اگر مرورگر رویداد نصب را بعداً ارسال کند، همان رویداد برای نصب استفاده می‌شود.
-    if (placement === "home") setShowButton(true);
+    // نصب بودن PWA در خود صفحهٔ مرورگر همیشه با display-mode=standalone
+    // قابل تشخیص نیست؛ بنابراین فلگ localStorage را تا زمان دریافت
+    // سیگنال واقعیِ beforeinstallprompt نگه می‌داریم.
+    const savedInstallState = hasSavedInstallState();
+
+    // در صفحه اصلی، اگر قبلاً نصب ثبت شده، ابتدا دکمه مخفی می‌ماند.
+    // بعد از حذف PWA، مرورگر دوباره beforeinstallprompt را می‌فرستد و
+    // همان‌جا فلگ قدیمی پاک و دکمه دوباره نمایش داده می‌شود.
+    if (placement === "home" && !savedInstallState) setShowButton(true);
 
     // اندروید/کروم/دسکتاپ: مرورگر رویداد beforeinstallprompt را می‌فرستد
     function handleBeforeInstallPrompt(e: Event) {
       e.preventDefault();
 
-      // اگر نصب قبلاً ثبت شده، حتی در صورت ارسال مجدد رویداد هم دکمه نمایش داده نشود.
       if (isStandalone()) {
         setAlreadyInstalled(true);
         return;
       }
 
+      // اگر beforeinstallprompt دوباره صادر شده، مرورگر عملاً اعلام کرده
+      // که PWA دوباره قابل نصب است (مثلاً بعد از حذف از گوشی).
+      try {
+        window.localStorage.removeItem(INSTALL_STATE_KEY);
+      } catch {}
+
+      setAlreadyInstalled(false);
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowButton(true);
     }
