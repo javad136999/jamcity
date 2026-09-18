@@ -420,8 +420,13 @@ export default function BusinessManagePage() {
                   </div>
                   <div className="flex flex-wrap gap-1">
                     <span className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${st.color}`}>
-                      {st.label}
+                      {b.subscription_status === "approved" ? "تأیید شده" : st.label}
                     </span>
+                    {b.subscription_status === "approved" && (
+                      <span className="mt-2 block text-[10px] font-bold text-emerald-600">
+                        👆 جهت ثبت منو و محصولات کلیک کنید
+                      </span>
+                    )}
                     {tier && (
                       <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-bold text-amber-700">
                         {tier.name}
