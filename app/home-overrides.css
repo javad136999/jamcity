@@ -172,7 +172,7 @@
   .jam-popular-viewport, .discount-home-viewport, .gold-products-manual-viewport { -webkit-overflow-scrolling:touch; touch-action:pan-x; scrollbar-width:none; }
   .jam-popular-viewport::-webkit-scrollbar, .discount-home-viewport::-webkit-scrollbar, .gold-products-manual-viewport::-webkit-scrollbar { display:none; }
   .gold-home-viewport { padding-inline:2px !important; }
-  .gold-home-viewport .gold-home-track > * { flex-basis:126px !important; }
+  .gold-home-viewport .gold-home-track > * { flex-basis:155px !important; min-width:155px !important; }
   .gold-home-viewport img { max-height:72px; }
   .gold-products-manual-viewport { padding:6px 3px 9px !important; }
   .gold-products-manual-viewport > * { min-width:0 !important; }
