@@ -249,9 +249,9 @@ export default function BusinessProductsPage() {
 
       {!isCarDealer && !isShoeStore && <section className="space-y-4 rounded-[24px] bg-white p-5 shadow-sm ring-1 ring-emerald-100">
         <form onSubmit={addProduct} className="grid gap-3 sm:grid-cols-2">
-          <input required value={name} onChange={e => setName(e.target.value)} placeholder="نام محصول یا خدمت" className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:bg-white focus:border-emerald-400" />
+          <input required value={name} onChange={e => setName(e.target.value)} placeholder="نام محصول یا خدمت" className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-500 outline-none focus:bg-white focus:border-emerald-400" />
           <input type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="قیمت (تومان)" className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:bg-white focus:border-emerald-400" />
-          <input value={description} onChange={e => setDescription(e.target.value)} placeholder="توضیح کوتاه (اختیاری)" className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none focus:bg-white sm:col-span-2" />
+          <input value={description} onChange={e => setDescription(e.target.value)} placeholder="توضیح کوتاه (اختیاری)" className="rounded-xl2 border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 placeholder:text-slate-500 outline-none focus:bg-white sm:col-span-2" />
           <input type="file" accept="image/*" onChange={e => setImage(e.target.files?.[0] ?? null)} className="rounded-xl2 border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-500 sm:col-span-2" />
           <button disabled={saving} className="rounded-xl2 bg-gradient-to-l from-jam-green to-emerald-400 py-3 text-sm font-bold text-white sm:col-span-2">{saving ? "در حال افزودن..." : "+ افزودن محصول"}</button>
         </form>
@@ -293,7 +293,7 @@ export default function BusinessProductsPage() {
       </section>}
     </div>
     <style jsx>{`
-      .field { width:100%; border-radius:0.75rem; border:1px solid rgb(226 232 240); background:rgb(248 250 252); padding:0.75rem 1rem; font-size:0.875rem; outline:none; }
+      .field { width:100%; border-radius:0.75rem; border:1px solid rgb(226 232 240); background:rgb(248 250 252); padding:0.75rem 1rem; font-size:0.875rem; color:rgb(30 41 59); caret-color:rgb(15 23 42); outline:none; }\n      .field::placeholder { color:rgb(100 116 139); opacity:1; }
       .field:focus { background:white; border-color:rgb(52 211 153); }
     `}</style>
   </div>;
