@@ -46,7 +46,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
 
   useEffect(() => {
-    if (isStandalone()) {
+    if (isStandalone() || hasSavedInstallState()) {
       setAlreadyInstalled(true);
       return;
     }
