@@ -49,11 +49,7 @@ type Referrer = {
   paid_reward: number;
 };
 
-type WallAdminMessage = {
-  id: string; content: string | null; image_url: string | null; is_promo: boolean;
-  is_pinned: boolean; pinned_at: string | null; created_at: string;
-  profiles?: { display_name: string; avatar_url: string | null } | null;
-};
+
 
 type Reward = {
   id: string;
