@@ -931,53 +931,40 @@ function handleReply(message: WallMessage) {
       {/* =====================================================
           هدر دیوار — جمع‌وجور، سفید، تم روشن
       ====================================================== */}
-      <div className="shrink-0 space-y-1.5 border-b border-[#E3EBDE] bg-white/95 px-2.5 pb-1.5 pt-2 backdrop-blur">
+      <div className="shrink-0 border-b border-[#E3EBDE] bg-white/95 px-2.5 pb-1 pt-1.5 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E3F3E9] text-base">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E3F3E9] text-sm">
               💬
             </span>
             <div className="min-w-0">
               <h1 className="truncate text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
               <p className="flex items-center gap-2 text-[10px] font-bold">
                 {memberCount !== null && (
-                  <span className="text-[#8A968C]">· {memberCount.toLocaleString("fa-IR")} عضو</span>
+                  <span className="font-black text-[#E2574C]">· {memberCount.toLocaleString("fa-IR")} عضو</span>
                 )}
               </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={async () => {
-              const shareData = {
-                title: "دیوار شهر جم",
-                text: "دیوار شهر جم؛ آگهی‌ها و گفتگوهای شهر جم را ببینید 👇",
-                url: window.location.origin + "/wall",
-              };
-
-              if (navigator.share) {
-                try {
-                  await navigator.share(shareData);
-                } catch {
-                  // کاربر پنجره اشتراک‌گذاری را بسته است
-                }
-              } else {
-                try {
-                  await navigator.clipboard.writeText(shareData.url);
-                  alert(
-                    "لینک دیوار شهر جم کپی شد؛ می‌توانید برای دوستانتان ارسال کنید."
-                  );
-                } catch {
-                  alert("کپی لینک انجام نشد.");
-                }
-              }
-            }}
-            aria-label="معرفی به دوستان"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#E3EBDE] bg-white text-[13px] shadow-sm transition hover:bg-[#F3FAF5]"
-          >
-            📤
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => startCategoryBrowse("car")}
+              aria-label="آگهی‌های خودرو"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EAF2FF] text-sm shadow-sm transition hover:bg-[#DCE9FF]"
+            >
+              🚗
+            </button>
+            <button
+              type="button"
+              onClick={() => startCategoryBrowse("realestate")}
+              aria-label="آگهی‌های املاک"
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F4EAFF] text-sm shadow-sm transition hover:bg-[#EBDCFF]"
+            >
+              🏠
+            </button>
+          </div>
         </div>
 
         <form
@@ -985,41 +972,24 @@ function handleReply(message: WallMessage) {
             e.preventDefault();
             if (searchInput.trim()) startBrowse(searchInput, null);
           }}
-          className="flex items-center gap-2"
+          className="mx-auto mt-1.5 flex w-[88%] items-center gap-1.5"
         >
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-[#E3EBDE] bg-[#F7F9F4] px-3.5 py-2.5 transition focus-within:border-[#147A4B] focus-within:bg-white">
-            <span className="text-[13px] text-[#B0BAB1]">🔍</span>
+          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-1.5 transition focus-within:border-[#147A4B] focus-within:bg-white">
+            <span className="text-[12px] text-[#B0BAB1]">🔍</span>
             <input
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="جستجو در آگهی‌های دیوار..."
-              className="w-full bg-transparent text-[12px] text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
+              className="w-full bg-transparent text-[11px] text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
             />
           </div>
           <button
             type="submit"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.3)] transition hover:brightness-110"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_5px_14px_rgba(20,122,75,.25)] transition hover:brightness-110"
           >
             🔍
           </button>
         </form>
-
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          <button
-            type="button"
-            onClick={() => startCategoryBrowse("car")}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-[#EAF2FF] px-2.5 py-1 text-[10px] font-bold text-[#2563EB] transition hover:bg-[#DCE9FF]"
-          >
-            🚗 آگهی‌های خودرو
-          </button>
-          <button
-            type="button"
-            onClick={() => startCategoryBrowse("realestate")}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-[#F4EAFF] px-2.5 py-1 text-[10px] font-bold text-[#7E22CE] transition hover:bg-[#EBDCFF]"
-          >
-            🏠 آگهی‌های املاک
-          </button>
-        </div>
       </div>
 
       {/* =====================================================
