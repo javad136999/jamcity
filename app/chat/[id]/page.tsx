@@ -230,7 +230,7 @@ export default function ConversationPage() {
   }
 
   return (
-    <main dir="rtl" className="h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] overflow-hidden bg-[#faf7f2] p-0 text-[#34271f] sm:h-auto sm:max-h-none sm:min-h-[calc(100vh-110px)] sm:overflow-visible sm:p-4 lg:p-6">
+    <main dir="rtl" className="h-[calc(100dvh-112px)] max-h-[calc(100dvh-112px)] overflow-hidden bg-[#faf7f2] p-0 text-[#34271f] sm:h-auto sm:max-h-none sm:min-h-[calc(100vh-110px)] sm:overflow-visible sm:p-4 lg:p-6">
       <div className="mx-auto flex h-full min-h-0 max-w-6xl overflow-hidden border-y border-[#eadfd4] bg-white shadow-[0_18px_60px_rgba(93,65,39,.1)] sm:h-[calc(100dvh-142px)] sm:min-h-[560px] sm:rounded-[30px] sm:border">
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="flex items-center gap-2 border-b border-[#eee5dc] bg-gradient-to-l from-[#fffaf3] to-white px-2.5 py-2.5 sm:gap-3 sm:px-6 sm:py-4">
