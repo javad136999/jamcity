@@ -896,15 +896,15 @@ function handleReply(message: WallMessage) {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in -mx-4 -mt-6 flex h-[calc(86dvh-64px)] flex-col overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:h-[78dvh] sm:rounded-[22px]">
+    <div className="fade-in -mx-4 -mt-6 flex h-[calc(100dvh-150px)] flex-col overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:h-[78dvh] sm:rounded-[22px]">
 
       {/* =====================================================
           هدر دیوار — جمع‌وجور، سفید، تم روشن
       ====================================================== */}
-      <div className="shrink-0 space-y-2 border-b border-[#E3EBDE] bg-white/95 px-3 pb-2 pt-2 backdrop-blur">
+      <div className="shrink-0 space-y-1.5 border-b border-[#E3EBDE] bg-white/95 px-2.5 pb-1.5 pt-2 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E3F3E9] text-lg">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#E3F3E9] text-base">
               💬
             </span>
             <div className="min-w-0">
@@ -957,7 +957,7 @@ function handleReply(message: WallMessage) {
           }}
           className="flex items-center gap-2"
         >
-          <div className="flex flex-1 items-center gap-2 rounded-full border border-[#E3EBDE] bg-[#F7F9F4] px-3.5 py-2 transition focus-within:border-[#147A4B] focus-within:bg-white">
+          <div className="flex flex-1 items-center gap-2 rounded-full border border-[#E3EBDE] bg-[#F7F9F4] px-3.5 py-2.5 transition focus-within:border-[#147A4B] focus-within:bg-white">
             <span className="text-[13px] text-[#B0BAB1]">🔍</span>
             <input
               value={searchInput}
@@ -974,7 +974,7 @@ function handleReply(message: WallMessage) {
           </button>
         </form>
 
-        <div className="flex items-center gap-1.5 overflow-x-auto">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           <button
             type="button"
             onClick={() => startCategoryBrowse("car")}
@@ -1094,7 +1094,7 @@ function handleReply(message: WallMessage) {
           <div
             ref={scrollAreaRef}
             onScroll={handleScrollArea}
-            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-3 py-3"
+            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden bg-[#EAF1E7] px-2.5 py-2"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
@@ -1470,7 +1470,7 @@ function handleReply(message: WallMessage) {
       {/* =====================================================
           نوار ارسال پیام
       ====================================================== */}
-      <div className="shrink-0 space-y-1.5 border-t border-[#E3EBDE] bg-white px-2.5 pb-2 pt-2">
+      <div className="shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-1.5 pt-1.5">
         {sendError && <ErrorState message={sendError} />}
         {voiceError && <ErrorState message={voiceError} />}
         {replyingTo && (
@@ -1535,7 +1535,7 @@ function handleReply(message: WallMessage) {
             </button>
           </div>
         ) : (
-          <div className="flex items-end gap-1.5 rounded-[22px] border border-[#E3EBDE] bg-[#F7F9F4] p-1.5">
+          <div className="flex items-end gap-1 rounded-[20px] border border-[#E3EBDE] bg-[#F7F9F4] p-1">
             <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
               📷
               <input
