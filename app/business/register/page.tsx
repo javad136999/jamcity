@@ -219,7 +219,7 @@ export default function BusinessRegisterPage() {
                           onClick={() => { setTier(t.value); setMonths(p.months === 1 ? 1 : p.months === 6 ? 6 : 12); }}
                           className={`relative min-h-[86px] rounded-2xl border p-2 text-center ${active ? "border-jam-navy bg-white shadow-md ring-2 ring-jam-navy/20" : "border-white/70 bg-white/60"}`}
                         >
-                          {p.badge && <span className="absolute -top-2 right-1/2 translate-x-1/2 whitespace-nowrap rounded-full bg-jam-navy px-2 py-0.5 text-[8px] font-black text-white">{p.badge}</span>}
+                          {"badge" in p && p.badge && <span className="absolute -top-2 right-1/2 translate-x-1/2 whitespace-nowrap rounded-full bg-jam-navy px-2 py-0.5 text-[8px] font-black text-white">{p.badge}</span>}
                           <span className="block text-[10px] font-black text-slate-800">{p.label}</span>
                           <span className="mt-2 block text-[13px] font-black text-slate-950">{formatPrice(p.price)}</span>
                           {p.months > 1 && <span className="mt-1 block text-[8px] font-bold text-slate-600">ماهی {formatPrice(Math.round(p.price / p.months))}</span>}
