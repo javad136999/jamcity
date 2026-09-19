@@ -62,6 +62,15 @@ begin
         )
         and not exists (
           select 1
+          from private.wall_republish_queue today_q
+          join public.wall_messages today_source
+            on today_source.id = today_q.source_message_id
+          where today_q.run_date = v_local_date
+            and today_q.status in ('scheduled','publishing','published')
+            and today_source.user_id = r.user_id
+        )
+        and not exists (
+          select 1
           from public.wall_messages today_auto
           where today_auto.is_auto_republish = true
             and today_auto.created_at >= date_trunc('day', now())
