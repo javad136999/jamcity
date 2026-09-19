@@ -15,7 +15,7 @@ const items = [
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const { unreadCount } = useAuth();
+  const { unreadCount, wallUnreadCount } = useAuth();
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 glass border-t border-black/5 pb-[env(safe-area-inset-bottom)] md:hidden">
@@ -39,6 +39,11 @@ export default function BottomNav() {
             >
               <span className="text-xl">{item.icon}</span>
               {item.label}
+              {item.href === "/wall" && wallUnreadCount > 0 && (
+                <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                  {wallUnreadCount > 99 ? "۹۹+" : wallUnreadCount}
+                </span>
+              )}
               {item.href === "/chat" && unreadCount > 0 && (
                 <span className="absolute right-1/4 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
                   {unreadCount}

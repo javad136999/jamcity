@@ -28,7 +28,9 @@ type AuthContextValue = {
   profile: Profile | null;
   loading: boolean;
   unreadCount: number;
+  wallUnreadCount: number;
   isAdmin: boolean;
+  markWallRead: (seenAt?: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
 
@@ -37,7 +39,9 @@ const AuthContext = createContext<AuthContextValue>({
   profile: null,
   loading: true,
   unreadCount: 0,
+  wallUnreadCount: 0,
   isAdmin: false,
+  markWallRead: async () => {},
   refreshProfile: async () => {},
 });
 
@@ -47,6 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [wallUnreadCount, setWallUnreadCount] = useState(0);
 
   const loadProfile = useCallback(
     async (uid: string) => {
@@ -93,6 +98,68 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [supabase]
   );
 
+  const loadWallUnread = useCallback(
+    async (uid: string) => {
+      const { data: state, error: stateError } = await supabase
+        .from("wall_read_state")
+        .select("last_read_at")
+        .eq("user_id", uid)
+        .maybeSingle();
+
+      if (stateError) {
+        console.error("wall unread state error", stateError);
+        setWallUnreadCount(0);
+        return;
+      }
+
+      if (!state) {
+        const now = new Date().toISOString();
+        const { error: insertError } = await supabase
+          .from("wall_read_state")
+          .insert({ user_id: uid, last_read_at: now, updated_at: now });
+        if (insertError) console.error("wall read state insert error", insertError);
+        setWallUnreadCount(0);
+        return;
+      }
+
+      const { count, error: countError } = await supabase
+        .from("wall_messages")
+        .select("id", { count: "exact", head: true })
+        .gt("created_at", state.last_read_at)
+        .neq("user_id", uid);
+
+      if (countError) {
+        console.error("wall unread count error", countError);
+        setWallUnreadCount(0);
+        return;
+      }
+
+      setWallUnreadCount(count ?? 0);
+    },
+    [supabase]
+  );
+
+  const markWallRead = useCallback(
+    async (seenAt?: string) => {
+      if (!user) return;
+      const timestamp = seenAt ?? new Date().toISOString();
+      const { error } = await supabase.from("wall_read_state").upsert(
+        {
+          user_id: user.id,
+          last_read_at: timestamp,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" }
+      );
+      if (error) {
+        console.error("wall read state update error", error);
+        return;
+      }
+      setWallUnreadCount(0);
+    },
+    [supabase, user]
+  );
+
   const refreshProfile = useCallback(async () => {
     if (user) await loadProfile(user.id);
   }, [user, loadProfile]);
@@ -106,6 +173,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (data.user) {
         loadProfile(data.user.id);
         loadUnread(data.user.id);
+        loadWallUnread(data.user.id);
       }
       setLoading(false);
     });
@@ -115,9 +183,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (session?.user) {
         loadProfile(session.user.id);
         loadUnread(session.user.id);
+        loadWallUnread(session.user.id);
       } else {
         setProfile(null);
         setUnreadCount(0);
+        setWallUnreadCount(0);
       }
     });
 
@@ -149,10 +219,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [user, supabase, loadUnread]);
 
-const isAdmin = profile?.is_admin === true;
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`wall-unread-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "wall_messages" },
+        () => loadWallUnread(user.id)
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "wall_messages" },
+        () => loadWallUnread(user.id)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, supabase, loadWallUnread]);
+
+  const isAdmin = profile?.is_admin === true;
   return (
     <AuthContext.Provider
-      value={{ user, profile, loading, unreadCount, isAdmin, refreshProfile }}
+      value={{
+        user,
+        profile,
+        loading,
+        unreadCount,
+        wallUnreadCount,
+        isAdmin,
+        markWallRead,
+        refreshProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>

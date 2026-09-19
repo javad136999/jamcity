@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ADMIN_CONTACT_EMAIL } from "@/lib/constants";
 
 export default function Header() {
-  const { user, profile, unreadCount, isAdmin } = useAuth();
+  const { user, profile, unreadCount, wallUnreadCount, isAdmin } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -132,8 +132,13 @@ export default function Header() {
         <Link href="/" className="transition hover:text-red-500">
           خانه
         </Link>
-        <Link href="/wall" className="transition hover:text-red-500">
+        <Link href="/wall" className="relative transition hover:text-red-500">
           دیوار شهر جم
+          {user && wallUnreadCount > 0 && (
+            <span className="absolute -left-4 -top-2 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+              {wallUnreadCount > 99 ? "۹۹+" : wallUnreadCount}
+            </span>
+          )}
         </Link>
         <Link href="/businesses" className="transition hover:text-red-500">
           کسب‌وکارها

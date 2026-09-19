@@ -456,6 +456,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      wall_read_state: {
+        Row: {
+          user_id: string;
+          last_read_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          last_read_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          last_read_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       private_messages: {
         Row: {
           id: string;

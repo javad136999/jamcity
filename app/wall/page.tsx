@@ -178,7 +178,7 @@ function WallGate() {
 export default function WallPage() {
   const supabase = createClient();
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, wallUnreadCount, markWallRead } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<WallMessage | null>(null);
   const [pinMenuMessage, setPinMenuMessage] = useState<WallMessage | null>(null);
@@ -696,6 +696,17 @@ export default function WallPage() {
     });
   }, [messages]);
 
+  useEffect(() => {
+    if (!user || messages === null || showScrollDown) return;
+    const latestSeenAt = messages.reduce<string | null>((latest, message) => {
+      if (!latest || new Date(message.created_at).getTime() > new Date(latest).getTime()) {
+        return message.created_at;
+      }
+      return latest;
+    }, null);
+    if (latestSeenAt) void markWallRead(latestSeenAt);
+  }, [user, messages, showScrollDown, markWallRead]);
+
   // اگر کاربر همین الان پایین صفحه بود و پیام جدیدی از بقیه رسید،
   // خودکار روی همون آخرین پیام بمونه (اگر بالا رفته و داره پیام‌های
   // قدیمی رو می‌خونه، مزاحمش نمی‌شیم)
@@ -1108,6 +1119,17 @@ function handleReply(message: WallMessage) {
                 <span className="shrink-0 text-[8px] font-semibold text-[#B8C0B9]">مشاهده ←</span>
               </button>
             </div>
+          )}
+
+          {wallUnreadCount > 0 && showScrollDown && (
+            <button
+              type="button"
+              onClick={() => scrollToBottom()}
+              className="flex shrink-0 items-center justify-between border-b border-[#DCEBDD] bg-[#F7FBF5] px-3 py-2 text-right text-[11px] font-bold text-[#147A4B] transition hover:bg-[#EEF8EE]"
+            >
+              <span>{wallUnreadCount > 99 ? "۹۹+" : wallUnreadCount} پیام جدید</span>
+              <span className="text-[10px] text-[#8A968C]">مشاهده ↓</span>
+            </button>
           )}
 
           <div
