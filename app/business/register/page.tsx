@@ -206,7 +206,11 @@ export default function BusinessRegisterPage() {
                       <p className="text-base font-black">{t.name}</p>
                       {selected && <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-jam-green">انتخاب شده</span>}
                     </div>
-                    <p className="mt-1 text-[11px] font-bold text-slate-800">{t.perks[0]}</p>
+                    <div className="mt-2 space-y-1">
+                      {t.perks.map((perk) => (
+                        <p key={perk} className="text-[10px] font-bold leading-5 text-slate-800">✓ {perk}</p>
+                      ))}
+                    </div>
                   </button>
 
                   <div className="mt-4 grid grid-cols-3 gap-2">
