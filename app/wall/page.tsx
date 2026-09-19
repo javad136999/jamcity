@@ -20,6 +20,7 @@ type WallMessage = {
   image_url: string | null;
   audio_url?: string | null;
   is_promo: boolean;
+  is_auto_republish?: boolean;
   is_pinned: boolean;
   pinned_at: string | null;
   business_id: string | null;
@@ -226,7 +227,7 @@ export default function WallPage() {
     // و در جای زمانی خودش به لیست اضافه می‌کنیم؛ آگهی جابه‌جا یا کپی نمی‌شود.
     const { data } = await supabase
       .from("wall_messages")
-      .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+      .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,is_pinned,pinned_at")
       .eq("id", message.id)
       .maybeSingle();
 
@@ -1127,7 +1128,7 @@ function handleReply(message: WallMessage) {
                 const prev = index > 0 ? messages[index - 1] : null;
                 const showDateDivider =
                   !prev || !isSameDay(new Date(prev.created_at), new Date(m.created_at));
-                const showMeta = !mine && (!prev || prev.user_id !== m.user_id || showDateDivider);
+                const showMeta = !mine && !m.is_auto_republish && (!prev || prev.user_id !== m.user_id || showDateDivider);
 
                 const bubbleTail = mine ? "rounded-br-md" : "rounded-bl-md";
 
@@ -1210,13 +1211,13 @@ function handleReply(message: WallMessage) {
                                 </p>
                               </button>
                             )}
-                            <button
+                            {!m.is_auto_republish && <button
                               onClick={() => openChatWith(m.user_id)}
                               className="flex items-center gap-2 text-[11px] font-bold text-[#D98F2B]"
                             >
                               <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={20} />
                               {m.profiles?.display_name || "کاربر"}
-                            </button>
+                            </button>}
                             {m.category && (
                               <span className="inline-block rounded-full bg-[#F3F6F1] px-2 py-0.5 text-[10px] font-bold text-[#66766A]">
                                 {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
