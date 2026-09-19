@@ -1109,11 +1109,11 @@ function handleReply(message: WallMessage) {
               <button
                 type="button"
                 onClick={() => scrollToPinnedMessage(pinnedMessage)}
-                className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 text-right transition hover:bg-[#F7F9F4]"
+                className="flex w-full items-center gap-2 rounded-lg border-r-4 border-[#E2574C] bg-[#FFF7F6] px-2 py-1 text-right shadow-[0_2px_10px_rgba(226,87,76,.14)] transition hover:bg-[#FFF1EF]"
                 aria-label="مشاهده آگهی سنجاق‌شده"
               >
                 <span className="shrink-0 text-[11px] opacity-55">📌</span>
-                <span className="min-w-0 flex-1 truncate text-[9px] font-semibold text-[#9AA49C]">
+                <span className="min-w-0 flex-1 truncate text-[10px] font-bold text-[#B43B32]">
                   {pinnedMessage.content?.split("\n")[0]?.replace(/^⭐\s*/, "") || "آگهی سنجاق‌شده"}
                 </span>
                 <span className="shrink-0 text-[8px] font-semibold text-[#B8C0B9]">مشاهده ←</span>
