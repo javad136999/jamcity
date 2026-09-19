@@ -184,35 +184,40 @@ export default function BusinessRegisterPage() {
         <div className="space-y-4 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
           <div>
             <label className="text-sm font-black text-slate-800">انتخاب اشتراک</label>
-            <p className="mt-1 text-[11px] text-slate-500">مدت اشتراک را انتخاب کنید؛ قیمت نهایی همان مبلغی است که در فیش باید واریز شود.</p>
+            <p className="mt-1 text-[11px] text-slate-500">مدت و نوع اشتراک را انتخاب کنید.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {SUBSCRIPTION_TIERS.map((t) => {
               const plans = SUBSCRIPTION_PLANS[t.value];
-              const isSelected = tier === t.value;
+              const selected = tier === t.value;
+
               return (
                 <div
                   key={t.value}
-                  className={`relative overflow-hidden rounded-[24px] border-2 bg-gradient-to-br ${t.color} p-4 shadow-lg transition-all ${isSelected ? "border-jam-green ring-4 ring-jam-green/20 scale-[1.01]" : "border-white/80"}`}
+                  className={`rounded-[24px] bg-gradient-to-br ${t.color} p-4 shadow-lg ${selected ? "ring-4 ring-jam-green/30" : "opacity-90"}`}
                 >
-                  <button type="button" onClick={() => { setTier(t.value); setMonths(1); }} className="w-full text-right text-slate-900">
-                    <div className="flex items-center justify-between gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { setTier(t.value); setMonths(1); }}
+                    className="w-full text-right text-slate-900"
+                  >
+                    <div className="flex items-center justify-between">
                       <p className="text-base font-black">{t.name}</p>
-                      {isSelected && <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-jam-green">انتخاب شده</span>}
+                      {selected && <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-jam-green">انتخاب شده</span>}
                     </div>
                     <p className="mt-1 text-[11px] font-bold text-slate-800">{t.perks[0]}</p>
                   </button>
 
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     {plans.map((p) => {
-                      const active = isSelected && months === p.months;
+                      const active = selected && months === p.months;
                       return (
                         <button
                           key={p.months}
                           type="button"
-                          onClick={() => { setTier(t.value); setMonths(p.months as 1 | 6 | 12); }}
-                          className={`relative min-h-[92px] rounded-2xl border p-2.5 text-center transition-all ${active ? "border-jam-navy bg-white shadow-md ring-2 ring-jam-navy/20" : "border-white/70 bg-white/55 hover:bg-white/80"}`}
+                          onClick={() => { setTier(t.value); setMonths(p.months === 1 ? 1 : p.months === 6 ? 6 : 12); }}
+                          className={`relative min-h-[86px] rounded-2xl border p-2 text-center ${active ? "border-jam-navy bg-white shadow-md ring-2 ring-jam-navy/20" : "border-white/70 bg-white/60"}`}
                         >
                           {p.badge && <span className="absolute -top-2 right-1/2 translate-x-1/2 whitespace-nowrap rounded-full bg-jam-navy px-2 py-0.5 text-[8px] font-black text-white">{p.badge}</span>}
                           <span className="block text-[10px] font-black text-slate-800">{p.label}</span>
