@@ -32,7 +32,7 @@ export default function BusinessesPage() {
   }, [category, query, supabase]);
 
   return (
-    <div className="fade-in space-y-6">
+    <div className="fade-in space-y-6 pt-3">
       <div>
         <h1 className="text-2xl font-extrabold text-slate-800">کسب‌وکارهای جم</h1>
         <p className="text-sm text-slate-500">رستوران، فروشگاه و خدمات شهر جم</p>
