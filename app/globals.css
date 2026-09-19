@@ -104,3 +104,6 @@ body, body.gradient-bg { background: radial-gradient(circle at 90% -10%, rgba(22
 .gold-home-viewport:hover .gold-home-track, .gold-home-viewport.is-manual .gold-home-track { animation-play-state: paused; }
 
 @keyframes priorityGoldMove { from { transform: translateX(-25%); } to { transform: translateX(0); } }
+
+/* Homepage starts directly beneath the header; keep other routes unchanged. */
+body:has(.home-shell) main { padding-top: 0 !important; }
