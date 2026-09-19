@@ -230,20 +230,20 @@ export default function ConversationPage() {
   }
 
   return (
-    <main dir="rtl" className="h-[100dvh] max-h-[100dvh] overflow-hidden bg-[#faf7f2] p-0 text-[#34271f] sm:h-auto sm:max-h-none sm:min-h-[calc(100vh-110px)] sm:overflow-visible sm:p-4 lg:p-6">
+    <main dir="rtl" className="h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] overflow-hidden bg-[#faf7f2] p-0 text-[#34271f] sm:h-auto sm:max-h-none sm:min-h-[calc(100vh-110px)] sm:overflow-visible sm:p-4 lg:p-6">
       <div className="mx-auto flex h-full min-h-0 max-w-6xl overflow-hidden border-y border-[#eadfd4] bg-white shadow-[0_18px_60px_rgba(93,65,39,.1)] sm:h-[calc(100dvh-142px)] sm:min-h-[560px] sm:rounded-[30px] sm:border">
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-3 border-b border-[#eee5dc] bg-gradient-to-l from-[#fffaf3] to-white px-4 py-4 sm:px-6">
-            <Link href="/chat" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#f7efe5] text-xl text-[#a56b2e] transition hover:-translate-x-1" aria-label="بازگشت به پیام‌ها">›</Link>
-            <span className="relative flex h-12 w-12 shrink-0 overflow-hidden rounded-[18px] bg-[#285f46] ring-2 ring-white shadow-md"><Avatar url={other?.avatar_url} name={other?.display_name} size={48} /><i className="absolute bottom-0 left-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#43a66b]" /></span>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-[#3d3028] sm:text-base">{other?.display_name ?? "کاربر جم‌سیتی"}</p><p className="mt-1 truncate text-xs text-[#2f7657]" dir="ltr">● @{other?.username ?? "unknown"} · آنلاین</p></div>
+          <header className="flex items-center gap-2 border-b border-[#eee5dc] bg-gradient-to-l from-[#fffaf3] to-white px-2.5 py-2.5 sm:gap-3 sm:px-6 sm:py-4">
+            <Link href="/chat" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7efe5] text-lg text-[#a56b2e] transition hover:-translate-x-1 sm:h-10 sm:w-10 sm:rounded-2xl sm:text-xl" aria-label="بازگشت به پیام‌ها">›</Link>
+            <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-[15px] sm:h-12 sm:w-12 sm:rounded-[18px] bg-[#285f46] ring-2 ring-white shadow-md"><Avatar url={other?.avatar_url} name={other?.display_name} size={40} /><i className="absolute bottom-0 left-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#43a66b]" /></span>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-[#3d3028] sm:text-base">{other?.display_name ?? "کاربر جم‌سیتی"}</p><p className="mt-0.5 truncate text-[10px] text-[#2f7657] sm:text-xs">● آنلاین</p></div>
             <button type="button" onClick={() => setShowDetails((value) => !value)} className={`rounded-2xl px-3 py-2 text-xl transition ${showDetails ? "bg-[#f6eadb] text-[#ae712d]" : "text-[#9a897b] hover:bg-[#f8f1e9]"}`} aria-label="اطلاعات گفتگو">ⓘ</button>
             <button type="button" onClick={() => void reportUser()} className="hidden rounded-2xl px-3 py-2 text-lg text-[#b8a79a] transition hover:bg-[#fff0ed] hover:text-[#c85e51] sm:block" title="گزارش این کاربر">⚑</button>
           </header>
 
           <div className="relative min-h-0 flex-1 overflow-hidden bg-[radial-gradient(circle_at_15%_10%,rgba(236,213,177,.3),transparent_28%),#fbfaf7]">
             <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:radial-gradient(#c8a576_0.7px,transparent_0.7px)] [background-size:22px_22px]" />
-            <div className="relative h-full min-h-0 space-y-3 overflow-y-auto overscroll-contain px-3 py-4 [scrollbar-width:thin] [scrollbar-color:#d9c2a7_transparent] sm:px-8 sm:py-6">
+            <div className="relative h-full min-h-0 space-y-2 overflow-y-auto overscroll-contain px-2.5 py-3 [scrollbar-width:thin] [scrollbar-color:#d9c2a7_transparent] sm:space-y-3 sm:px-8 sm:py-6">
               <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-[#eee3d8] bg-white/85 px-4 py-2 text-[10px] font-bold text-[#9b8b7f] shadow-sm">امروز · گفت‌وگوی خصوصی و امن</div>
               {messages && messages.length === 0 && <p className="py-16 text-center text-sm text-[#9b8b7f]">هنوز پیامی ارسال نشده؛ اولین پیام را بفرستید 👋</p>}
               {messages?.map((message) => {
@@ -259,7 +259,7 @@ export default function ConversationPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSend} className="shrink-0 border-t border-[#eee5dc] bg-white p-2.5 pb-[max(.65rem,env(safe-area-inset-bottom))] sm:p-4">
+          <form onSubmit={handleSend} className="shrink-0 border-t border-[#eee5dc] bg-white p-2 pb-[max(.45rem,env(safe-area-inset-bottom))] sm:p-4">
             <div className="flex items-end gap-2">
               <label className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-[#f7f0e8] text-lg text-[#9a7651] transition hover:bg-[#f0e3d4]" title="ارسال تصویر">📷<input type="file" accept="image/*" className="hidden" onChange={handleImagePick} /></label>
               <button type="button" onMouseDown={() => void startRecording()} onMouseUp={stopRecording} onTouchStart={() => void startRecording()} onTouchEnd={stopRecording} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-lg transition ${recording ? "bg-[#d9534f] text-white shadow-lg" : "bg-[#f7f0e8] text-[#9a7651] hover:bg-[#f0e3d4]"}`} title="برای ضبط نگه دارید">🎤</button>
@@ -267,11 +267,11 @@ export default function ConversationPage() {
               <input value={text} onChange={(event) => setText(event.target.value)} placeholder="پیام خود را بنویسید..." className="min-w-0 flex-1 rounded-2xl border border-[#eee3d8] bg-[#faf7f2] px-3 py-3 text-sm text-[#34271f] outline-none transition placeholder:text-[#ad9d90] focus:border-[#d39a51] focus:bg-white focus:ring-4 focus:ring-[#d39a51]/10 sm:px-4" />
               <button type="submit" disabled={sending || !text.trim()} className="rounded-2xl bg-[#2f7657] px-3.5 py-3 text-sm font-black text-white shadow-[0_8px_20px_rgba(47,118,87,.2)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50 sm:px-5">ارسال</button>
             </div>
-            <p className="mt-2 px-1 text-[10px] text-[#aa9b8e]">پیام‌های شما با اتصال زنده ارسال و به‌روزرسانی می‌شوند.</p>
+            <p className="mt-1 hidden px-1 text-[10px] text-[#aa9b8e] sm:block">پیام‌های شما با اتصال زنده ارسال و به‌روزرسانی می‌شوند.</p>
           </form>
         </section>
 
-        {showDetails && <aside className="hidden w-64 border-r border-[#eee5dc] bg-[#fffdfa] p-5 lg:block"><div className="text-center"><span className="mx-auto flex h-24 w-24 overflow-hidden rounded-[28px] bg-[#285f46] shadow-lg"><Avatar url={other?.avatar_url} name={other?.display_name} size={96} /></span><h2 className="mt-4 font-black">{other?.display_name ?? "کاربر جم‌سیتی"}</h2><p className="mt-1 text-xs text-[#9a8a7d]" dir="ltr">@{other?.username ?? "unknown"}</p><span className="mt-3 inline-flex rounded-full bg-[#edf6ef] px-3 py-1 text-[10px] font-bold text-[#2f7657]">● آنلاین</span></div><div className="mt-8 space-y-2"><button type="button" className="w-full rounded-xl bg-[#f7f0e8] px-3 py-3 text-right text-xs font-bold text-[#695548]">📌 پیام‌های نشان‌شده</button><button type="button" className="w-full rounded-xl bg-[#f7f0e8] px-3 py-3 text-right text-xs font-bold text-[#695548]">🔔 اعلان‌های گفتگو</button><button type="button" onClick={() => void reportUser()} className="w-full rounded-xl bg-[#fff0ed] px-3 py-3 text-right text-xs font-bold text-[#c85e51]">⚑ گزارش کاربر</button></div></aside>}
+        {showDetails && <aside className="hidden w-64 border-r border-[#eee5dc] bg-[#fffdfa] p-5 lg:block"><div className="text-center"><span className="mx-auto flex h-24 w-24 overflow-hidden rounded-[28px] bg-[#285f46] shadow-lg"><Avatar url={other?.avatar_url} name={other?.display_name} size={96} /></span><h2 className="mt-4 font-black">{other?.display_name ?? "کاربر جم‌سیتی"}</h2><span className="mt-3 inline-flex rounded-full bg-[#edf6ef] px-3 py-1 text-[10px] font-bold text-[#2f7657]">● آنلاین</span></div><div className="mt-8 space-y-2"><button type="button" className="w-full rounded-xl bg-[#f7f0e8] px-3 py-3 text-right text-xs font-bold text-[#695548]">📌 پیام‌های نشان‌شده</button><button type="button" className="w-full rounded-xl bg-[#f7f0e8] px-3 py-3 text-right text-xs font-bold text-[#695548]">🔔 اعلان‌های گفتگو</button><button type="button" onClick={() => void reportUser()} className="w-full rounded-xl bg-[#fff0ed] px-3 py-3 text-right text-xs font-bold text-[#c85e51]">⚑ گزارش کاربر</button></div></aside>}
       </div>
     </main>
   );
