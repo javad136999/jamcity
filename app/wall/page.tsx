@@ -1173,7 +1173,7 @@ function handleReply(message: WallMessage) {
                   <div
                     key={m.id}
                     id={`message-${m.id}`}
-                    className="min-w-0 max-w-full"
+                    className={`min-w-0 max-w-full rounded-xl transition-all ${m.is_pinned ? "border-r-4 border-[#E2574C] bg-[#FFF7F6] shadow-[0_0_18px_rgba(226,87,76,.18)]" : ""}`}
                     onPointerDown={(e) => startPinPress(e, m)}
                     onPointerUp={clearPinPressTimer}
                     onPointerCancel={clearPinPressTimer}
