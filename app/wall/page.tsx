@@ -637,6 +637,15 @@ export default function WallPage() {
       )
       .on(
         "postgres_changes",
+        { event: "DELETE", schema: "public", table: "wall_messages" },
+        (payload) => {
+          const messageId = payload.old.id as string;
+          setMessages((prev) => (prev ?? []).filter((message) => message.id !== messageId));
+          setPinnedMessage((current) => current?.id === messageId ? null : current);
+        }
+      )
+      .on(
+        "postgres_changes",
         { event: "INSERT", schema: "public", table: "wall_message_likes" },
         (payload) => {
           const mid = payload.new.message_id as string;
@@ -762,28 +771,34 @@ if (textareaRef.current) textareaRef.current.style.height = "auto";
       await supabase.from("wall_message_likes").insert({ message_id: messageId, user_id: user.id });
     }
   }
-async function deleteMessage(messageId: string) {
-  if (!user) return;
+  async function deleteMessage(messageId: string) {
+    if (!user) return;
 
-  const confirmed = window.confirm("آیا مطمئن هستید می‌خواهید این پیام را حذف کنید؟");
-  if (!confirmed) return;
+    const message = messages?.find((item) => item.id === messageId);
+    const canDelete = Boolean(message && (message.user_id === user.id || profile?.is_admin));
+    if (!canDelete) return;
 
-  const { error } = await supabase
-    .from("wall_messages")
-    .delete()
-    .eq("id", messageId)
-    .eq("user_id", user.id);
+    const confirmed = window.confirm(
+      profile?.is_admin && message?.user_id !== user.id
+        ? "آیا مطمئن هستید می‌خواهید پیام این کاربر را حذف کنید؟"
+        : "آیا مطمئن هستید می‌خواهید این پیام را حذف کنید؟"
+    );
+    if (!confirmed) return;
 
-  if (error) {
-    console.error("delete message error:", error);
-    alert("حذف پیام انجام نشد. دوباره تلاش کنید.");
-    return;
+    const { error } = await supabase
+      .from("wall_messages")
+      .delete()
+      .eq("id", messageId);
+
+    if (error) {
+      console.error("delete message error:", error);
+      alert("حذف پیام انجام نشد. دوباره تلاش کنید.");
+      return;
+    }
+
+    setMessages((prev) => prev?.filter((item) => item.id !== messageId) ?? prev);
+    setPinnedMessage((current) => current?.id === messageId ? null : current);
   }
-
-  setMessages((prev) =>
-    prev ? prev.filter((message) => message.id !== messageId) : prev
-  );
-}
   async function openChatWith(otherId: string) {
     if (!user || otherId === user.id || navigating) return;
     setNavigating(true);
@@ -1237,12 +1252,12 @@ function handleReply(message: WallMessage) {
                               </button>
                               <p className="text-[10px] text-[#B0BAB1]">{timeAgo(m.created_at)}</p>
                               <div className="flex items-center gap-3">
-                                {mine && (
+                                {(mine || profile?.is_admin) && (
                                   <button
                                     type="button"
                                     onClick={() => deleteMessage(m.id)}
                                     className="text-[10px] text-[#B0BAB1]"
-                                    title="حذف پیام"
+                                    title={mine ? "حذف پیام" : "حذف پیام کاربر"}
                                   >
                                     🗑️
                                   </button>
@@ -1379,12 +1394,12 @@ function handleReply(message: WallMessage) {
                                     🚩
                                   </button>
                                 )}
-                                {mine && (
+                                {(mine || profile?.is_admin) && (
                                   <button
                                     type="button"
                                     onClick={() => deleteMessage(m.id)}
                                     className="text-[10px] text-white/70"
-                                    title="حذف پیام"
+                                    title={mine ? "حذف پیام" : "حذف پیام کاربر"}
                                   >
                                     🗑️
                                   </button>
@@ -1459,6 +1474,16 @@ function handleReply(message: WallMessage) {
               className="w-full rounded-xl bg-[#147A4B] px-4 py-3 text-right text-[12px] font-black text-white"
             >
               {pinMenuMessage.is_pinned ? "📍 برداشتن پین" : "📌 پین کردن آگهی"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void deleteMessage(pinMenuMessage.id);
+                setPinMenuMessage(null);
+              }}
+              className="mt-1.5 w-full rounded-xl bg-[#FFF1F0] px-4 py-3 text-right text-[12px] font-black text-[#C4473F]"
+            >
+              🗑️ حذف این پیام
             </button>
             <button
               type="button"
