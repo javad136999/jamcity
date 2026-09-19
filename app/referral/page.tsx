@@ -210,7 +210,7 @@ function ReferralPage() {
   }, [currentProgress]);
 
   const totalRewardAmount = useMemo(() => {
-    return earnedLevels * 20000;
+    return earnedLevels * 50000;
   }, [earnedLevels]);
 
   const paidRewardAmount = useMemo(() => {
@@ -371,7 +371,7 @@ function ReferralPage() {
           <p className="mt-2 text-xs leading-6 text-[#7D897F]">
             دوستانت رو به جم‌سیتی دعوت کن و
             <br />
-            به ازای هر ۲۰ معرفی موفق، ۲۰ هزار تومان جایزه بگیر.
+            به ازای هر ۲۰ معرفی موفق، ۵۰ هزار تومان + یک ماه اشتراک نقره‌ای رایگان دریافت کن.
           </p>
         </div>
 
@@ -588,7 +588,7 @@ function ReferralPage() {
             </p>
 
             <p className="mt-1 text-xl font-black text-[#D98F2B]">
-              ۲۰٬۰۰۰ تومان
+              ۵۰٬۰۰۰ تومان + یک ماه اشتراک نقره‌ای رایگان
             </p>
           </div>
 
@@ -788,7 +788,7 @@ function ReferralPage() {
         <p className="mt-2 text-[10px] leading-5 text-white/80">
           لینک دعوتت رو برای دوستانت بفرست و
           <br />
-          با هر ۲۰ معرفی یک پاداش ۲۰ هزار تومانی بگیر.
+          با هر ۲۰ معرفی، ۵۰ هزار تومان + یک ماه اشتراک نقره‌ای رایگان بگیر.
         </p>
 
         <button
@@ -806,7 +806,7 @@ function ReferralPage() {
       <p className="px-3 text-center text-[9px] leading-6 text-[#A1AAA3]">
         پاداش‌ها بر اساس ثبت‌نام‌های موفق محاسبه می‌شوند.
         <br />
-        هر ۲۰ معرفی موفق = یک پاداش ۲۰٬۰۰۰ تومانی
+        هر ۲۰ معرفی موفق = یک پاداش ۵۰٬۰۰۰ تومان + یک ماه اشتراک نقره‌ای رایگانی
       </p>
     </div>
   );
