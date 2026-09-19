@@ -617,7 +617,7 @@ export default function AdminPage() {
     setBusyId(null);
   }
 
-  async function approve(id: string) {
+  async function approve(id: string, months: number) {
     setBusyId(id);
 
     try {
@@ -1763,7 +1763,7 @@ export default function AdminPage() {
 
                     {tier && (
                       <p className="text-xs font-bold text-amber-700">
-                        {tier.name} — {formatPrice(tier.price)}
+                        {tier.name} — {formatPrice(tier.price)} · {b.subscription_months === 12 ? "۱۲ ماهه" : b.subscription_months === 6 ? "۶ ماهه" : "۱ ماهه"}
                       </p>
                     )}
 
@@ -1855,7 +1855,7 @@ export default function AdminPage() {
                         b.subscription_status === "suspended") && (
                         <button
                           disabled={busyId === b.id}
-                          onClick={() => approve(b.id)}
+                          onClick={() => approve(b.id, b.subscription_months)}
                           className="flex-1 rounded-xl2 bg-jam-green py-2 text-sm font-bold text-white shadow-glow disabled:opacity-50"
                         >
                           ✅ تایید
