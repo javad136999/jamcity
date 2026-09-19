@@ -558,6 +558,9 @@ export default function WallPage() {
             .in("id", userIds)
         : Promise.resolve({ data: [] as { id: string; display_name: string; avatar_url: string | null }[] });
 
+      // پیام‌ها را همین حالا نمایش بده؛ اطلاعات جانبی نباید اولین نمایش دیوار را معطل کند.
+      setMessages(rows);
+
       const [profilesResult, likesResult] = await Promise.all([profilesPromise, likesPromise]);
 
       const profileMap = new Map(
