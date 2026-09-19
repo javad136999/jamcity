@@ -96,22 +96,35 @@ export const SUBSCRIPTION_TIERS = [
   {
     value: "gold",
     name: "اشتراک طلایی",
-    price: 500000,
-    color: "from-yellow-500 to-amber-300",
+    price: 400000,
+    color: "from-yellow-400 via-amber-300 to-yellow-500",
     perks: [
       "⭐ درج روی نقشه با نشان ستاره طلایی",
-      "📢 ارسال خودکار روزانه یک آگهی در دیوار شهر جم (ساعت ۹ صبح)",
+      "📢 ارسال خودکار روزانه یک آگهی در دیوار شهر جم",
       "🏬 پنل کامل مدیریت منو و محصولات",
     ],
   },
   {
     value: "silver",
     name: "اشتراک نقره‌ای",
-    price: 300000,
-    color: "from-slate-400 to-slate-300",
+    price: 200000,
+    color: "from-slate-300 via-slate-200 to-slate-400",
     perks: ["📍 درج روی نقشه شهر جم", "🏬 پنل کامل مدیریت منو و محصولات"],
   },
 ] as const;
+
+export const SUBSCRIPTION_PLANS = {
+  gold: [
+    { months: 1, price: 400000, label: "۱ ماهه" },
+    { months: 6, price: 1500000, label: "۶ ماهه", badge: "پیشنهاد ویژه" },
+    { months: 12, price: 2500000, label: "۱۲ ماهه", badge: "به‌صرفه‌ترین" },
+  ],
+  silver: [
+    { months: 1, price: 200000, label: "۱ ماهه" },
+    { months: 6, price: 800000, label: "۶ ماهه", badge: "پیشنهاد ویژه" },
+    { months: 12, price: 1300000, label: "۱۲ ماهه", badge: "به‌صرفه‌ترین" },
+  ],
+} as const;
 
 export type SubscriptionTierValue = (typeof SUBSCRIPTION_TIERS)[number]["value"];
 
