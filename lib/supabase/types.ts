@@ -168,6 +168,7 @@ export type Database = {
           lat?: number | null;
           lng?: number | null;
           subscription_tier?: "bronze" | "silver" | "gold" | null;
+          subscription_months?: number;
           subscription_status?: "pending" | "approved" | "rejected" | "suspended";
           receipt_url?: string | null;
           submitted_at?: string;
