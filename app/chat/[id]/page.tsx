@@ -54,11 +54,7 @@ export default function ConversationPage() {
     let active = true;
 
     async function load() {
-      const { data: convo } = await supabase
-        .from("conversations")
-        .select("id, user_one, user_two")
-        .eq("id", params.id)
-        .maybeSingle();
+      const { data: convo } = await supabase.from("conversations").select("id, user_one, user_two").eq("id", params.id).maybeSingle();
 
       if (!convo || (convo.user_one !== currentUserId && convo.user_two !== currentUserId)) {
         if (active) setNotFoundOrForbidden(true);
@@ -66,71 +62,41 @@ export default function ConversationPage() {
       }
 
       const otherId = convo.user_one === currentUserId ? convo.user_two : convo.user_one;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, display_name, username, avatar_url")
-        .eq("id", otherId)
-        .maybeSingle();
+      const { data: profile } = await supabase.from("profiles").select("id, display_name, username, avatar_url").eq("id", otherId).maybeSingle();
 
       if (active) setOther(profile as OtherProfile);
 
-      const { data: msgs } = await supabase
-        .from("private_messages")
-        .select("*")
-        .eq("conversation_id", params.id)
-        .order("created_at", { ascending: true });
+      const { data: msgs } = await supabase.from("private_messages").select("*").eq("conversation_id", params.id).order("created_at", { ascending: true });
 
       if (active) {
         setMessages((msgs as Message[]) ?? []);
         window.setTimeout(scrollToBottom, 100);
       }
 
-      await supabase
-        .from("private_messages")
-        .update({ read_at: new Date().toISOString() })
-        .eq("conversation_id", params.id)
-        .neq("sender_id", currentUserId)
-        .is("read_at", null);
+      await supabase.from("private_messages").update({ read_at: new Date().toISOString() }).eq("conversation_id", params.id).neq("sender_id", currentUserId).is("read_at", null);
     }
 
     void load();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [user, params.id, supabase, scrollToBottom]);
 
   useEffect(() => {
     if (!user) return;
-    const channel = supabase
-      .channel(`conversation-${params.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "private_messages",
-          filter: `conversation_id=eq.${params.id}`,
-        },
-        (payload) => {
-          const msg = payload.new as Message;
-          setMessages((previous) => {
-            if (!previous || previous.some((item) => item.id === msg.id)) return previous ?? [msg];
-            return [...previous, msg];
-          });
-          window.setTimeout(scrollToBottom, 100);
-          if (msg.sender_id !== user.id) {
-            void supabase
-              .from("private_messages")
-              .update({ read_at: new Date().toISOString() })
-              .eq("id", msg.id);
-          }
-        }
-      )
-      .subscribe();
+    const channel = supabase.channel(`conversation-${params.id}`).on("postgres_changes", {
+      event: "INSERT", schema: "public", table: "private_messages", filter: `conversation_id=eq.${params.id}`,
+    }, (payload) => {
+      const msg = payload.new as Message;
+      setMessages((previous) => {
+        if (!previous || previous.some((item) => item.id === msg.id)) return previous ?? [msg];
+        return [...previous, msg];
+      });
+      window.setTimeout(scrollToBottom, 100);
+      if (msg.sender_id !== user.id) {
+        void supabase.from("private_messages").update({ read_at: new Date().toISOString() }).eq("id", msg.id);
+      }
+    }).subscribe();
 
-    return () => {
-      void supabase.removeChannel(channel);
-    };
+    return () => { void supabase.removeChannel(channel); };
   }, [user, params.id, supabase, scrollToBottom]);
 
   async function handleSend(event: React.FormEvent) {
@@ -140,15 +106,8 @@ export default function ConversationPage() {
     setText("");
     setSending(true);
     try {
-      await supabase.from("private_messages").insert({
-        conversation_id: params.id,
-        sender_id: user.id,
-        content,
-        message_type: "text",
-      });
-    } finally {
-      setSending(false);
-    }
+      await supabase.from("private_messages").insert({ conversation_id: params.id, sender_id: user.id, content, message_type: "text" });
+    } finally { setSending(false); }
   }
 
   async function handleImagePick(event: React.ChangeEvent<HTMLInputElement>) {
@@ -158,15 +117,8 @@ export default function ConversationPage() {
     setSending(true);
     try {
       const media_url = await uploadSingleFile(file, "wall-images", user.id, file.name.split(".").pop());
-      await supabase.from("private_messages").insert({
-        conversation_id: params.id,
-        sender_id: user.id,
-        message_type: "image",
-        media_url,
-      });
-    } finally {
-      setSending(false);
-    }
+      await supabase.from("private_messages").insert({ conversation_id: params.id, sender_id: user.id, message_type: "image", media_url });
+    } finally { setSending(false); }
   }
 
   async function startRecording() {
@@ -182,15 +134,8 @@ export default function ConversationPage() {
       setSending(true);
       try {
         const media_url = await uploadSingleFile(blob, "voice-messages", user.id, "webm");
-        await supabase.from("private_messages").insert({
-          conversation_id: params.id,
-          sender_id: user.id,
-          message_type: "voice",
-          media_url,
-        });
-      } finally {
-        setSending(false);
-      }
+        await supabase.from("private_messages").insert({ conversation_id: params.id, sender_id: user.id, message_type: "voice", media_url });
+      } finally { setSending(false); }
     };
     recorder.start();
     mediaRecorderRef.current = recorder;
@@ -205,12 +150,7 @@ export default function ConversationPage() {
   async function reportUser() {
     if (!user || !other) return;
     const reason = window.prompt("دلیل گزارش این کاربر را بنویسید (اختیاری):") ?? "";
-    await supabase.from("reports").insert({
-      reporter_id: user.id,
-      reported_user_id: other.id,
-      context: "chat",
-      reason: reason.trim() || null,
-    });
+    await supabase.from("reports").insert({ reporter_id: user.id, reported_user_id: other.id, context: "chat", reason: reason.trim() || null });
     window.alert("گزارش شما برای بررسی به پنل مدیریت ارسال شد.");
   }
 
@@ -219,23 +159,16 @@ export default function ConversationPage() {
   }
 
   if (notFoundOrForbidden) {
-    return (
-      <main dir="rtl" className="flex min-h-[520px] items-center justify-center bg-[#faf7f2] p-5">
-        <div className="w-full max-w-sm rounded-[28px] border border-[#eadfd4] bg-white p-8 text-center shadow-[0_18px_55px_rgba(93,65,39,.1)]">
-          <p className="text-4xl">🚫</p><p className="mt-4 font-black text-[#3d3028]">این گفتگو در دسترس نیست</p>
-          <button onClick={() => router.push("/chat")} className="mt-5 rounded-2xl bg-[#2f7657] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5">بازگشت به پیام‌ها</button>
-        </div>
-      </main>
-    );
+    return <main dir="rtl" className="flex min-h-[520px] items-center justify-center bg-[#faf7f2] p-5"><div className="w-full max-w-sm rounded-[28px] border border-[#eadfd4] bg-white p-8 text-center shadow-[0_18px_55px_rgba(93,65,39,.1)]"><p className="text-4xl">🚫</p><p className="mt-4 font-black text-[#3d3028]">این گفتگو در دسترس نیست</p><button onClick={() => router.push("/chat")} className="mt-5 rounded-2xl bg-[#2f7657] px-5 py-3 text-sm font-bold text-white shadow-lg transition hover:-translate-y-0.5">بازگشت به پیام‌ها</button></div></main>;
   }
 
   return (
     <main dir="rtl" className="h-[calc(100dvh-112px)] max-h-[calc(100dvh-112px)] overflow-hidden bg-[#faf7f2] p-0 text-[#34271f] sm:h-auto sm:max-h-none sm:min-h-[calc(100vh-110px)] sm:overflow-visible sm:p-4 lg:p-6">
       <div className="mx-auto flex h-full min-h-0 max-w-6xl overflow-hidden border-y border-[#eadfd4] bg-white shadow-[0_18px_60px_rgba(93,65,39,.1)] sm:h-[calc(100dvh-142px)] sm:min-h-[560px] sm:rounded-[30px] sm:border">
         <section className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <header className="flex items-center gap-2 border-b border-[#eee5dc] bg-gradient-to-l from-[#fffaf3] to-white px-2.5 py-2.5 sm:gap-3 sm:px-6 sm:py-4">
+          <header className="shrink-0 flex items-center gap-2 border-b border-[#eee5dc] bg-gradient-to-l from-[#fffaf3] to-white px-2.5 py-2 sm:gap-3 sm:px-6 sm:py-4">
             <Link href="/chat" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f7efe5] text-lg text-[#a56b2e] transition hover:-translate-x-1 sm:h-10 sm:w-10 sm:rounded-2xl sm:text-xl" aria-label="بازگشت به پیام‌ها">›</Link>
-            <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-[15px] sm:h-12 sm:w-12 sm:rounded-[18px] bg-[#285f46] ring-2 ring-white shadow-md"><Avatar url={other?.avatar_url} name={other?.display_name} size={40} /><i className="absolute bottom-0 left-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#43a66b]" /></span>
+            <span className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-[15px] bg-[#285f46] ring-2 ring-white shadow-md sm:h-12 sm:w-12 sm:rounded-[18px]"><Avatar url={other?.avatar_url} name={other?.display_name} size={40} /><i className="absolute bottom-0 left-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-[#43a66b]" /></span>
             <div className="min-w-0 flex-1"><p className="truncate text-sm font-black text-[#3d3028] sm:text-base">{other?.display_name ?? "کاربر جم‌سیتی"}</p><p className="mt-0.5 truncate text-[10px] text-[#2f7657] sm:text-xs">● آنلاین</p></div>
             <button type="button" onClick={() => setShowDetails((value) => !value)} className={`rounded-2xl px-3 py-2 text-xl transition ${showDetails ? "bg-[#f6eadb] text-[#ae712d]" : "text-[#9a897b] hover:bg-[#f8f1e9]"}`} aria-label="اطلاعات گفتگو">ⓘ</button>
             <button type="button" onClick={() => void reportUser()} className="hidden rounded-2xl px-3 py-2 text-lg text-[#b8a79a] transition hover:bg-[#fff0ed] hover:text-[#c85e51] sm:block" title="گزارش این کاربر">⚑</button>
