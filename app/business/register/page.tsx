@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   BUSINESS_CATEGORIES,
   SUBSCRIPTION_TIERS,
+  SUBSCRIPTION_PLANS,
   PAYMENT_CARD_NUMBER,
   PAYMENT_CARD_HOLDER,
   formatPrice,
@@ -37,11 +38,13 @@ export default function BusinessRegisterPage() {
   const [lng, setLng] = useState<number | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [tier, setTier] = useState<SubscriptionTierValue>("gold");
+  const [months, setMonths] = useState<1 | 6 | 12>(1);
   const [receipt, setReceipt] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const selectedTier = SUBSCRIPTION_TIERS.find((t) => t.value === tier)!;
+  const selectedPlan = SUBSCRIPTION_PLANS[tier].find((p) => p.months === months)!;
   const icon = BUSINESS_CATEGORIES.find((c) => c.slug === category)?.icon ?? "🏬";
 
   async function handleSubmit(e: React.FormEvent) {
@@ -78,6 +81,7 @@ export default function BusinessRegisterPage() {
           lat,
           lng,
           subscription_tier: tier,
+          subscription_months: months,
           subscription_status: "pending",
           receipt_url,
         })
@@ -177,29 +181,54 @@ export default function BusinessRegisterPage() {
           {lat && lng && <p className="text-xs text-slate-400">موقعیت انتخاب شد: {lat.toFixed(5)}, {lng.toFixed(5)}</p>}
         </div>
 
-        <div className="space-y-3 rounded-xl2 border border-slate-200 bg-white p-4">
-          <label className="text-sm font-bold text-slate-700">نوع اشتراک</label>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {SUBSCRIPTION_TIERS.map((t) => (
-              <button
-                type="button"
-                key={t.value}
-                onClick={() => setTier(t.value)}
-                className={`rounded-xl2 bg-gradient-to-l ${t.color} p-4 text-right text-slate-900 shadow-soft transition ${
-                  tier === t.value ? "ring-4 ring-jam-green" : "opacity-80"
-                }`}
-              >
-                <p className="font-extrabold text-slate-900">{t.name}</p>
-                <p className="mb-2 text-sm text-slate-900">{formatPrice(t.price)} در ماه</p>
-                <ul className="space-y-0.5 text-[11px] text-slate-900">
-                  {t.perks.map((p) => <li key={p}>• {p}</li>)}
-                </ul>
-              </button>
-            ))}
+        <div className="space-y-4 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
+          <div>
+            <label className="text-sm font-black text-slate-800">انتخاب اشتراک</label>
+            <p className="mt-1 text-[11px] text-slate-500">مدت اشتراک را انتخاب کنید؛ قیمت نهایی همان مبلغی است که در فیش باید واریز شود.</p>
           </div>
 
-          <div className="rounded-xl2 bg-slate-50 p-4 text-sm text-slate-700">
-            <p>مبلغ <strong>{formatPrice(selectedTier.price)}</strong> را به شماره کارت زیر واریز کرده و تصویر فیش واریزی را آپلود کنید:</p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {SUBSCRIPTION_TIERS.map((t) => {
+              const plans = SUBSCRIPTION_PLANS[t.value];
+              const isSelected = tier === t.value;
+              return (
+                <div
+                  key={t.value}
+                  className={`relative overflow-hidden rounded-[24px] border-2 bg-gradient-to-br ${t.color} p-4 shadow-lg transition-all ${isSelected ? "border-jam-green ring-4 ring-jam-green/20 scale-[1.01]" : "border-white/80"}`}
+                >
+                  <button type="button" onClick={() => { setTier(t.value); setMonths(1); }} className="w-full text-right text-slate-900">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-base font-black">{t.name}</p>
+                      {isSelected && <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-jam-green">انتخاب شده</span>}
+                    </div>
+                    <p className="mt-1 text-[11px] font-bold text-slate-800">{t.perks[0]}</p>
+                  </button>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    {plans.map((p) => {
+                      const active = isSelected && months === p.months;
+                      return (
+                        <button
+                          key={p.months}
+                          type="button"
+                          onClick={() => { setTier(t.value); setMonths(p.months as 1 | 6 | 12); }}
+                          className={`relative min-h-[92px] rounded-2xl border p-2.5 text-center transition-all ${active ? "border-jam-navy bg-white shadow-md ring-2 ring-jam-navy/20" : "border-white/70 bg-white/55 hover:bg-white/80"}`}
+                        >
+                          {p.badge && <span className="absolute -top-2 right-1/2 translate-x-1/2 whitespace-nowrap rounded-full bg-jam-navy px-2 py-0.5 text-[8px] font-black text-white">{p.badge}</span>}
+                          <span className="block text-[10px] font-black text-slate-800">{p.label}</span>
+                          <span className="mt-2 block text-[13px] font-black text-slate-950">{formatPrice(p.price)}</span>
+                          {p.months > 1 && <span className="mt-1 block text-[8px] font-bold text-slate-600">ماهی {formatPrice(Math.round(p.price / p.months))}</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+            <p>مبلغ <strong className="text-jam-navy">{formatPrice(selectedPlan.price)}</strong> بابت <strong>{selectedTier.name} — {selectedPlan.label}</strong> را به شماره کارت زیر واریز کرده و تصویر فیش واریزی را آپلود کنید.</p>
             <p dir="ltr" className="mt-2 text-center text-lg font-extrabold tracking-widest text-jam-navy">{PAYMENT_CARD_NUMBER}</p>
             <p className="text-center text-xs text-slate-500">به نام {PAYMENT_CARD_HOLDER}</p>
           </div>
