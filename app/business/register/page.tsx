@@ -135,92 +135,46 @@ export default function BusinessRegisterPage() {
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">نام کسب و کار</label>
-          <input
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-            placeholder="مثلاً رستوران الف"
-          />
+          <input required value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="مثلاً رستوران الف" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label className="text-xs text-slate-500">دسته‌بندی</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-            >
-              {BUSINESS_CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.icon} {c.name}
-                </option>
-              ))}
+            <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green">
+              {BUSINESS_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>)}
             </select>
           </div>
           <div className="space-y-1">
             <label className="text-xs text-slate-500">ساعات کاری</label>
-            <input
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-              placeholder="مثلاً ۹ صبح تا ۱۱ شب"
-            />
+            <input value={hours} onChange={(e) => setHours(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="مثلاً ۹ صبح تا ۱۱ شب" />
           </div>
         </div>
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">آدرس</label>
-          <input
-            required
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-          />
+          <input required value={address} onChange={(e) => setAddress(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" />
         </div>
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">شماره تماس</label>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            dir="ltr"
-            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-            placeholder="09xxxxxxxxx"
-          />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="09xxxxxxxxx" />
         </div>
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">توضیحات</label>
-          <textarea
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green"
-          />
+          <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" />
         </div>
 
         <div className="space-y-1">
           <label className="text-xs text-slate-500">تصویر کسب و کار</label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
-            className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500"
-          />
+          <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500" />
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs text-slate-500">
-            موقعیت روی نقشه (روی نقشه کلیک کنید)
-          </label>
+          <label className="text-xs text-slate-500">موقعیت روی نقشه (روی نقشه کلیک کنید)</label>
           <LocationPicker lat={lat} lng={lng} onChange={(la, ln) => { setLat(la); setLng(ln); }} />
-          {lat && lng && (
-            <p className="text-xs text-slate-400">
-              موقعیت انتخاب شد: {lat.toFixed(5)}, {lng.toFixed(5)}
-            </p>
-          )}
+          {lat && lng && <p className="text-xs text-slate-400">موقعیت انتخاب شد: {lat.toFixed(5)}, {lng.toFixed(5)}</p>}
         </div>
 
         <div className="space-y-3 rounded-xl2 border border-slate-200 bg-white p-4">
@@ -231,54 +185,35 @@ export default function BusinessRegisterPage() {
                 type="button"
                 key={t.value}
                 onClick={() => setTier(t.value)}
-                className={`rounded-xl2 bg-gradient-to-l ${t.color} p-4 text-right text-white shadow-soft transition ${
+                className={`rounded-xl2 bg-gradient-to-l ${t.color} p-4 text-right text-slate-900 shadow-soft transition ${
                   tier === t.value ? "ring-4 ring-jam-green" : "opacity-80"
                 }`}
               >
-                <p className="font-extrabold">{t.name}</p>
-                <p className="mb-2 text-sm">{formatPrice(t.price)} در ماه</p>
-                <ul className="space-y-0.5 text-[11px] text-white/90">
-                  {t.perks.map((p) => (
-                    <li key={p}>• {p}</li>
-                  ))}
+                <p className="font-extrabold text-slate-900">{t.name}</p>
+                <p className="mb-2 text-sm text-slate-900">{formatPrice(t.price)} در ماه</p>
+                <ul className="space-y-0.5 text-[11px] text-slate-900">
+                  {t.perks.map((p) => <li key={p}>• {p}</li>)}
                 </ul>
               </button>
             ))}
           </div>
 
           <div className="rounded-xl2 bg-slate-50 p-4 text-sm text-slate-700">
-            <p>
-              مبلغ <strong>{formatPrice(selectedTier.price)}</strong> را به شماره کارت زیر واریز کرده و
-              تصویر فیش واریزی را آپلود کنید:
-            </p>
-            <p dir="ltr" className="mt-2 text-center text-lg font-extrabold tracking-widest text-jam-navy">
-              {PAYMENT_CARD_NUMBER}
-            </p>
+            <p>مبلغ <strong>{formatPrice(selectedTier.price)}</strong> را به شماره کارت زیر واریز کرده و تصویر فیش واریزی را آپلود کنید:</p>
+            <p dir="ltr" className="mt-2 text-center text-lg font-extrabold tracking-widest text-jam-navy">{PAYMENT_CARD_NUMBER}</p>
             <p className="text-center text-xs text-slate-500">به نام {PAYMENT_CARD_HOLDER}</p>
           </div>
 
           <div className="space-y-1">
             <label className="text-xs text-slate-500">فیش واریزی</label>
-            <input
-              required
-              type="file"
-              accept="image/*"
-              onChange={(e) => setReceipt(e.target.files?.[0] ?? null)}
-              className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500"
-            />
+            <input required type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500" />
           </div>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50">
           {loading ? "در حال ارسال..." : "ارسال درخواست ثبت"}
         </button>
-        <p className="text-center text-xs text-slate-400">
-          درخواست شما برای بررسی به پنل مدیریت ارسال می‌شود و پس از تایید روی نقشه نمایش داده می‌شود.
-        </p>
+        <p className="text-center text-xs text-slate-400">درخواست شما برای بررسی به پنل مدیریت ارسال می‌شود و پس از تایید روی نقشه نمایش داده می‌شود.</p>
       </form>
       )}
     </div>
