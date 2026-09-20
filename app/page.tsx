@@ -73,7 +73,7 @@ export default function HomePage(){
    {key:"home_appliances",title:"لوازم خانگی",icon:"🏠",accent:"from-[#FFF4E8] to-[#FFFCF8]",border:"border-[#F0D9BE]"},
    {key:"restaurant",title:"رستوران‌ها",icon:"🍽️",accent:"from-[#FFF0F0] to-[#FFFBFB]",border:"border-[#F0D1D1]"},
    {key:"cafe",title:"کافه‌ها",icon:"☕",accent:"from-[#F7F0E8] to-[#FFFCF9]",border:"border-[#E8D7C4]"},
-  ].map((row)=>{const rowGroups=goldProductGroups.filter(group=>group.business.category===row.key);const rowItems=rowGroups.map(group=>({business:group.business,product:[...group.products].sort(()=>Math.random()-.5)[0]})).filter(item=>item.product);if(rowItems.length===0)return null;return <div key={row.key} className={`overflow-hidden rounded-2xl border ${row.border} bg-gradient-to-l ${row.accent} p-2.5 sm:p-3`}>
+  ].map((row)=>{const rowGroups=goldProductGroups.filter(group=>group.business.category===row.key);const rowItems=rowGroups.flatMap(group=>group.products.map(product=>({business:group.business,product})));if(rowItems.length===0)return null;return <div key={row.key} className={`overflow-hidden rounded-2xl border ${row.border} bg-gradient-to-l ${row.accent} p-2.5 sm:p-3`}>
    <div className="mb-2 flex items-center gap-2"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-base shadow-sm">{row.icon}</span><div><h3 className="text-[11px] font-black text-[#3A3028] sm:text-xs">{row.title}</h3><p className="text-[7px] font-bold text-[#8B8178]">از هر کسب‌وکار یک محصول</p></div></div>
    <div className="gold-products-viewport min-w-0 overflow-x-auto overflow-y-hidden overscroll-x-contain rounded-2xl px-1 py-1.5 touch-pan-x" dir="ltr" style={{scrollbarWidth:"none"}}>
     <div className="gold-products-track flex w-max gap-2.5" dir="rtl">
