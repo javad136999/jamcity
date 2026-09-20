@@ -66,10 +66,26 @@ export default function ConversationPage() {
 
       if (active) setOther(profile as OtherProfile);
 
-      const { data: msgs } = await supabase.from("private_messages").select("*").eq("conversation_id", params.id).order("created_at", { ascending: true });
+      const pageSize = 1000;
+      const allMessages: Message[] = [];
+      for (let offset = 0; ; offset += pageSize) {
+        const { data: batch, error: messageError } = await supabase
+          .from("private_messages")
+          .select("*")
+          .eq("conversation_id", params.id)
+          .order("created_at", { ascending: true })
+          .range(offset, offset + pageSize - 1);
+        if (messageError) {
+          console.error("Failed to load chat history:", messageError.message);
+          break;
+        }
+        const rows = (batch as Message[]) ?? [];
+        allMessages.push(...rows);
+        if (rows.length < pageSize) break;
+      }
 
       if (active) {
-        setMessages((msgs as Message[]) ?? []);
+        setMessages(allMessages);
         window.setTimeout(scrollToBottom, 100);
       }
 
