@@ -205,12 +205,73 @@ export default function WallPage() {
   // فقط ظاهری: نمایش دکمهٔ «برو به آخرین پیام» وقتی کاربر اسکرول کرده بالا
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMoreOlder, setHasMoreOlder] = useState(true);
+  const oldestLoadedAtRef = useRef<string | null>(null);
+
+  async function loadOlderMessages() {
+    const el = scrollAreaRef.current;
+    if (!user || !el || loadingOlder || !hasMoreOlder || !messages?.length) return;
+
+    const oldest = messages.reduce((a, b) =>
+      new Date(a.created_at).getTime() < new Date(b.created_at).getTime() ? a : b
+    );
+    const cursor = oldestLoadedAtRef.current ?? oldest.created_at;
+    setLoadingOlder(true);
+    const previousHeight = el.scrollHeight;
+
+    try {
+      const { data, error } = await supabase
+        .from("wall_messages")
+        .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+        .lt("created_at", cursor)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (error) throw error;
+      const olderRows = [...((data as unknown as WallMessage[]) ?? [])].reverse();
+      if (!olderRows.length) {
+        setHasMoreOlder(false);
+        return;
+      }
+
+      const userIds = Array.from(new Set(olderRows.map((r) => r.user_id)));
+      const { data: profiles } = userIds.length
+        ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds)
+        : { data: [] };
+
+      const profileMap = new Map(
+        (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+      );
+      olderRows.forEach((r) => { r.profiles = profileMap.get(r.user_id) ?? null; });
+
+      setMessages((prev) => {
+        const current = prev ?? [];
+        const existing = new Set(current.map((m) => m.id));
+        return [...olderRows.filter((m) => !existing.has(m.id)), ...current];
+      });
+
+      oldestLoadedAtRef.current = olderRows[0].created_at;
+      if (olderRows.length < 20) setHasMoreOlder(false);
+
+      requestAnimationFrame(() => {
+        el.scrollTop += el.scrollHeight - previousHeight;
+      });
+    } catch (error) {
+      console.error("wall older messages load error", error);
+    } finally {
+      setLoadingOlder(false);
+    }
+  }
 
   function handleScrollArea() {
     const el = scrollAreaRef.current;
     if (!el) return;
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
     setShowScrollDown(distanceFromBottom > 240);
+    if (el.scrollTop < 140 && messages?.length && !loadingOlder && hasMoreOlder) {
+      void loadOlderMessages();
+    }
   }
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
@@ -525,7 +586,7 @@ export default function WallPage() {
           .from("wall_messages")
           .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
           .order("created_at", { ascending: false })
-          .limit(30),
+          .limit(20),
         (supabase as any)
           .from("wall_messages")
           .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
