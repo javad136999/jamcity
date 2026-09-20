@@ -184,6 +184,7 @@ export default function WallPage() {
   const [pinMenuMessage, setPinMenuMessage] = useState<WallMessage | null>(null);
   const pinPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [replyingTo, setReplyingTo] = useState<WallMessage | null>(null);
+  const [replyTargets, setReplyTargets] = useState<Record<string, WallMessage>>({});
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
   const [likedByMe, setLikedByMe] = useState<Set<string>>(new Set());
   const [text, setText] = useState("");
@@ -232,7 +233,7 @@ export default function WallPage() {
       .maybeSingle();
 
     if (data) {
-      const target = { ...(data as unknown as WallMessage), reply_to: null };
+      const target = { ...(data as unknown as WallMessage) };
       const { data: p } = await supabase
         .from("profiles")
         .select("id, display_name, avatar_url")
@@ -241,6 +242,7 @@ export default function WallPage() {
       target.profiles = p
         ? { display_name: p.display_name, avatar_url: p.avatar_url }
         : message.profiles ?? null;
+      setReplyTargets((prev) => ({ ...prev, [target.id]: target }));
 
       setMessages((prev) => {
         const next = [...(prev ?? []).filter((m) => m.id !== target.id), target];
@@ -521,12 +523,12 @@ export default function WallPage() {
       const [messagesResult, pinnedResult] = await Promise.all([
         supabase
           .from("wall_messages")
-          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
           .order("created_at", { ascending: false })
           .limit(30),
         (supabase as any)
           .from("wall_messages")
-          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
           .eq("is_pinned", true)
           .order("pinned_at", { ascending: false })
           .limit(1),
@@ -540,8 +542,7 @@ export default function WallPage() {
       }
 
       // کوئری برای رسیدن سریع‌تر به آخرین پیام‌ها نزولی است؛ نمایش همچنان قدیمی به جدید باشد.
-      const rows = [...((rawMessages as unknown as Omit<WallMessage, "reply_to">[]) ?? [])]
-        .map((row) => ({ ...row, reply_to: null }))
+      const rows = [...((rawMessages as unknown as WallMessage[]) ?? [])]
         .reverse() as WallMessage[];
 
       const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
@@ -564,12 +565,37 @@ export default function WallPage() {
 
       const [profilesResult, likesResult] = await Promise.all([profilesPromise, likesPromise]);
 
+      // Keep reply previews even when the original message is older than the 30-message initial window.
+      const replyIds = Array.from(new Set(rows.map((r) => r.reply_to).filter((id): id is string => Boolean(id))));
+      const missingReplyIds = replyIds.filter((id) => !rows.some((r) => r.id === id));
+      const replyTargetsResult = missingReplyIds.length
+        ? await supabase
+            .from("wall_messages")
+            .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+            .in("id", missingReplyIds)
+        : { data: [] };
+
       const profileMap = new Map(
         (profilesResult.data ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
       );
       rows.forEach((r) => {
         r.profiles = profileMap.get(r.user_id) ?? null;
       });
+
+      const targetRows = (replyTargetsResult.data ?? []) as unknown as WallMessage[];
+      const targetUserIds = Array.from(new Set(targetRows.map((r) => r.user_id)));
+      const { data: targetProfiles } = targetUserIds.length
+        ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", targetUserIds)
+        : { data: [] };
+      const targetProfileMap = new Map(
+        (targetProfiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+      );
+      const targetMap: Record<string, WallMessage> = {};
+      targetRows.forEach((r) => {
+        r.profiles = targetProfileMap.get(r.user_id) ?? null;
+        targetMap[r.id] = r;
+      });
+      setReplyTargets(targetMap);
 
       const pinnedRows = (pinnedResult.data ?? []) as any[];
       const pinnedRow = pinnedRows[0] ?? null;
@@ -578,7 +604,6 @@ export default function WallPage() {
         const pinnedProfile = rows.find((r) => r.user_id === pinnedRow.user_id)?.profiles;
         setPinnedMessage({
           ...(pinnedRow as WallMessage),
-          reply_to: null,
           profiles: pinnedProfile ?? null,
         });
       } else {
@@ -871,7 +896,7 @@ if (textareaRef.current) textareaRef.current.style.height = "auto";
 
     const { data, error } = await supabase
       .from("wall_messages")
-      .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,is_pinned,pinned_at")
+      .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
       .or(filters)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -1125,7 +1150,7 @@ function handleReply(message: WallMessage) {
               messages.map((m, index) => {
                 const mine = m.user_id === user.id;
                 const quoted = m.reply_to
-                  ? messages?.find((msg) => msg.id === m.reply_to)
+                  ? messages?.find((msg) => msg.id === m.reply_to) ?? replyTargets[m.reply_to]
                   : null;
                 const isPromoCard = m.is_promo && !!m.business_id;
                 const isAdCard = !!m.image_url && !!m.content;
