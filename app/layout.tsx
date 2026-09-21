@@ -1,4 +1,4 @@
-﻿import type { Metadata, Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "./home-overrides.css";
 import { AuthProvider } from "@/lib/auth-context";
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   },
 
   icons: {
-    icon: "/icons/jamcity-icon.svg",
-    apple: "/icons/jamcity-icon.svg",
+    icon: "/icons/icon-512.png",
+    apple: "/icons/icon-192.png",
   },
 };
 
