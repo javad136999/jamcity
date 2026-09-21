@@ -236,14 +236,64 @@ export default function WallPage() {
       }
 
       const userIds = Array.from(new Set(olderRows.map((r) => r.user_id)));
-      const { data: profiles } = userIds.length
-        ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds)
-        : { data: [] };
+      const replyIds = Array.from(
+        new Set(olderRows.map((r) => r.reply_to).filter((id): id is string => Boolean(id)))
+      );
+      const missingReplyIds = replyIds.filter((id) => !olderRows.some((r) => r.id === id));
+
+      const [{ data: profiles }, likesResult, replyTargetsResult] = await Promise.all([
+        userIds.length
+          ? supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds)
+          : Promise.resolve({ data: [] as { id: string; display_name: string; avatar_url: string | null }[] }),
+        supabase
+          .from("wall_message_likes")
+          .select("message_id, user_id")
+          .in("message_id", olderRows.map((r) => r.id)),
+        missingReplyIds.length
+          ? supabase
+              .from("wall_messages")
+              .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+              .in("id", missingReplyIds)
+          : Promise.resolve({ data: [] as unknown as WallMessage[] }),
+      ]);
 
       const profileMap = new Map(
         (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
       );
       olderRows.forEach((r) => { r.profiles = profileMap.get(r.user_id) ?? null; });
+
+      if (replyTargetsResult.data && replyTargetsResult.data.length > 0) {
+        const targetRows = replyTargetsResult.data as unknown as WallMessage[];
+        const targetUserIds = Array.from(new Set(targetRows.map((t) => t.user_id)));
+        const { data: targetProfiles } = targetUserIds.length
+          ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", targetUserIds)
+          : { data: [] as { id: string; display_name: string; avatar_url: string | null }[] };
+        const targetProfileMap = new Map(
+          (targetProfiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
+        );
+        setReplyTargets((prev) => {
+          const next = { ...prev };
+          targetRows.forEach((t) => {
+            next[t.id] = { ...t, profiles: targetProfileMap.get(t.user_id) ?? null };
+          });
+          return next;
+        });
+      }
+
+      setLikeCounts((prev) => {
+        const counts = { ...prev };
+        (likesResult.data ?? []).forEach((l) => {
+          counts[l.message_id] = (counts[l.message_id] ?? 0) + 1;
+        });
+        return counts;
+      });
+      setLikedByMe((prev) => {
+        const mine = new Set(prev);
+        (likesResult.data ?? []).forEach((l) => {
+          if (l.user_id === user.id) mine.add(l.message_id);
+        });
+        return mine;
+      });
 
       setMessages((prev) => {
         const current = prev ?? [];
@@ -572,6 +622,8 @@ export default function WallPage() {
     if (!user) return;
 
     async function load() {
+      setHasMoreOlder(true);
+      oldestLoadedAtRef.current = null;
       // Fetch messages and profiles as two separate queries instead of
       // an embedded join — the embedded-resource join relies on
       // PostgREST's schema cache recognizing the foreign key, which can
@@ -584,12 +636,12 @@ export default function WallPage() {
       const [messagesResult, pinnedResult] = await Promise.all([
         supabase
           .from("wall_messages")
-          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+          .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
           .order("created_at", { ascending: false })
           .limit(20),
         (supabase as any)
           .from("wall_messages")
-          .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+          .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
           .eq("is_pinned", true)
           .order("pinned_at", { ascending: false })
           .limit(1),
@@ -632,7 +684,7 @@ export default function WallPage() {
       const replyTargetsResult = missingReplyIds.length
         ? await supabase
             .from("wall_messages")
-            .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+            .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
             .in("id", missingReplyIds)
         : { data: [] };
 
@@ -1221,7 +1273,7 @@ function handleReply(message: WallMessage) {
                 const prev = index > 0 ? messages[index - 1] : null;
                 const showDateDivider =
                   !prev || !isSameDay(new Date(prev.created_at), new Date(m.created_at));
-                const showMeta = !mine && !m.is_auto_republish && (!prev || prev.user_id !== m.user_id || showDateDivider);
+                const showMeta = !mine && (!prev || prev.user_id !== m.user_id || showDateDivider);
 
                 const bubbleTail = mine ? "rounded-br-md" : "rounded-bl-md";
 
@@ -1304,13 +1356,13 @@ function handleReply(message: WallMessage) {
                                 </p>
                               </button>
                             )}
-                            {!m.is_auto_republish && <button
+                            <button
                               onClick={() => openChatWith(m.user_id)}
                               className="flex items-center gap-2 text-[11px] font-bold text-[#D98F2B]"
                             >
                               <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={20} />
                               {m.profiles?.display_name || "کاربر"}
-                            </button>}
+                            </button>
                             {m.category && (
                               <span className="inline-block rounded-full bg-[#F3F6F1] px-2 py-0.5 text-[10px] font-bold text-[#66766A]">
                                 {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
