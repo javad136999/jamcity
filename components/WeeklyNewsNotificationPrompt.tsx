@@ -145,9 +145,6 @@ export default function WeeklyNewsNotificationPrompt() {
             </div>
             <div className="min-w-0">
               <div className="text-[15px] font-black">خبرهای جم‌سیتی را از دست نده!</div>
-              <div className="mt-0.5 text-[11px] font-medium text-white/90">
-                فقط هفته‌ای یک اعلان، شنبه ساعت ۱۰ صبح
-              </div>
             </div>
           </div>
         </div>
