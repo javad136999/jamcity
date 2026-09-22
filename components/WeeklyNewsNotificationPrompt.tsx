@@ -135,12 +135,12 @@ export default function WeeklyNewsNotificationPrompt() {
       dir="rtl"
       role="dialog"
       aria-label="فعال‌سازی اعلان‌های جم‌سیتی"
-      className="fixed inset-x-3 top-3 z-[10000] mx-auto max-w-md"
+      className="fixed inset-x-3 top-3 z-[10000] mx-auto max-w-sm"
     >
-      <div className="overflow-hidden rounded-[24px] border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,.28)] backdrop-blur-xl">
-        <div className="bg-gradient-to-l from-[#087443] via-[#0b8f58] to-[#16a064] px-5 py-4 text-white">
+      <div className="overflow-hidden rounded-[20px] border border-white/70 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,.28)] backdrop-blur-xl">
+        <div className="bg-gradient-to-l from-[#087443] via-[#0b8f58] to-[#16a064] px-4 py-3 text-white">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-2xl shadow-inner">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-xl shadow-inner">
               🔔
             </div>
             <div className="min-w-0">
@@ -152,17 +152,17 @@ export default function WeeklyNewsNotificationPrompt() {
           </div>
         </div>
 
-        <div className="px-5 py-4">
+        <div className="px-4 py-3">
           <p className="text-[13px] leading-6 text-slate-600">
             دوست داری هر هفته خلاصه‌ای از تازه‌ترین خبرهای شهر جم و اطراف را روی گوشی‌ات دریافت کنی؟
           </p>
 
-          <div className="mt-4 flex gap-2">
+          <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={enableNotifications}
               disabled={busy}
-              className="flex-1 rounded-2xl bg-[#0b7d4b] px-4 py-3 text-[13px] font-black text-white shadow-lg shadow-emerald-900/15 transition active:scale-[.98] disabled:opacity-60"
+              className="flex-1 rounded-2xl bg-[#0b7d4b] px-3 py-2.5 text-[12px] font-black text-white shadow-lg shadow-emerald-900/15 transition active:scale-[.98] disabled:opacity-60"
             >
               {busy ? "در حال فعال‌سازی…" : "🔔 بله، فعالش کن"}
             </button>
@@ -170,7 +170,7 @@ export default function WeeklyNewsNotificationPrompt() {
               type="button"
               onClick={dismiss}
               disabled={busy}
-              className="rounded-2xl bg-slate-100 px-4 py-3 text-[12px] font-bold text-slate-600 transition active:scale-[.98]"
+              className="rounded-2xl bg-slate-100 px-3 py-2.5 text-[11px] font-bold text-slate-600 transition active:scale-[.98]"
             >
               فعلاً نه
             </button>
