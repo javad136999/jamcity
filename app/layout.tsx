@@ -7,6 +7,7 @@ import BottomNav from "@/components/BottomNav";
 import VisitTracker from "@/components/VisitTracker";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
 import HomeReferralPlacement from "@/components/HomeReferralPlacement";
+import WeeklyNewsNotificationPrompt from "@/components/WeeklyNewsNotificationPrompt";
 
 export const metadata: Metadata = {
   title: "جم‌سیتی | همه‌چیز برای زندگی بهتر در جم",
@@ -64,6 +65,7 @@ export default function RootLayout({
 
       <body className="gradient-bg min-h-screen">
         <ServiceWorkerRegistration />
+        <WeeklyNewsNotificationPrompt />
 
         <AuthProvider>
           <VisitTracker />
