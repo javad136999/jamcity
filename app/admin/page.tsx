@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
@@ -668,13 +668,15 @@ export default function AdminPage() {
     setBusyId(id);
 
     try {
-      const { error } = await (supabase as any).rpc(
-        "admin_set_business_status",
-        {
-          p_business_id: id,
-          p_status: status,
-        }
-      );
+      const { error } =
+        status === "suspended"
+          ? await (supabase as any).rpc("admin_suspend_business", {
+              p_business_id: id,
+            })
+          : await (supabase as any).rpc("admin_set_business_status", {
+              p_business_id: id,
+              p_status: status,
+            });
 
       if (error) {
         console.error("SET BUSINESS STATUS ERROR:", error);
