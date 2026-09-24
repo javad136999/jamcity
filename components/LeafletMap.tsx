@@ -120,7 +120,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       if (cancelled) { map.remove(); map = null; return; }
       L.control.zoom({ position: "bottomright" }).addTo(map);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
-      map.fitBounds(JAM_BOUNDS, { animate: false, padding: [18, 18] });
+      // نمایش خودکار تمام کسب‌وکارهای موجود در محدوده نقشه
+      // به‌جای زوم ثابت، بعد از لود مارکرها fitBounds انجام می‌شود.
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       window.setTimeout(() => map?.invalidateSize({ animate: false }), 80);
@@ -182,6 +183,26 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         marker.addTo(layer);
         markerRefs.current.push(marker);
       });
+
+      // زوم خودکار روی تمام کسب‌وکارها؛ با اضافه/کم شدن کسب‌وکارها دوباره تنظیم می‌شود.
+      if (markerRefs.current.length > 0) {
+        const bounds = L.latLngBounds(
+          markerRefs.current.map((marker) => marker.getLatLng())
+        );
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds, {
+            animate: false,
+            padding: [35, 35],
+            maxZoom: 15,
+          });
+        }
+      } else {
+        map.fitBounds(JAM_BOUNDS, {
+          animate: false,
+          padding: [18, 18],
+        });
+      }
 
       let syncTimer: ReturnType<typeof setTimeout> | null = null;
       let fadeTimer: ReturnType<typeof setTimeout> | null = null;
