@@ -156,9 +156,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         return L.divIcon({
           className: "jam-fantasy-marker",
           html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div>${rating ? `<div class="jam-marker-rating">★ ${rating}</div>` : ""}</div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-          tooltipAnchor: [0, -18],
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          tooltipAnchor: [0, -15],
         });
       };
 
@@ -169,21 +169,25 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         const zoom = map.getZoom();
         const markerList = markerRefs.current;
 
+        // فاصله‌ی تصویری در زوم اصلی بیشتر است و با زوم کاربر
+        // به‌صورت تدریجی کم می‌شود تا در زوم بالا آیکون دقیقاً
+        // روی مختصات واقعی کسب‌وکار قرار بگیرد.
+        const progress = Math.max(0, Math.min(1, (zoom - 13) / 4));
+        const spreadDistance = 30 * (1 - progress);
+
         markerList.forEach((marker) => {
-          marker.setLatLng(marker.getLatLng());
+          const icon = marker.getElement();
+          if (icon) icon.style.setProperty("--jam-marker-offset", "translate(0,0)");
         });
 
-        if (zoom < 15 || markerList.length < 2) return;
+        if (markerList.length < 2 || spreadDistance <= 0) return;
 
         const projected = markerList.map((marker) => ({
           marker,
           point: map.latLngToLayerPoint(marker.getLatLng()),
         }));
 
-        const spreadDistance = zoom >= 17 ? 26 : zoom >= 16 ? 20 : 14;
-        const maxPasses = 3;
-
-        for (let pass = 0; pass < maxPasses; pass++) {
+        for (let pass = 0; pass < 4; pass++) {
           for (let i = 0; i < projected.length; i++) {
             for (let j = i + 1; j < projected.length; j++) {
               const a = projected[i];
@@ -192,11 +196,19 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
               const dy = b.point.y - a.point.y;
               const distance = Math.sqrt(dx * dx + dy * dy);
 
-              if (distance >= spreadDistance || distance === 0) continue;
+              if (distance >= spreadDistance) continue;
+
+              if (distance < 0.1) {
+                const angle = ((i * 137.5) + (j * 31)) * Math.PI / 180;
+                const push = spreadDistance * 0.45;
+                a.point = a.point.add(L.point(Math.cos(angle) * push, Math.sin(angle) * push));
+                b.point = b.point.subtract(L.point(Math.cos(angle) * push, Math.sin(angle) * push));
+                continue;
+              }
 
               const push = (spreadDistance - distance) / 2;
-              const nx = dx === 0 ? 1 : dx / distance;
-              const ny = dy === 0 ? 0 : dy / distance;
+              const nx = dx / distance;
+              const ny = dy / distance;
 
               a.point = a.point.subtract(L.point(nx * push, ny * push));
               b.point = b.point.add(L.point(nx * push, ny * push));
@@ -209,7 +221,10 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           const offset = point.subtract(original);
           const icon = marker.getElement();
           if (icon) {
-            icon.style.setProperty("--jam-marker-offset", `translate(${offset.x}px, ${offset.y}px)`);
+            icon.style.setProperty(
+              "--jam-marker-offset",
+              `translate(${offset.x.toFixed(1)}px, ${offset.y.toFixed(1)}px)`
+            );
           }
         });
       };
@@ -242,7 +257,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         const isMobile = window.matchMedia("(max-width: 640px)").matches;
         map.setView(
           markerRefs.current[0].getLatLng(),
-          isMobile ? 16 : 17,
+          isMobile ? 15 : 17,
           { animate: false }
         );
       } else if (markerRefs.current.length > 1) {
@@ -253,7 +268,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           map.fitBounds(bounds, {
             animate: false,
             padding: isMobile ? [22, 22] : [35, 35],
-            maxZoom: 16,
+            maxZoom: 15,
           });
         }
       } else {
@@ -355,10 +370,10 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .legend-dot.green { background:#2f7657; box-shadow:0 0 0 3px #dcefe3; }
         .legend-zoom { color:#b09e8e; }
         .jam-fantasy-marker { background:transparent !important; border:0 !important; }
-        .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); }
-        .jam-marker-wrap { position:relative; width:36px; height:36px; filter:drop-shadow(0 3px 4px rgba(61,39,23,.18)); }
-        .jam-marker-body { position:absolute; z-index:3; inset:4px; display:flex; align-items:center; justify-content:center; width:28px; height:28px; border:2px solid #fff; border-radius:50%; background:linear-gradient(145deg,var(--marker-soft),#fff); box-shadow:0 0 0 2px var(--marker-ring), inset 0 2px 5px rgba(255,255,255,.9); font-size:14px; }
-        .jam-marker-body span { transform:translateY(-1px); }
+        .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); transform-origin:center; transition:transform .18s ease; }
+        .jam-marker-wrap { position:relative; width:30px; height:30px; filter:drop-shadow(0 3px 4px rgba(61,39,23,.18)); }
+        .jam-marker-body { position:absolute; z-index:3; inset:3px; display:flex; align-items:center; justify-content:center; width:24px; height:24px; border:2px solid #fff; border-radius:50%; background:linear-gradient(145deg,var(--marker-soft),#fff); box-shadow:0 0 0 2px var(--marker-ring), inset 0 2px 5px rgba(255,255,255,.9); font-size:14px; }
+        .jam-marker-body span { transform:translateY(-1px); font-size:12px; }
         .jam-marker-pulse { position:absolute; inset:2px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
         .jam-marker-rating { position:absolute; z-index:6; bottom:-5px; left:-8px; border:1px solid #fff; border-radius:999px; background:var(--marker-main); color:#fff; padding:1px 3px; font:900 7px Vazirmatn,sans-serif; direction:ltr; }
         .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.08); box-shadow:0 0 0 3px var(--marker-ring), 0 5px 12px rgba(72,48,29,.22), inset 0 2px 5px rgba(255,255,255,.9); }
