@@ -268,7 +268,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           map.fitBounds(bounds, {
             animate: false,
             padding: isMobile ? [22, 22] : [35, 35],
-            maxZoom: isMobile ? 11 : 15,
+            maxZoom: isMobile ? 10 : 15,
           });
         }
       } else {
@@ -361,7 +361,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-map-category-item:hover,.jam-map-category-item.active { border-color:#9ad0ad; background:#effaf2; color:#17643d; }
         .jam-map-category-menu::-webkit-scrollbar { width:5px; }
         .jam-map-category-menu::-webkit-scrollbar-thumb { border-radius:99px; background:#c8d9cc; }
-        .jam-map-canvas { width:100%; height:clamp(300px,52vw,390px); overflow:hidden; background:#e9f1e8; border-radius:0; }
+        .jam-map-canvas { width:100%; height:100%; aspect-ratio:1 / 1; overflow:hidden; background:#e9f1e8; border-radius:0; }
         .jam-map-legend { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px 16px; padding:10px 12px; color:#88786d; font-family:Vazirmatn,sans-serif; font-size:9px; direction:rtl; border-radius:0 0 26px 26px; }
         .jam-map-legend span { display:inline-flex; align-items:center; gap:4px; }
         .legend-dot { display:inline-block; width:9px; height:9px; border-radius:50%; }
@@ -397,7 +397,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           .jam-map-category-copy b { max-width:145px; font-size:9px; }
           .jam-map-category-copy small { font-size:6.5px; }
           .jam-map-category-menu { width:min(300px,calc(100vw - 24px)); max-height:220px; grid-template-columns:repeat(2,minmax(0,1fr)); }
-          .jam-map-canvas { height:clamp(300px,72vw,360px); }
+          .jam-map-canvas { height:auto; aspect-ratio:1 / 1; }
           .jam-map-legend { gap:8px 10px; }
         }
         @media (prefers-reduced-motion:reduce) { .jam-marker-pulse { animation:none; } }
