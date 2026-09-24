@@ -89,6 +89,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
     select.dispatchEvent(new Event("change", { bubbles: true }));
     setActiveCategory(slug);
     setCategoryOpen(false);
+    // فیلتر توسط کامپوننت والد اعمال می‌شود؛ بعد از به‌روزرسانی markers،
+    // افکت نقشه روی نتایج دسته‌بندی‌شده دقیقاً مرکز و زوم می‌کند.
   }
 
   useEffect(() => {
@@ -120,8 +122,6 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       if (cancelled) { map.remove(); map = null; return; }
       L.control.zoom({ position: "bottomright" }).addTo(map);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { attribution: "&copy; OpenStreetMap contributors", maxZoom: 19 }).addTo(map);
-      // نمایش خودکار تمام کسب‌وکارهای موجود در محدوده نقشه
-      // به‌جای زوم ثابت، بعد از لود مارکرها fitBounds انجام می‌شود.
       layerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       window.setTimeout(() => map?.invalidateSize({ animate: false }), 80);
@@ -162,6 +162,58 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         });
       };
 
+      // برای جلوگیری از روی‌هم‌افتادن آیکون‌ها در زوم‌های بالا،
+      // فقط نمایش بصری آیکون‌ها کمی از هم فاصله می‌گیرد؛ مختصات واقعی
+      // کسب‌وکارها تغییر نمی‌کند و با زوم بیشتر دوباره به محل دقیق برمی‌گردند.
+      const spreadMarkers = () => {
+        const zoom = map.getZoom();
+        const markerList = markerRefs.current;
+
+        markerList.forEach((marker) => {
+          marker.setLatLng(marker.getLatLng());
+        });
+
+        if (zoom < 15 || markerList.length < 2) return;
+
+        const projected = markerList.map((marker) => ({
+          marker,
+          point: map.latLngToLayerPoint(marker.getLatLng()),
+        }));
+
+        const spreadDistance = zoom >= 17 ? 26 : zoom >= 16 ? 20 : 14;
+        const maxPasses = 3;
+
+        for (let pass = 0; pass < maxPasses; pass++) {
+          for (let i = 0; i < projected.length; i++) {
+            for (let j = i + 1; j < projected.length; j++) {
+              const a = projected[i];
+              const b = projected[j];
+              const dx = b.point.x - a.point.x;
+              const dy = b.point.y - a.point.y;
+              const distance = Math.sqrt(dx * dx + dy * dy);
+
+              if (distance >= spreadDistance || distance === 0) continue;
+
+              const push = (spreadDistance - distance) / 2;
+              const nx = dx === 0 ? 1 : dx / distance;
+              const ny = dy === 0 ? 0 : dy / distance;
+
+              a.point = a.point.subtract(L.point(nx * push, ny * push));
+              b.point = b.point.add(L.point(nx * push, ny * push));
+            }
+          }
+        }
+
+        projected.forEach(({ marker, point }) => {
+          const original = map.latLngToLayerPoint(marker.getLatLng());
+          const offset = point.subtract(original);
+          const icon = marker.getElement();
+          if (icon) {
+            icon.style.setProperty("--jam-marker-offset", `translate(${offset.x}px, ${offset.y}px)`);
+          }
+        });
+      };
+
       markers.forEach((markerData) => {
         if (cancelled || !mapRef.current || !layerRef.current) return;
         const theme = markerTheme(markerData);
@@ -184,17 +236,24 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         markerRefs.current.push(marker);
       });
 
-      // زوم خودکار روی تمام کسب‌وکارها؛ با اضافه/کم شدن کسب‌وکارها دوباره تنظیم می‌شود.
-      if (markerRefs.current.length > 0) {
-        const bounds = L.latLngBounds(
-          markerRefs.current.map((marker) => marker.getLatLng())
+      if (markerRefs.current.length === 1) {
+        // وقتی یک کسب‌وکار/نتیجه برای دسته‌بندی باقی مانده،
+        // دقیقاً روی همان محل زوم و مرکز می‌شویم.
+        const isMobile = window.matchMedia("(max-width: 640px)").matches;
+        map.setView(
+          markerRefs.current[0].getLatLng(),
+          isMobile ? 16 : 17,
+          { animate: false }
         );
-
+      } else if (markerRefs.current.length > 1) {
+        // در حالت دسته‌بندی، تمام نتایج انتخاب‌شده در قاب دیده شوند.
+        const bounds = L.latLngBounds(markerRefs.current.map((marker) => marker.getLatLng()));
         if (bounds.isValid()) {
+          const isMobile = window.matchMedia("(max-width: 640px)").matches;
           map.fitBounds(bounds, {
             animate: false,
-            padding: [35, 35],
-            maxZoom: 15,
+            padding: isMobile ? [22, 22] : [35, 35],
+            maxZoom: 16,
           });
         }
       } else {
@@ -203,6 +262,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           padding: [18, 18],
         });
       }
+
+      spreadMarkers();
 
       let syncTimer: ReturnType<typeof setTimeout> | null = null;
       let fadeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -246,8 +307,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           markerRefs.current.forEach((marker) => marker.getTooltip()?.getElement()?.classList.remove("jam-tooltip-fading"));
         }, 220);
       };
-      map.on("zoomend", showZoomedBusiness);
-      map.on("moveend", showZoomedBusiness);
+      map.on("zoomend", () => { spreadMarkers(); showZoomedBusiness(); });
+      map.on("moveend", () => { spreadMarkers(); showZoomedBusiness(); });
       map.on("movestart", handleMoveStart);
       showZoomedBusiness();
       return () => {
@@ -267,7 +328,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       <div ref={containerRef} className="jam-map-canvas" />
       <div className="jam-map-legend"><span><i className="legend-dot gold" /> طلایی</span><span><i className="legend-dot silver" /> نقره‌ای</span><span><i className="legend-dot green" /> سایر مکان‌ها</span><span className="legend-zoom">+ / − برای زوم</span></div>
       <style jsx global>{`
-        .jam-map-frame { overflow:visible; border:1px solid #eadfd4; border-radius:26px; background:#fff; box-shadow:0 14px 42px rgba(91,63,38,.12); }
+        .jam-map-frame { width:100%; max-width:100%; overflow:visible; border:1px solid #eadfd4; box-sizing:border-box; border-radius:26px; background:#fff; box-shadow:0 14px 42px rgba(91,63,38,.12); }
         .jam-map-category-bar { position:relative; z-index:1200; display:flex; justify-content:flex-start; padding:8px 10px 7px; background:linear-gradient(135deg,#fffdf8,#f7fbf5); border-bottom:1px solid #edf0e7; border-radius:26px 26px 0 0; }
         .jam-map-category-wrap { position:relative; }
         .jam-map-category-button { display:flex; align-items:center; gap:8px; min-height:42px; max-width:100%; padding:6px 9px 6px 11px; border:1px solid #dfe9dd; border-radius:16px; background:rgba(255,255,255,.96); color:#234533; box-shadow:0 5px 16px rgba(38,93,61,.09); cursor:pointer; transition:.2s ease; }
@@ -285,7 +346,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-map-category-item:hover,.jam-map-category-item.active { border-color:#9ad0ad; background:#effaf2; color:#17643d; }
         .jam-map-category-menu::-webkit-scrollbar { width:5px; }
         .jam-map-category-menu::-webkit-scrollbar-thumb { border-radius:99px; background:#c8d9cc; }
-        .jam-map-canvas { height:390px; width:100%; overflow:hidden; background:#e9f1e8; border-radius:0; }
+        .jam-map-canvas { width:100%; height:clamp(300px,52vw,390px); overflow:hidden; background:#e9f1e8; border-radius:0; }
         .jam-map-legend { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:10px 16px; padding:10px 12px; color:#88786d; font-family:Vazirmatn,sans-serif; font-size:9px; direction:rtl; border-radius:0 0 26px 26px; }
         .jam-map-legend span { display:inline-flex; align-items:center; gap:4px; }
         .legend-dot { display:inline-block; width:9px; height:9px; border-radius:50%; }
@@ -294,6 +355,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .legend-dot.green { background:#2f7657; box-shadow:0 0 0 3px #dcefe3; }
         .legend-zoom { color:#b09e8e; }
         .jam-fantasy-marker { background:transparent !important; border:0 !important; }
+        .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); }
         .jam-marker-wrap { position:relative; width:36px; height:36px; filter:drop-shadow(0 3px 4px rgba(61,39,23,.18)); }
         .jam-marker-body { position:absolute; z-index:3; inset:4px; display:flex; align-items:center; justify-content:center; width:28px; height:28px; border:2px solid #fff; border-radius:50%; background:linear-gradient(145deg,var(--marker-soft),#fff); box-shadow:0 0 0 2px var(--marker-ring), inset 0 2px 5px rgba(255,255,255,.9); font-size:14px; }
         .jam-marker-body span { transform:translateY(-1px); }
@@ -320,7 +382,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           .jam-map-category-copy b { max-width:145px; font-size:9px; }
           .jam-map-category-copy small { font-size:6.5px; }
           .jam-map-category-menu { width:min(300px,calc(100vw - 24px)); max-height:220px; grid-template-columns:repeat(2,minmax(0,1fr)); }
-          .jam-map-canvas { height:300px; }
+          .jam-map-canvas { height:clamp(300px,72vw,360px); }
           .jam-map-legend { gap:8px 10px; }
         }
         @media (prefers-reduced-motion:reduce) { .jam-marker-pulse { animation:none; } }
