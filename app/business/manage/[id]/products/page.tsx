@@ -2,12 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { businessCategoryLabel, formatPrice } from "@/lib/constants";
 import { uploadImages } from "@/lib/upload";
 import { Spinner, ErrorState } from "@/components/Feedback";
+
+const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
+  ssr: false,
+  loading: () => <Spinner label="در حال بارگذاری نقشه..." />,
+});
 
 const CAR_DEALER_CATEGORY = "car_dealer";
 const SHOES_BAGS_CATEGORY = "shoes";
@@ -20,6 +26,13 @@ type Business = {
   category: string;
   subscription_status: string;
   subscription_tier: string | null;
+  image_url: string | null;
+  address: string | null;
+  phone: string | null;
+  description: string | null;
+  hours: string | null;
+  lat: number | null;
+  lng: number | null;
 };
 
 type Product = {
@@ -97,6 +110,19 @@ export default function BusinessProductsPage() {
   const [footImages, setFootImages] = useState<File[]>([]);
   const [footSaving, setFootSaving] = useState(false);
 
+  const [editOpen, setEditOpen] = useState(false);
+  const [eName, setEName] = useState("");
+  const [ePhone, setEPhone] = useState("");
+  const [eAddress, setEAddress] = useState("");
+  const [eHours, setEHours] = useState("");
+  const [eDescription, setEDescription] = useState("");
+  const [eLat, setELat] = useState<number | null>(null);
+  const [eLng, setELng] = useState<number | null>(null);
+  const [eImage, setEImage] = useState<File | null>(null);
+  const [eSaving, setESaving] = useState(false);
+  const [eError, setEError] = useState<string | null>(null);
+  const [eSuccess, setESuccess] = useState(false);
+
   useEffect(() => {
     if (authLoading || !user || !id) return;
     const currentUser = user;
@@ -106,7 +132,7 @@ export default function BusinessProductsPage() {
       setError(null);
       const { data, error: businessError } = await supabase
         .from("businesses")
-        .select("id,owner_id,name,icon,category,subscription_status,subscription_tier")
+        .select("id,owner_id,name,icon,category,subscription_status,subscription_tier,image_url,address,phone,description,hours,lat,lng")
         .eq("id", id)
         .eq("owner_id", currentUser.id)
         .maybeSingle();
@@ -122,6 +148,13 @@ export default function BusinessProductsPage() {
         return;
       }
       setBusiness(data as Business);
+      setEName(data.name ?? "");
+      setEPhone(data.phone ?? "");
+      setEAddress(data.address ?? "");
+      setEHours(data.hours ?? "");
+      setEDescription(data.description ?? "");
+      setELat(data.lat ?? null);
+      setELng(data.lng ?? null);
       if (data.category === CAR_DEALER_CATEGORY) {
         const { data: rows } = await supabase.from("vehicle_listings").select("*").eq("business_id", id).order("created_at", { ascending: false });
         if (!cancelled) setVehicles((rows ?? []) as Vehicle[]);
@@ -222,6 +255,48 @@ export default function BusinessProductsPage() {
     await supabase.from("footwear_bag_listings").update({ stock_quantity: stock }).eq("id", itemId).eq("business_id", id);
   }
 
+  async function saveBusinessInfo(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !business) return;
+    if (!eName.trim() || !eAddress.trim()) {
+      setEError("نام و آدرس کسب‌وکار الزامی است.");
+      return;
+    }
+    setESaving(true);
+    setEError(null);
+    setESuccess(false);
+    try {
+      let image_url = business.image_url;
+      if (eImage) {
+        const [url] = await uploadImages([eImage], "business-images", user.id);
+        image_url = url;
+      }
+      const { error: updateError } = await supabase
+        .from("businesses")
+        .update({
+          name: eName.trim(),
+          phone: ePhone.trim() || null,
+          address: eAddress.trim(),
+          hours: eHours.trim() || null,
+          description: eDescription.trim() || null,
+          image_url,
+          lat: eLat,
+          lng: eLng,
+        })
+        .eq("id", business.id)
+        .eq("owner_id", user.id);
+      if (updateError) throw updateError;
+      setBusiness((prev) => prev ? { ...prev, name: eName.trim(), phone: ePhone.trim() || null, address: eAddress.trim(), hours: eHours.trim() || null, description: eDescription.trim() || null, image_url, lat: eLat, lng: eLng } : prev);
+      setEImage(null);
+      setESuccess(true);
+      setEditOpen(false);
+    } catch {
+      setEError("ذخیره تغییرات با خطا مواجه شد.");
+    } finally {
+      setESaving(false);
+    }
+  }
+
   if (authLoading || loading) return <div className="min-h-[70vh] flex items-center justify-center"><Spinner label="در حال بارگذاری منوی کسب‌وکار..." /></div>;
   if (!user) return <div dir="rtl" className="mx-auto max-w-xl p-5 text-center"><p className="rounded-2xl bg-white p-6">برای مدیریت محصولات ابتدا وارد حساب شوید.</p></div>;
   if (!business) return <div dir="rtl" className="mx-auto max-w-xl p-5"><ErrorState message={error ?? "کسب‌وکار در دسترس نیست."} /></div>;
@@ -238,6 +313,55 @@ export default function BusinessProductsPage() {
           <p className="mt-1 text-[10px] text-slate-500">{businessCategoryLabel(business.category)}</p>
         </div>
         <Link href="/business/manage" className="shrink-0 rounded-xl2 border border-emerald-200 bg-white px-3 py-2 text-[10px] font-bold text-emerald-700">← پنل کسب‌وکار</Link>
+      </div>
+
+      <div className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-black text-slate-800">✏️ اطلاعات کسب‌وکار</h2>
+            <p className="mt-1 text-[10px] text-slate-500">عکس، نام، آدرس، تماس و توضیحات کسب‌وکار خود را ویرایش کنید.</p>
+          </div>
+          <button onClick={() => { setEditOpen((v) => !v); setEError(null); }} className="shrink-0 rounded-xl2 border border-emerald-200 bg-emerald-50 px-3 py-2 text-[10px] font-bold text-emerald-700">
+            {editOpen ? "بستن" : "ویرایش اطلاعات"}
+          </button>
+        </div>
+
+        {eSuccess && !editOpen && (
+          <p className="mt-3 rounded-xl2 bg-emerald-50 p-2.5 text-[11px] font-bold text-emerald-700">تغییرات با موفقیت ذخیره شد.</p>
+        )}
+
+        {editOpen && (
+          <form onSubmit={saveBusinessInfo} className="mt-4 grid gap-3 sm:grid-cols-2">
+            {eError && <div className="sm:col-span-2"><ErrorState message={eError} /></div>}
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                {eImage ? (
+                  <img src={URL.createObjectURL(eImage)} alt="پیش‌نمایش" className="h-full w-full object-cover" />
+                ) : business.image_url ? (
+                  <img src={business.image_url} alt={business.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-2xl">{business.icon}</div>
+                )}
+              </div>
+              <label className="flex-1 cursor-pointer rounded-xl2 border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-center text-[11px] text-slate-500">
+                {eImage ? eImage.name : "برای تغییر عکس کسب‌وکار کلیک کنید"}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => setEImage(e.target.files?.[0] ?? null)} />
+              </label>
+            </div>
+            <input required value={eName} onChange={(e) => setEName(e.target.value)} placeholder="نام کسب‌وکار" className="field sm:col-span-2" />
+            <input required value={eAddress} onChange={(e) => setEAddress(e.target.value)} placeholder="آدرس" className="field sm:col-span-2" />
+            <input value={ePhone} onChange={(e) => setEPhone(e.target.value)} dir="ltr" placeholder="شماره تماس" className="field" />
+            <input value={eHours} onChange={(e) => setEHours(e.target.value)} placeholder="ساعات کاری" className="field" />
+            <textarea rows={3} value={eDescription} onChange={(e) => setEDescription(e.target.value)} placeholder="توضیحات کسب‌وکار" className="field sm:col-span-2" />
+            <div className="sm:col-span-2 space-y-2">
+              <p className="text-[10px] text-slate-500">برای تغییر موقعیت روی نقشه کلیک کنید (اختیاری)</p>
+              <LocationPicker lat={eLat} lng={eLng} onChange={(la, ln) => { setELat(la); setELng(ln); }} />
+            </div>
+            <button disabled={eSaving} className="rounded-xl2 bg-gradient-to-l from-jam-green to-emerald-400 py-3 text-sm font-bold text-white sm:col-span-2">
+              {eSaving ? "در حال ذخیره..." : "ذخیره تغییرات"}
+            </button>
+          </form>
+        )}
       </div>
 
       <div className="rounded-[24px] border border-emerald-100 bg-white p-4 shadow-sm">
