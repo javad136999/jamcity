@@ -257,14 +257,20 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       );
       const hasActiveCategory = Boolean(categorySelect?.value);
 
-      if (isMobile && !hasActiveCategory) {
-        // نمای اولیه موبایل: کل محدوده شهری جم از ابتدا دیده شود،
-        // نه فقط محدوده کسب‌وکارها.
-        map.fitBounds(JAM_BOUNDS, {
-          animate: false,
-          padding: [8, 8],
-        });
-      } else if (markerRefs.current.length === 1) {
+      if (isMobile && !hasActiveCategory && markerRefs.current.length > 0) {
+  // تمام کسب‌وکارها با حاشیه مساوی از چهار طرف داخل کادر دیده شوند.
+  const bounds = L.latLngBounds(
+    markerRefs.current.map((marker) => marker.getLatLng())
+  );
+
+  if (bounds.isValid()) {
+    map.fitBounds(bounds, {
+      animate: false,
+      padding: [36, 36],
+      maxZoom: 15,
+    });
+  }
+} else if (markerRefs.current.length === 1) {
         // وقتی یک کسب‌وکار/نتیجه برای دسته‌بندی باقی مانده،
         // دقیقاً روی همان محل زوم و مرکز می‌شویم.
         map.setView(
