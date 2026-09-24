@@ -268,7 +268,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
           map.fitBounds(bounds, {
             animate: false,
             padding: isMobile ? [22, 22] : [35, 35],
-            maxZoom: 15,
+            maxZoom: isMobile ? 14 : 15,
           });
         }
       } else {
