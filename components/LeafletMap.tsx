@@ -104,7 +104,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       map = L.map(container, {
         center: JAM_CENTER,
         zoom: 14,
-        minZoom: 13,
+        minZoom: 10,
         maxZoom: 18,
         zoomControl: false,
         scrollWheelZoom: false,
@@ -251,10 +251,22 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         markerRefs.current.push(marker);
       });
 
-      if (markerRefs.current.length === 1) {
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+      const categorySelect = document.querySelector<HTMLSelectElement>(
+        'select[aria-label="فیلتر دسته‌بندی کسب‌وکارها"]'
+      );
+      const hasActiveCategory = Boolean(categorySelect?.value);
+
+      if (isMobile && !hasActiveCategory) {
+        // نمای اولیه موبایل: کل محدوده شهری جم از ابتدا دیده شود،
+        // نه فقط محدوده کسب‌وکارها.
+        map.fitBounds(JAM_BOUNDS, {
+          animate: false,
+          padding: [8, 8],
+        });
+      } else if (markerRefs.current.length === 1) {
         // وقتی یک کسب‌وکار/نتیجه برای دسته‌بندی باقی مانده،
         // دقیقاً روی همان محل زوم و مرکز می‌شویم.
-        const isMobile = window.matchMedia("(max-width: 640px)").matches;
         map.setView(
           markerRefs.current[0].getLatLng(),
           isMobile ? 15 : 17,
@@ -264,7 +276,6 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         // در حالت دسته‌بندی، تمام نتایج انتخاب‌شده در قاب دیده شوند.
         const bounds = L.latLngBounds(markerRefs.current.map((marker) => marker.getLatLng()));
         if (bounds.isValid()) {
-          const isMobile = window.matchMedia("(max-width: 640px)").matches;
           map.fitBounds(bounds, {
             animate: false,
             padding: isMobile ? [22, 22] : [35, 35],
