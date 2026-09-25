@@ -76,31 +76,6 @@ function maskPhone(phone: string | null) {
 }
 
 
-type CityEvent = {
-  id: string; title: string; description: string | null; image_url: string | null;
-  category: string | null; event_date: string | null; event_time: string | null;
-  location: string | null; is_published: boolean; is_featured: boolean;
-  created_at: string; updated_at: string;
-};
-
-type EventForm = {
-  title: string; description: string; image_url: string; category: string;
-  event_date: string; event_time: string; location: string;
-  is_published: boolean; is_featured: boolean;
-};
-
-const EMPTY_EVENT_FORM: EventForm = {
-  title: "", description: "", image_url: "", category: "general",
-  event_date: "", event_time: "", location: "", is_published: false, is_featured: false,
-};
-
-const EVENT_CATEGORIES = [
-  ["general", "عمومی"], ["cultural", "فرهنگی"], ["sport", "ورزشی"],
-  ["religious", "مذهبی"], ["educational", "آموزشی"], ["business", "اقتصادی"],
-  ["entertainment", "تفریحی"], ["government", "اداری"],
-] as const;
-
-
 const TABS = [
   { value: "pending", label: "در انتظار" },
   { value: "approved", label: "فعال" },
@@ -134,7 +109,7 @@ export default function AdminPage() {
   const supabase = useMemo(() => createClient() as any, []);
 
   const [view, setView] = useState<
-    "businesses" | "stats" | "reports" | "referrals" | "events"
+    "businesses" | "stats" | "reports" | "referrals"
   >("businesses");
 
   const [tab, setTab] =
@@ -166,14 +141,6 @@ export default function AdminPage() {
   const [referralStatusFilter, setReferralStatusFilter] = useState<"all" | "pending" | "paid">("all");
   const [referralMessage, setReferralMessage] = useState<{ text: string; type: "ok" | "err" } | null>(null);
   const [referralActionLoading, setReferralActionLoading] = useState<string | null>(null);
-
-  const [events, setEvents] = useState<CityEvent[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(false);
-  const [eventSaving, setEventSaving] = useState(false);
-  const [eventFormOpen, setEventFormOpen] = useState(false);
-  const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [eventForm, setEventForm] = useState<EventForm>(EMPTY_EVENT_FORM);
-  const [eventMessage, setEventMessage] = useState<{ text: string; error?: boolean } | null>(null);
 
   useEffect(() => {
     if (!isAdmin || view !== "stats") return;
@@ -429,54 +396,6 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, view]);
 
-
-  async function loadEvents() {
-    setEventsLoading(true);
-    const { data, error } = await (supabase as any).from("events")
-      .select("id,title,description,image_url,category,event_date,event_time,location,is_published,is_featured,created_at,updated_at")
-      .order("created_at", { ascending: false });
-    if (error) {
-      console.error("EVENTS LOAD ERROR:", error);
-      setEventMessage({ text: "دریافت رویدادها با خطا مواجه شد: " + error.message, error: true });
-      setEvents([]);
-    } else setEvents((data ?? []) as CityEvent[]);
-    setEventsLoading(false);
-  }
-
-  useEffect(() => {
-    if (isAdmin && view === "events") loadEvents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAdmin, view]);
-
-  function openEventForm(event?: CityEvent) {
-    setEventMessage(null);
-    if (event) {
-      setEditingEventId(event.id);
-      setEventForm({ title: event.title ?? "", description: event.description ?? "", image_url: event.image_url ?? "", category: event.category ?? "general", event_date: event.event_date?.slice(0, 10) ?? "", event_time: event.event_time ?? "", location: event.location ?? "", is_published: Boolean(event.is_published), is_featured: Boolean(event.is_featured) });
-    } else { setEditingEventId(null); setEventForm(EMPTY_EVENT_FORM); }
-    setEventFormOpen(true);
-  }
-
-  async function saveEvent() {
-    if (!eventForm.title.trim()) { setEventMessage({ text: "عنوان رویداد را وارد کنید.", error: true }); return; }
-    setEventSaving(true); setEventMessage(null);
-    const payload = { title: eventForm.title.trim(), description: eventForm.description.trim() || null, image_url: eventForm.image_url.trim() || null, category: eventForm.category || "general", event_date: eventForm.event_date ? new Date(`${eventForm.event_date}T00:00:00`).toISOString() : null, event_time: eventForm.event_time.trim() || null, location: eventForm.location.trim() || null, is_published: eventForm.is_published, is_featured: eventForm.is_featured, updated_at: new Date().toISOString() };
-    const result = editingEventId ? await (supabase as any).from("events").update(payload).eq("id", editingEventId) : await (supabase as any).from("events").insert({ ...payload, created_at: new Date().toISOString() });
-    if (result.error) setEventMessage({ text: "ذخیره رویداد ناموفق بود: " + result.error.message, error: true });
-    else { setEventMessage({ text: editingEventId ? "رویداد ویرایش شد." : "رویداد ثبت شد." }); setEventFormOpen(false); setEditingEventId(null); setEventForm(EMPTY_EVENT_FORM); await loadEvents(); }
-    setEventSaving(false);
-  }
-
-  async function updateEvent(id: string, patch: Partial<CityEvent>, success: string) {
-    const { error } = await (supabase as any).from("events").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", id);
-    if (error) setEventMessage({ text: error.message, error: true }); else { setEventMessage({ text: success }); await loadEvents(); }
-  }
-
-  async function deleteEvent(event: CityEvent) {
-    if (!confirm(`آیا از حذف رویداد «${event.title}» مطمئن هستید؟\n\nاین عملیات قابل بازگشت نیست.`)) return;
-    const { error } = await (supabase as any).from("events").delete().eq("id", event.id);
-    if (error) setEventMessage({ text: "حذف رویداد ناموفق بود: " + error.message, error: true }); else { setEventMessage({ text: "رویداد حذف شد." }); await loadEvents(); }
-  }
 
   async function publishAutoAdNow() {
     if (autoAdBusy) return;
@@ -1015,10 +934,6 @@ export default function AdminPage() {
           🚩 گزارش‌ها
         </button>
 
-        <button type="button" onClick={() => setView("events")} className={`rounded-full px-4 py-2 text-sm font-bold transition ${view === "events" ? "bg-jam-green text-white shadow-glow" : "bg-black/5 text-slate-500 hover:bg-jam-green hover:text-white"}`}>
-          📅 مدیریت رویدادها
-        </button>
-
         <button
           type="button"
           onClick={() => setView("referrals")}
@@ -1032,28 +947,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {view === "events" ? (
-        <div className="space-y-4">
-          <div className="rounded-xl2 glass p-5 shadow-soft">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div><h2 className="text-lg font-extrabold text-slate-800">📅 مدیریت رویدادها</h2><p className="mt-1 text-xs text-slate-500">افزودن، ویرایش و انتشار رویدادهای شهر جم</p></div>
-              <button type="button" onClick={() => openEventForm()} className="rounded-xl bg-jam-green px-4 py-2 text-xs font-bold text-white shadow-glow">+ افزودن رویداد</button>
-            </div>
-            {eventMessage && <p className={`mt-3 rounded-xl px-3 py-2 text-xs font-bold ${eventMessage.error ? "bg-red-50 text-red-600" : "bg-emerald-50 text-emerald-700"}`}>{eventMessage.error ? "⚠️ " : "✅ "}{eventMessage.text}</p>}
-          </div>
-          {eventFormOpen && <div className="rounded-xl2 glass p-5 shadow-soft"><h3 className="mb-3 font-extrabold text-slate-800">{editingEventId ? "ویرایش رویداد" : "رویداد جدید"}</h3><div className="grid gap-3 sm:grid-cols-2">
-            <input value={eventForm.title} onChange={e => setEventForm(f => ({ ...f, title: e.target.value }))} placeholder="عنوان رویداد *" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700" />
-            <input value={eventForm.location} onChange={e => setEventForm(f => ({ ...f, location: e.target.value }))} placeholder="مکان برگزاری" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700" />
-            <input type="date" value={eventForm.event_date} onChange={e => setEventForm(f => ({ ...f, event_date: e.target.value }))} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700" />
-            <input type="time" value={eventForm.event_time} onChange={e => setEventForm(f => ({ ...f, event_time: e.target.value }))} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700" />
-            <select value={eventForm.category} onChange={e => setEventForm(f => ({ ...f, category: e.target.value }))} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700">{EVENT_CATEGORIES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>
-            <input value={eventForm.image_url} onChange={e => setEventForm(f => ({ ...f, image_url: e.target.value }))} placeholder="لینک تصویر" className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700" />
-            <textarea value={eventForm.description} onChange={e => setEventForm(f => ({ ...f, description: e.target.value }))} placeholder="توضیحات رویداد" rows={3} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 sm:col-span-2" />
-            <label className="flex items-center gap-2 text-sm font-bold text-slate-700"><input type="checkbox" checked={eventForm.is_published} onChange={e => setEventForm(f => ({ ...f, is_published: e.target.checked }))} /> انتشار</label><label className="flex items-center gap-2 text-sm font-bold text-slate-700"><input type="checkbox" checked={eventForm.is_featured} onChange={e => setEventForm(f => ({ ...f, is_featured: e.target.checked }))} /> ویژه</label>
-          </div><div className="mt-4 flex gap-2"><button type="button" disabled={eventSaving} onClick={saveEvent} className="rounded-xl bg-jam-green px-4 py-2 text-xs font-bold text-white disabled:opacity-50">{eventSaving ? "در حال ذخیره..." : "💾 ذخیره"}</button><button type="button" disabled={eventSaving} onClick={() => setEventFormOpen(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600">انصراف</button></div></div>}
-          {eventsLoading ? <Spinner label="در حال بارگذاری رویدادها..." /> : events.length === 0 ? <EmptyState icon="📅" title="هنوز رویدادی ثبت نشده است" /> : <div className="grid gap-3 sm:grid-cols-2">{events.map(event => <div key={event.id} className="space-y-3 rounded-xl2 glass p-4 shadow-soft">{event.image_url && <img src={event.image_url} alt={event.title} className="h-40 w-full rounded-xl object-cover" />}<div className="flex items-start justify-between gap-2"><div><h3 className="font-extrabold text-slate-800">{event.title}</h3><p className="mt-1 text-xs text-slate-500">{event.location || "بدون مکان"} {event.event_date ? `· ${new Date(event.event_date).toLocaleDateString("fa-IR")}` : ""}</p></div><span className={`rounded-full px-2 py-1 text-[10px] font-bold ${event.is_published ? "bg-emerald-100 text-emerald-700" : "bg-yellow-100 text-yellow-700"}`}>{event.is_published ? "منتشرشده" : "پیش‌نویس"}</span></div>{event.description && <p className="text-xs leading-6 text-slate-600">{event.description}</p>}<div className="flex flex-wrap gap-2"><button type="button" onClick={() => openEventForm(event)} className="rounded-xl bg-jam-navy px-3 py-2 text-xs font-bold text-white">ویرایش</button><button type="button" onClick={() => updateEvent(event.id, { is_published: !event.is_published }, event.is_published ? "رویداد از انتشار خارج شد." : "رویداد منتشر شد.")} className="rounded-xl bg-jam-green px-3 py-2 text-xs font-bold text-white">{event.is_published ? "لغو انتشار" : "انتشار"}</button><button type="button" onClick={() => updateEvent(event.id, { is_featured: !event.is_featured }, event.is_featured ? "رویداد از حالت ویژه خارج شد." : "رویداد ویژه شد.")} className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-700">{event.is_featured ? "★ ویژه" : "☆ ویژه کردن"}</button><button type="button" onClick={() => deleteEvent(event)} className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-500">🗑 حذف</button></div></div>)}</div>}
-        </div>
-      ) : view === "referrals" ? (
+      {view === "referrals" ? (
         <div className="space-y-4">
       {/* Message */}
       {referralMessage && (
