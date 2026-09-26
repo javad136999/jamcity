@@ -1449,7 +1449,7 @@ function handleReply(message: WallMessage) {
       {/* =====================================================
           نوار ارسال پیام
       ====================================================== */}
-      <div className="shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-1.5 pt-1.5">
+      <div className="shrink-0 touch-none space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-1.5 pt-1.5">
         {sendError && <ErrorState message={sendError} />}
         {voiceError && <ErrorState message={voiceError} />}
         {replyingTo && (
