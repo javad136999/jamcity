@@ -911,14 +911,14 @@ function handleReply(message: WallMessage) {
             <Link
               href="/wall/car"
               aria-label="آگهی‌های خودرو"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF2FF] text-sm shadow-sm transition hover:bg-[#DCE9FF]"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF2FF] text-xl shadow-sm transition hover:bg-[#DCE9FF]"
             >
               🚗
             </Link>
             <Link
               href="/wall/realestate"
               aria-label="آگهی‌های املاک"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4EAFF] text-sm shadow-sm transition hover:bg-[#EBDCFF]"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4EAFF] text-xl shadow-sm transition hover:bg-[#EBDCFF]"
             >
               🏠
             </Link>
