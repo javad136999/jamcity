@@ -10,6 +10,7 @@ import { timeAgo } from "@/lib/constants";
 import { Spinner, ErrorState } from "@/components/Feedback";
 import Avatar from "@/components/Avatar";
 import EmojiPicker from "@/components/EmojiPicker";
+import WallGate from "@/components/WallGate";
 import { getOrCreateConversation } from "@/lib/conversations";
 
 type WallMessage = {
@@ -33,10 +34,6 @@ const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   car: { label: "خودرو", icon: "🚗" },
   realestate: { label: "املاک", icon: "🏠" },
 };
-
-function sanitizeUsername(raw: string) {
-  return raw.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
-}
 
 // --- کمکی‌های نمایشی (فقط ظاهر؛ روی هیچ منطق/دیتایی اثر نمی‌گذارند) ---
 function isSameDay(a: Date, b: Date) {
@@ -64,117 +61,6 @@ function formatSeconds(total: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function WallGate() {
-  const supabase = createClient();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-
-    const clean = sanitizeUsername(username);
-    if (clean.length < 3) {
-      setError("نام کاربری باید حداقل ۳ حرف انگلیسی/عدد باشد.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("رمز عبور باید حداقل ۶ کاراکتر باشد.");
-      return;
-    }
-
-    setLoading(true);
-    const email = `${clean}@wall.jamcity.local`;
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (!signInError) {
-      setLoading(false);
-      return;
-    }
-
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username: clean, account_source: "wall" } },
-    });
-
-    setLoading(false);
-
-    if (signUpError) {
-      if (signUpError.message.toLowerCase().includes("already")) {
-        setError("این نام کاربری قبلاً ثبت شده. رمز عبور را درست وارد کنید.");
-      } else {
-        setError("ورود با خطا مواجه شد. دوباره تلاش کنید.");
-      }
-    }
-  }
-
-  return (
-    <div className="fade-in flex min-h-[80vh] items-center justify-center bg-[#F4F7F2] px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-7 text-center">
-          <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-[0_10px_30px_rgba(20,122,75,.15)] ring-1 ring-[#E3EBDE]">
-            💬
-          </span>
-          <h1 className="text-xl font-black text-[#1D2B1F]">دیوار شهر جم</h1>
-          <p className="mt-1.5 text-[12px] leading-6 text-[#8A968C]">
-            یک نام کاربری و رمز عبور انتخاب کنید تا وارد گفتگو شوید
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-4 rounded-[22px] border border-[#E3EBDE] bg-white p-5 shadow-[0_10px_30px_rgba(20,60,40,.06)]"
-        >
-          {error && <ErrorState message={error} />}
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-[#66766A]">نام کاربری</label>
-            <input
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              dir="ltr"
-              className="w-full rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-4 py-3 text-sm text-[#1D2B1F] outline-none transition focus:border-[#147A4B] focus:bg-white"
-              placeholder="ali_reza"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[11px] font-bold text-[#66766A]">رمز عبور</label>
-            <input
-              required
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-4 py-3 text-sm text-[#1D2B1F] outline-none transition focus:border-[#147A4B] focus:bg-white"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-[#147A4B] py-3 text-sm font-black text-white shadow-[0_10px_24px_rgba(20,122,75,.3)] transition hover:brightness-110 disabled:opacity-50"
-          >
-            {loading ? "در حال ورود..." : "ورود به دیوار"}
-          </button>
-
-          <p className="text-center text-[10px] leading-5 text-[#B0BAB1]">
-            دفعه بعد با همین نام کاربری و رمز عبور وارد شوید. این حساب برای ثبت کسب و کار استفاده نمی‌شود.
-          </p>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 export default function WallPage() {
   const supabase = createClient();
   const router = useRouter();
@@ -195,7 +81,6 @@ export default function WallPage() {
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [browse, setBrowse] = useState<{ query: string; category: "car" | "realestate" | null } | null>(null);
   const [browseResultsData, setBrowseResultsData] = useState<WallMessage[] | null>(null);
-  const [browseLoading, setBrowseLoading] = useState(false);
   const [searchInput, setSearchInput] = useState("");
   const [browseIndex, setBrowseIndex] = useState(0);
   const [replyTo, setReplyTo] = useState<WallMessage | null>(null);
@@ -975,69 +860,6 @@ if (textareaRef.current) textareaRef.current.style.height = "auto";
     setBrowseIndex(0);
   }
 
-  async function startCategoryBrowse(category: "car" | "realestate") {
-    setBrowse({ query: "", category });
-    setBrowseIndex(0);
-    setBrowseLoading(true);
-    setBrowseResultsData(null);
-
-    const carTerms = [
-      "خودرو", "ماشین", "پژو", "پراید", "سمند", "دنا", "تیبا", "کوییک",
-      "شاهین", "ساینا", "رانا", "پارس", "آریسان", "تارا", "206", "207",
-      "405", "پارس خودرو",
-    ];
-    const realEstateTransactionTerms = ["خرید", "فروش", "رهن", "اجاره"];
-    const realEstatePropertyTerms = [
-      "آپارتمان", "اپارتمان", "واحد", "ویلایی", "ویلا",
-    ];
-    const filters =
-      category === "car"
-        ? carTerms
-            .flatMap((term) => [
-              `and(content.ilike.%خرید%,content.ilike.%${term}%)`,
-              `and(content.ilike.%فروش%,content.ilike.%${term}%)`,
-            ])
-            .join(",")
-        : realEstatePropertyTerms
-            .flatMap((propertyTerm) =>
-              realEstateTransactionTerms.map(
-                (transactionTerm) =>
-                  `and(content.ilike.%${transactionTerm}%,content.ilike.%${propertyTerm}%)`
-              )
-            )
-            .join(",");
-
-    const { data, error } = await supabase
-      .from("wall_messages")
-      .select("id,user_id,content,image_url,audio_url,is_promo,business_id,category,created_at,reply_to,is_pinned,pinned_at")
-      .or(filters)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    if (error) {
-      console.error("category browse error", error);
-      setBrowseResultsData([]);
-      setBrowseLoading(false);
-      return;
-    }
-
-    const rows = (data ?? []) as unknown as WallMessage[];
-    const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
-    const { data: profiles } = userIds.length
-      ? await supabase.from("profiles").select("id, display_name, avatar_url").in("id", userIds)
-      : { data: [] };
-
-    const profileMap = new Map(
-      (profiles ?? []).map((p) => [p.id, { display_name: p.display_name, avatar_url: p.avatar_url }])
-    );
-    rows.forEach((r) => {
-      r.reply_to = null;
-      r.profiles = profileMap.get(r.user_id) ?? null;
-    });
-
-    setBrowseResultsData(rows);
-    setBrowseLoading(false);
-  }
 function handleReply(message: WallMessage) {
   setReplyTo(message);
   setReplyingTo(message);
@@ -1086,22 +908,20 @@ function handleReply(message: WallMessage) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => startCategoryBrowse("car")}
+            <Link
+              href="/wall/car"
               aria-label="آگهی‌های خودرو"
               className="flex h-7 w-7 items-center justify-center rounded-full bg-[#EAF2FF] text-sm shadow-sm transition hover:bg-[#DCE9FF]"
             >
               🚗
-            </button>
-            <button
-              type="button"
-              onClick={() => startCategoryBrowse("realestate")}
+            </Link>
+            <Link
+              href="/wall/realestate"
               aria-label="آگهی‌های املاک"
               className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F4EAFF] text-sm shadow-sm transition hover:bg-[#EBDCFF]"
             >
               🏠
-            </button>
+            </Link>
           </div>
         </div>
 
