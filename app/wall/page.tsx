@@ -886,7 +886,7 @@ function handleReply(message: WallMessage) {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in -mx-4 -mt-6 -mb-24 flex h-[calc(100dvh-64px)] flex-col overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:mb-0 sm:h-[78dvh] sm:rounded-[22px]">
+    <div className="fade-in -mx-4 -mt-6 -mb-24 flex h-[calc(100dvh-64px)] min-h-0 flex-col overflow-hidden overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:mb-0 sm:h-[78dvh] sm:rounded-[22px]">
 
       {/* =====================================================
           هدر دیوار — جمع‌وجور، سفید، تم روشن
