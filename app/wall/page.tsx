@@ -1031,7 +1031,7 @@ function handleReply(message: WallMessage) {
           )}
         </div>
       ) : (
-        <div className="relative min-h-0 flex flex-1 flex-col overflow-hidden">
+        <div className="relative min-h-0 flex flex-1 flex-col overflow-hidden overscroll-none">
           {pinnedMessage && (
             <div className="shrink-0 border-b border-[#E3EBDE] bg-white/55 px-2.5 py-1.5 backdrop-blur">
               <button
@@ -1449,7 +1449,7 @@ function handleReply(message: WallMessage) {
       {/* =====================================================
           نوار ارسال پیام
       ====================================================== */}
-      <div className="shrink-0 touch-none space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-1.5 pt-1.5">
+       	<div className="shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-1.5 pt-1.5">
         {sendError && <ErrorState message={sendError} />}
         {voiceError && <ErrorState message={voiceError} />}
         {replyingTo && (
