@@ -497,7 +497,6 @@ export default function WallPage() {
         p_category: adCategory,
         p_ad_id: insertedAd.id,
       });
-
       if (wallError || !wallMessage) {
         console.error("wall ad publish error", wallError);
         throw wallError ?? new Error("انتشار آگهی در دیوار انجام نشد");
@@ -997,8 +996,7 @@ function handleReply(message: WallMessage) {
   requestAnimationFrame(() => {
     textareaRef.current?.focus();
   });
-}
-  const browseResults =
+}  const browseResults =
     browseResultsData ??
     (browse && messages
       ? messages
@@ -1016,7 +1014,7 @@ function handleReply(message: WallMessage) {
   if (!user) return <WallGate />;
 
   return (
-    <div className="fade-in -mx-4 -mt-6 -mb-24 flex h-[calc(100dvh-64px)] min-h-0 flex-col overflow-hidden overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:mb-0 sm:h-[78dvh] sm:rounded-[22px]">
+    <div className="fade-in -mx-4 -mt-6 flex h-[100dvh] min-h-0 flex-col overflow-hidden rounded-b-[22px] bg-[#EAF1E7] sm:mx-0 sm:mt-0 sm:mb-0 sm:h-[78dvh] sm:rounded-[22px]">
 
       {/* =====================================================
           هدر دیوار — جمع‌وجور، سفید، تم روشن
@@ -1498,7 +1496,6 @@ function handleReply(message: WallMessage) {
                 );
               })
             )}
-
             {typingNames.length > 0 && (
               <div className="flex justify-end pt-1">
                 <div className="flex items-center gap-1.5 rounded-full border border-[#E3EBDE] bg-white px-3 py-1.5 text-[10px] font-bold text-[#8A968C] shadow-sm">
