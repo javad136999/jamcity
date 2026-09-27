@@ -10,7 +10,7 @@ const items = [
   { href: "/business/register", label: "ثبت کسب‌وکار", icon: "🏬", red: false },
   { href: "/chat", label: "پیام‌ها", icon: "✉️", red: false },
   { href: "/discounts", label: "تخفیف‌ها", icon: "🏷️", red: true },
-  { href: "/profile", label: "پروفایل", icon: "👤", red: false },
+  { href: "/profile", label: "آگهی‌های من", icon: "📋", red: false },
 ];
 
 export default function BottomNav() {
