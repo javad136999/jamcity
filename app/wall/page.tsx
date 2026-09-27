@@ -33,6 +33,7 @@ type WallMessage = {
 const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   car: { label: "خودرو", icon: "🚗" },
   realestate: { label: "املاک", icon: "🏠" },
+  construction: { label: "خدمات ساختمانی", icon: "🛠️" },
 };
 
 // --- کمکی‌های نمایشی (فقط ظاهر؛ روی هیچ منطق/دیتایی اثر نمی‌گذارند) ---
@@ -921,6 +922,13 @@ function handleReply(message: WallMessage) {
               className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4EAFF] text-xl shadow-sm transition hover:bg-[#EBDCFF]"
             >
               🏠
+            </Link>
+            <Link
+              href="/wall/construction"
+              aria-label="آگهی‌های خدمات ساختمانی"
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF3E0] text-xl shadow-sm transition hover:bg-[#FFE7C2]"
+            >
+              🛠️
             </Link>
           </div>
         </div>

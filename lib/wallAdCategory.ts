@@ -1,15 +1,17 @@
-// جم‌سیتی — تشخیص دسته‌بندی آگهی‌های دیوار (خودرو / املاک)
+// جم‌سیتی — تشخیص دسته‌بندی آگهی‌های دیوار (خودرو / املاک / خدمات ساختمانی)
 //
 // این فایل منطق تشخیص دسته‌بندی را که قبلاً فقط داخل app/wall/page.tsx بود
 // به‌صورت مشترک درآورده تا هم صفحه‌ی دیوار و هم صفحات اختصاصی
-// /wall/car و /wall/realestate از یک منبع واحد استفاده کنند.
+// /wall/car و /wall/realestate و /wall/construction از یک منبع واحد استفاده کنند.
 //
 // منبع اصلی تشخیص، فیلد ستون `category` روی wall_messages است (اگر ثبت شده باشد).
 // برای آگهی‌های قدیمی‌تر که این فیلد را ندارند (category = null)، از همان
 // کلیدواژه‌های قبلی روی متن پیام به‌عنوان راه تشخیص جایگزین استفاده می‌شود؛
 // بدون هیچ تغییری در ساختار دیتابیس.
 
-export type WallAdCategory = "car" | "realestate";
+export type WallAdCategory = "car" | "realestate" | "construction";
+
+const ALL_CATEGORIES: WallAdCategory[] = ["car", "realestate", "construction"];
 
 const CAR_TERMS = [
   "خودرو", "ماشین", "پژو", "پراید", "سمند", "دنا", "تیبا", "کوییک",
@@ -19,6 +21,21 @@ const CAR_TERMS = [
 
 const REAL_ESTATE_TRANSACTION_TERMS = ["خرید", "فروش", "رهن", "اجاره"];
 const REAL_ESTATE_PROPERTY_TERMS = ["آپارتمان", "اپارتمان", "واحد", "ویلایی", "ویلا"];
+
+// خدمات ساختمانی: برخلاف خودرو/املاک، این آگهی‌ها معمولاً «ارائه‌ی خدمت»اند
+// (مثلاً «برق‌کاری ساختمان با ضمانت») نه خرید/فروش یک کالا، پس صرفاً وجود
+// یکی از این کلیدواژه‌ها در متن برای تشخیص کافی است.
+const CONSTRUCTION_SERVICE_TERMS = [
+  "برق کاری", "برقکاری", "برق کشی", "برق‌کشی", "لوله کشی", "لوله‌کشی",
+  "تاسیسات", "نقاشی ساختمان", "نقاشی منزل", "گچ کاری", "گچکاری",
+  "دیوار چینی", "دیوارچینی", "بنایی", "بنّایی", "کاشی", "سرامیک",
+  "کابینت", "کمد دیواری", "کف سازی", "کفسازی", "سنگ کاری", "سنگکاری",
+  "ایزوگام", "عایق کاری", "عایق‌کاری", "درب و پنجره", "پنجره دوجداره",
+  "تعمیرات ساختمان", "بازسازی ساختمان", "بازسازی منزل", "نازک کاری",
+  "نصب کابینت", "کاغذ دیواری", "کناف", "سقف کاذب", "شیشه بری", "شیشه‌بری",
+  "آهنگری", "جوشکاری", "کولر گازی", "تعمیرکار ساختمان", "خدمات ساختمانی",
+  "پیمانکار ساختمان", "سفت کاری", "سفتکاری", "موزاییک", "پارکت",
+];
 
 /**
  * رشته‌ی فیلتر ilike روی متن پیام برای Supabase .or(...) — همان منطق قبلی
@@ -33,13 +50,16 @@ function buildContentIlikeFilter(category: WallAdCategory): string {
       ])
       .join(",");
   }
-  return REAL_ESTATE_PROPERTY_TERMS
-    .flatMap((propertyTerm) =>
-      REAL_ESTATE_TRANSACTION_TERMS.map(
-        (transactionTerm) => `and(content.ilike.%${transactionTerm}%,content.ilike.%${propertyTerm}%)`
+  if (category === "realestate") {
+    return REAL_ESTATE_PROPERTY_TERMS
+      .flatMap((propertyTerm) =>
+        REAL_ESTATE_TRANSACTION_TERMS.map(
+          (transactionTerm) => `and(content.ilike.%${transactionTerm}%,content.ilike.%${propertyTerm}%)`
+        )
       )
-    )
-    .join(",");
+      .join(",");
+  }
+  return CONSTRUCTION_SERVICE_TERMS.map((term) => `content.ilike.%${term}%`).join(",");
 }
 
 /**
@@ -58,32 +78,40 @@ export function contentMatchesCategory(content: string | null, category: WallAdC
       (term) => content.includes(term) && (content.includes("خرید") || content.includes("فروش"))
     );
   }
-  return REAL_ESTATE_PROPERTY_TERMS.some(
-    (propertyTerm) =>
-      content.includes(propertyTerm) &&
-      REAL_ESTATE_TRANSACTION_TERMS.some((t) => content.includes(t))
-  );
+  if (category === "realestate") {
+    return REAL_ESTATE_PROPERTY_TERMS.some(
+      (propertyTerm) =>
+        content.includes(propertyTerm) &&
+        REAL_ESTATE_TRANSACTION_TERMS.some((t) => content.includes(t))
+    );
+  }
+  return CONSTRUCTION_SERVICE_TERMS.some((term) => content.includes(term));
 }
 
 /**
- * آیا این آگهی قطعاً به دسته‌ی مقابل تعلق دارد؟ (برای جلوگیری از نمایش
- * یک آگهی در هر دو صفحه‌ی خودرو و املاک). اگر فیلد category ثبت شده
- * باشد، همان معیار قطعی است؛ در غیر این صورت فقط وقتی که متن با
- * کلیدواژه‌های دسته‌ی مقابل مطابقت دارد و با کلیدواژه‌های دسته‌ی فعلی
- * مطابقت ندارد، آگهی را متعلق به دسته‌ی مقابل در نظر می‌گیریم.
+ * آیا این آگهی قطعاً به یکی از دسته‌های دیگر تعلق دارد؟ (برای جلوگیری از
+ * نمایش یک آگهی در بیش از یکی از صفحات خودرو/املاک/خدمات ساختمانی).
+ * اگر فیلد category ثبت شده باشد، همان معیار قطعی است؛ در غیر این صورت
+ * فقط وقتی که متن با کلیدواژه‌های یکی از دسته‌های دیگر مطابقت دارد و با
+ * کلیدواژه‌های دسته‌ی فعلی مطابقت ندارد، آگهی را متعلق به دسته‌ی دیگر
+ * در نظر می‌گیریم.
  */
 export function belongsToOtherCategory(
   ad: { category: WallAdCategory | null; content: string | null },
   category: WallAdCategory
 ): boolean {
-  const other: WallAdCategory = category === "car" ? "realestate" : "car";
-  if (ad.category) return ad.category === other;
-  return contentMatchesCategory(ad.content, other) && !contentMatchesCategory(ad.content, category);
+  if (ad.category) return ad.category !== category;
+  const others = ALL_CATEGORIES.filter((c) => c !== category);
+  return (
+    others.some((other) => contentMatchesCategory(ad.content, other)) &&
+    !contentMatchesCategory(ad.content, category)
+  );
 }
 
 export const CATEGORY_META: Record<WallAdCategory, { label: string; icon: string }> = {
   car: { label: "خودرو", icon: "🚗" },
   realestate: { label: "املاک", icon: "🏠" },
+  construction: { label: "خدمات ساختمانی", icon: "🛠️" },
 };
 
 /**
