@@ -65,7 +65,7 @@ export default function WallCategoryPage({
         )
         .or(buildCategoryOrFilter(category))
         .order("created_at", { ascending: false })
-        .limit(300);
+        .limit(1000);
 
       if (cancelled) return;
 
