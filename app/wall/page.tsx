@@ -1040,23 +1040,21 @@ function handleReply(message: WallMessage) {
           <div className="flex shrink-0 items-center gap-1.5">
             <span className="text-[10px] font-black text-[#8A968C]">دسته‌بندی‌ها</span>
           </div>
-        <div className="mt-2 overflow-x-auto pb-1 scrollbar-none" dir="rtl">
-          <div className="flex min-w-max items-center gap-2 px-0.5">
-            {AD_CATEGORIES.map((category) => (
-              <button
-                key={category.slug}
-                type="button"
-                onClick={() => router.push("/wall/category/" + category.slug)}
-                className="group flex min-w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-[#E3EBDE] bg-[#F7F9F4] px-2.5 py-1.5 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#E3F3E9] active:scale-95"
-                aria-label={category.name}
-              >
-                <span className="text-xl leading-none transition group-hover:scale-110">{category.icon}</span>
-                <span className="max-w-[76px] truncate text-[9px] font-black text-[#1D2B1F]">
-                  {category.name}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="mt-2 grid grid-cols-5 gap-1.5" dir="rtl">
+          {AD_CATEGORIES.map((category) => (
+            <button
+              key={category.slug}
+              type="button"
+              onClick={() => router.push("/wall/category/" + category.slug)}
+              className="group flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-1 py-1 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#E3F3E9] active:scale-95"
+              aria-label={category.name}
+            >
+              <span className="text-lg leading-none transition group-hover:scale-110">{category.icon}</span>
+              <span className="w-full truncate text-[8px] font-black text-[#1D2B1F]">
+                {category.name}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
