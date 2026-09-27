@@ -637,7 +637,7 @@ export type Database = {
         Args: {
           p_content: string;
           p_image_url: string | null;
-          p_category: "car" | "realestate" | null;
+          p_category: string | null;
         };
         Returns: string;
       };
