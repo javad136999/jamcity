@@ -105,6 +105,51 @@ export function detectAdCategory(
 
 const MOBILE_PHONE_TERMS = CATEGORY_TERMS.mobile;
 
+const MOBILE_PHONE_CONTEXT_TERMS = [
+  "موبایل",
+  "گوشی",
+  "تلفن همراه",
+  "iphone",
+  "آیفون",
+  "سامسونگ",
+  "samsung",
+  "شیائومی",
+  "xiaomi",
+  "هواوی",
+  "huawei",
+  "نوکیا",
+  "nokia",
+  "وان پلاس",
+  "oneplus",
+  "آنر",
+  "honor",
+  "موتورولا",
+  "motorola",
+  "پیکسل",
+  "pixel",
+  "ردمی",
+  "redmi",
+  "پوکو",
+  "poco",
+  "ریلمی",
+  "realme",
+];
+
+const MOBILE_NON_PHONE_TERMS = [
+  "آیفون تصویری",
+  "ایفون تصویری",
+  "آیفون ساختمان",
+  "ایفون ساختمان",
+  "آیفون درب",
+  "ایفون درب",
+  "آیفون صوتی",
+  "ایفون صوتی",
+  "درب بازکن",
+  "درب بازکن تصویری",
+  "هوشمندسازی ساختمان",
+  "هوشمند سازی ساختمان",
+];
+
 const REAL_ESTATE_TRANSACTION_TERMS = [
   "خرید",
   "فروش",
@@ -133,6 +178,23 @@ export function isMobilePhoneAd(
   explicitCategory?: string | null
 ) {
   const text = normalize(content ?? "");
+
+  // دسته‌ای که کاربر خودش هنگام ثبت آگهی انتخاب کرده، معتبر است.
+  if (explicitCategory === "mobile") return true;
+
+  // پیام عمومی فقط وقتی گوشی محسوب می‌شود که زمینه‌ی مشخص موبایل داشته باشد.
+  // «آیفون تصویری» و موارد مربوط به ساختمان نباید وارد دسته گوشی شوند.
+  const isNonPhone = MOBILE_NON_PHONE_TERMS.some((term) =>
+    text.includes(normalize(term))
+  );
+  if (isNonPhone) return false;
+
+  const hasPhoneContext = MOBILE_PHONE_CONTEXT_TERMS.some((term) =>
+    text.includes(normalize(term))
+  );
+
+  if (!hasPhoneContext) return false;
+
   return MOBILE_PHONE_TERMS.some((term) => text.includes(normalize(term)));
 }
 
