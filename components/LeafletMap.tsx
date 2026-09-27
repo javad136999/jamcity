@@ -156,9 +156,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         return L.divIcon({
           className: "jam-fantasy-marker",
           html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div>${rating ? `<div class="jam-marker-rating">★ ${rating}</div>` : ""}</div>`,
-          iconSize: [30, 30],
-          iconAnchor: [15, 15],
-          tooltipAnchor: [0, -15],
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+          tooltipAnchor: [0, -11],
         });
       };
 
@@ -173,7 +173,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         // به‌صورت تدریجی کم می‌شود تا در زوم بالا آیکون دقیقاً
         // روی مختصات واقعی کسب‌وکار قرار بگیرد.
         const progress = Math.max(0, Math.min(1, (zoom - 13) / 4));
-        const spreadDistance = 30 * (1 - progress);
+        const spreadDistance = 22 * (1 - progress);
 
         markerList.forEach((marker) => {
           const icon = marker.getElement();
@@ -388,12 +388,12 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .legend-zoom { color:#b09e8e; }
         .jam-fantasy-marker { background:transparent !important; border:0 !important; }
         .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); transform-origin:center; transition:transform .18s ease; }
-        .jam-marker-wrap { position:relative; width:30px; height:30px; filter:drop-shadow(0 3px 4px rgba(61,39,23,.18)); }
-        .jam-marker-body { position:absolute; z-index:3; inset:3px; display:flex; align-items:center; justify-content:center; width:24px; height:24px; border:2px solid #fff; border-radius:50%; background:linear-gradient(145deg,var(--marker-soft),#fff); box-shadow:0 0 0 2px var(--marker-ring), inset 0 2px 5px rgba(255,255,255,.9); font-size:14px; }
-        .jam-marker-body span { transform:translateY(-1px); font-size:12px; }
-        .jam-marker-pulse { position:absolute; inset:2px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
-        .jam-marker-rating { position:absolute; z-index:6; bottom:-5px; left:-8px; border:1px solid #fff; border-radius:999px; background:var(--marker-main); color:#fff; padding:1px 3px; font:900 7px Vazirmatn,sans-serif; direction:ltr; }
-        .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.08); box-shadow:0 0 0 3px var(--marker-ring), 0 5px 12px rgba(72,48,29,.22), inset 0 2px 5px rgba(255,255,255,.9); }
+        .jam-marker-wrap { position:relative; width:22px; height:22px; filter:drop-shadow(0 2px 3px rgba(61,39,23,.25)); }
+        .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; font-size:16px; }
+        .jam-marker-body span { transform:translateY(-1px); font-size:16px; }
+        .jam-marker-pulse { position:absolute; inset:1px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
+        .jam-marker-rating { position:absolute; z-index:6; bottom:-5px; left:-6px; border:1px solid #fff; border-radius:999px; background:var(--marker-main); color:#fff; padding:1px 3px; font:900 7px Vazirmatn,sans-serif; direction:ltr; }
+        .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.15); }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
         .jam-business-tooltip { z-index:1000 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; pointer-events:auto; transition:opacity .18s ease, transform .18s ease; }
         .jam-business-tooltip.jam-tooltip-fading { opacity:0 !important; transform:translateY(5px); }
