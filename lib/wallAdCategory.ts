@@ -18,7 +18,7 @@ const CATEGORY_TERMS: Record<(typeof AD_CATEGORIES)[number]["slug"], string[]> =
     "نوکیا", "nokia", "وان پلاس", "oneplus", "آنر", "honor", "موتورولا", "motorola", "گوگل پیکسل", "pixel",
     "ردمی", "redmi", "پوکو", "poco", "ریلمی", "realme", "اس 23", "s23", "اس 24", "s24", "اس 25", "s25",
     "اس 26", "s26", "a12", "a13", "a14", "a15", "a16", "a17", "a22", "a23", "a24", "a25", "a26",
-    "note 10", "note 11", "note 12", "note 13", "note 14", "ردمی نوت", "پوکو x", "مک‌بوک", "آیفون 11",
+    "note 10", "note 11", "note 12", "note 13", "note 14", "ردمی نوت", "پوکو x", "a52", "a53", "a54", "a55", "a71", "آیفون 11",
     "آیفون 12", "آیفون 13", "آیفون 14", "آیفون 15", "آیفون 16", "آیفون 17", "iphone 11", "iphone 12",
     "iphone 13", "iphone 14", "iphone 15", "iphone 16", "iphone 17"
   ],
