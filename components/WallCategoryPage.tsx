@@ -24,6 +24,7 @@ type CategoryAd = {
   image_url: string | null;
   business_id: string | null;
   category: WallAdCategory | null;
+  ad_id: string | null;
   source_message_id: string | null;
   created_at: string;
   profiles?: {
@@ -61,7 +62,7 @@ export default function WallCategoryPage({
       const { data, error } = await supabase
         .from("wall_messages")
         .select(
-          "id,user_id,content,image_url,business_id,category,source_message_id,created_at"
+          "id,user_id,content,image_url,business_id,category,ad_id,source_message_id,created_at"
         )
         .or(buildCategoryOrFilter(category))
         .order("created_at", { ascending: false })
