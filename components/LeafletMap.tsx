@@ -389,8 +389,8 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); transform-origin:center; transition:transform .18s ease; }
         .jam-marker-wrap { position:relative; width:22px; height:22px; filter:drop-shadow(0 2px 3px rgba(61,39,23,.25)); }
         .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; font-size:16px; }
-        .jam-marker-body span { transform:translateY(-1px); font-size:16px; }
-        .jam-marker-pulse { position:absolute; inset:1px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
+        .jam-marker-body span { transform:translateY(-1px); font-size:16px; filter:drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff) drop-shadow(0 1px 0 #fff) drop-shadow(0 -1px 0 #fff); }
+        .jam-marker-pulse { position:absolute; inset:1px; border:0; border-radius:50%; opacity:0; animation:none; }
         .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.15); }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
         .jam-business-tooltip { z-index:1000 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; pointer-events:auto; transition:opacity .18s ease, transform .18s ease; }
