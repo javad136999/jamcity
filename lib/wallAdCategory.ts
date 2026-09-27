@@ -105,6 +105,29 @@ export function detectAdCategory(
 
 const MOBILE_PHONE_TERMS = CATEGORY_TERMS.mobile;
 
+const REAL_ESTATE_TRANSACTION_TERMS = [
+  "خرید",
+  "فروش",
+  "رهن",
+  "اجاره",
+  "خرید و فروش",
+  "رهن و اجاره",
+];
+
+const REAL_ESTATE_CONTEXT_TERMS = [
+  "املاک",
+  "آپارتمان",
+  "اپارتمان",
+  "ویلا",
+  "زمین",
+  "باغ",
+  "باغچه",
+  "خانه",
+  "ملک",
+  "مغازه",
+  "سرقفلی",
+];
+
 export function isMobilePhoneAd(
   content: string | null,
   explicitCategory?: string | null
@@ -113,12 +136,29 @@ export function isMobilePhoneAd(
   return MOBILE_PHONE_TERMS.some((term) => text.includes(normalize(term)));
 }
 
+export function isPublicRealEstateMessage(content: string | null) {
+  const text = normalize(content ?? "");
+
+  const hasTransactionTerm = REAL_ESTATE_TRANSACTION_TERMS.some((term) =>
+    text.includes(normalize(term))
+  );
+
+  const hasRealEstateContext = REAL_ESTATE_CONTEXT_TERMS.some((term) =>
+    text.includes(normalize(term))
+  );
+
+  return hasTransactionTerm && hasRealEstateContext;
+}
+
 export function contentMatchesCategory(
   content: string | null,
   category: WallAdCategory,
   explicitCategory?: string | null
 ) {
   if (category === "mobile") return isMobilePhoneAd(content, explicitCategory);
+  if (category === "real-estate" && !explicitCategory) {
+    return isPublicRealEstateMessage(content);
+  }
   return detectAdCategory(content, explicitCategory) === category;
 }
 
@@ -141,6 +181,13 @@ export function belongsToOtherCategory(
   category: WallAdCategory
 ) {
   if (category === "mobile") return !isMobilePhoneAd(ad.content, ad.category);
+
+  // آگهی‌هایی که کاربر هنگام ثبت آگهی دسته‌بندی کرده، دست‌نخورده باقی می‌مانند.
+  // فقط پیام‌های عمومی باید برای ورود به املاک شرط معامله + زمینه ملکی داشته باشند.
+  if (category === "real-estate" && !ad.category) {
+    return !isPublicRealEstateMessage(ad.content);
+  }
+
   return detectAdCategory(ad.content, ad.category) !== detectAdCategory(null, category);
 }
 
