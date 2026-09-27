@@ -155,9 +155,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         return L.divIcon({
           className: "jam-fantasy-marker",
           html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div></div>`,
-          iconSize: [22, 22],
-          iconAnchor: [11, 11],
-          tooltipAnchor: [0, -11],
+          iconSize: [20, 20],
+          iconAnchor: [10, 10],
+          tooltipAnchor: [0, -10],
         });
       };
 
@@ -387,9 +387,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .legend-zoom { color:#b09e8e; }
         .jam-fantasy-marker { background:transparent !important; border:0 !important; }
         .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); transform-origin:center; transition:transform .18s ease; }
-        .jam-marker-wrap { position:relative; width:22px; height:22px; filter:drop-shadow(0 2px 3px rgba(61,39,23,.25)); }
-        .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; font-size:16px; }
-        .jam-marker-body span { transform:translateY(-1px); font-size:16px; filter:drop-shadow(1px 0 0 #35524a) drop-shadow(-1px 0 0 #35524a) drop-shadow(0 1px 0 #35524a) drop-shadow(0 -1px 0 #35524a); }
+        .jam-marker-wrap { position:relative; width:20px; height:20px; filter:drop-shadow(0 2px 3px rgba(61,39,23,.25)); }
+        .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:20px; height:20px; font-size:16px; }
+        .jam-marker-body span { transform:translateY(-1px); font-size:15px; filter:drop-shadow(1px 0 0 #35524a) drop-shadow(-1px 0 0 #35524a) drop-shadow(0 1px 0 #35524a) drop-shadow(0 -1px 0 #35524a); }
         .jam-marker-pulse { position:absolute; inset:1px; border:0; border-radius:50%; opacity:0; animation:none; }
         .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.15); }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
