@@ -359,7 +359,8 @@ export type Database = {
           image_url: string | null;
           is_promo: boolean;
           business_id: string | null;
-          category: "car" | "realestate" | null;
+          category: string | null;
+          ad_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -369,7 +370,8 @@ export type Database = {
           image_url?: string | null;
           is_promo?: boolean;
           business_id?: string | null;
-          category?: "car" | "realestate" | null;
+          category?: string | null;
+          ad_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -379,7 +381,8 @@ export type Database = {
           image_url?: string | null;
           is_promo?: boolean;
           business_id?: string | null;
-          category?: "car" | "realestate" | null;
+          category?: string | null;
+          ad_id?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -638,6 +641,7 @@ export type Database = {
           p_content: string;
           p_image_url: string | null;
           p_category: string | null;
+          p_ad_id?: string | null;
         };
         Returns: string;
       };
