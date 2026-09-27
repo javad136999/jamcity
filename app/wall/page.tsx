@@ -480,20 +480,17 @@ export default function WallPage() {
         adDescription.trim(),
       ].filter(Boolean).join("\n");
 
+      // انتشار در دیوار با همان ساختار پیام‌های عادی؛ ستون‌های دارای مقدار پیش‌فرض را دستی ارسال نکن.
       const { error: wallError } = await supabase.from("wall_messages").insert({
         user_id: user.id,
         content: adText,
         image_url: images[0] ?? null,
-        is_promo: false,
-        is_auto_republish: false,
-        is_pinned: false,
-        pinned_at: null,
-        business_id: null,
         category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
       });
 
       if (wallError) {
-        await supabase.from("ads").delete().eq("id", insertedAd.id);
+        console.error("wall ad publish error", wallError);
+        // آگهی در بخش «آگهی‌های من» باقی می‌ماند تا اطلاعات کاربر از بین نرود.
         throw wallError;
       }
 
