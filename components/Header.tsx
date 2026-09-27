@@ -49,6 +49,15 @@ export default function Header() {
           <span>پنل کسب‌وکار</span>
         </Link>
 
+        <Link
+          href="/news"
+          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#E3EBDE] bg-white px-2 py-1.5 text-[9px] font-black text-[#4B5A4E] shadow-sm transition hover:bg-[#F3F8F2] sm:px-3 sm:text-[11px]"
+          aria-label="اخبار"
+        >
+          <span className="text-sm">📰</span>
+          <span>اخبار</span>
+        </Link>
+
         <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
           {!user ? (
             <Link
