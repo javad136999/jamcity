@@ -31,8 +31,8 @@ export default function BottomNav() {
         main.style.height = "100dvh";
         main.style.overflow = "hidden";
       }
-      html.style.overflow = "hidden";
-      body.style.overflow = "hidden";
+      html.style.overflow = "";
+      body.style.overflow = "";
       body.classList.add("wall-page");
     } else {
       if (main) {
