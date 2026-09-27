@@ -22,11 +22,38 @@ export default function BottomNav() {
 
   React.useEffect(() => {
     const main = document.querySelector("main");
-    if (main) main.style.paddingBottom = isWall ? "0px" : "";
-    document.body.classList.toggle("wall-page", isWall);
+    const html = document.documentElement;
+    const body = document.body;
+
+    if (isWall) {
+      if (main) {
+        main.style.paddingBottom = "0px";
+        main.style.height = "100dvh";
+        main.style.overflow = "hidden";
+      }
+      html.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+      body.classList.add("wall-page");
+    } else {
+      if (main) {
+        main.style.paddingBottom = "";
+        main.style.height = "";
+        main.style.overflow = "";
+      }
+      html.style.overflow = "";
+      body.style.overflow = "";
+      body.classList.remove("wall-page");
+    }
+
     return () => {
-      if (main) main.style.paddingBottom = "";
-      document.body.classList.remove("wall-page");
+      if (main) {
+        main.style.paddingBottom = "";
+        main.style.height = "";
+        main.style.overflow = "";
+      }
+      html.style.overflow = "";
+      body.style.overflow = "";
+      body.classList.remove("wall-page");
     };
   }, [isWall]);
 
