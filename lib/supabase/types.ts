@@ -632,7 +632,7 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {\n      publish_ad_to_wall: {\n        Args: {\n          p_content: string;\n          p_image_url: string | null;\n          p_category: "car" | "realestate" | null;\n        };\n        Returns: string;\n      };\n    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };
