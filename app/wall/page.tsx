@@ -451,19 +451,51 @@ export default function WallPage() {
     try {
       const images = adFiles.length ? await uploadImages(adFiles, "ad-images", user.id) : [];
 
-      const { error: insertError } = await supabase.from("ads").insert({
+      const { data: insertedAd, error: insertError } = await supabase
+        .from("ads")
+        .insert({
+          user_id: user.id,
+          title: adTitle.trim(),
+          description: adDescription.trim(),
+          price: adPrice ? Number(adPrice) : null,
+          category: adCategory,
+          region: adRegion.trim(),
+          phone: adPhone.trim() || null,
+          status: adStatus as "active" | "reserved" | "sold" | "expired",
+          images,
+        })
+        .select("id")
+        .single();
+
+      if (insertError || !insertedAd) throw insertError ?? new Error("ثبت آگهی ناموفق بود");
+
+      const adText = [
+        "📢 آگهی جدید",
+        `🔹 ${adTitle.trim()}`,
+        `📂 ${AD_CATEGORIES.find((c) => c.slug === adCategory)?.name ?? adCategory}`,
+        `📍 ${adRegion.trim()}`,
+        adPrice ? `💰 ${Number(adPrice).toLocaleString("fa-IR")} تومان` : "💰 قیمت: توافقی",
+        adPhone.trim() ? `📞 ${adPhone.trim()}` : "",
+        "",
+        adDescription.trim(),
+      ].filter(Boolean).join("\n");
+
+      const { error: wallError } = await supabase.from("wall_messages").insert({
         user_id: user.id,
-        title: adTitle.trim(),
-        description: adDescription.trim(),
-        price: adPrice ? Number(adPrice) : null,
-        category: adCategory,
-        region: adRegion.trim(),
-        phone: adPhone.trim() || null,
-        status: adStatus as "active" | "reserved" | "sold" | "expired",
-        images,
+        content: adText,
+        image_url: images[0] ?? null,
+        is_promo: false,
+        is_auto_republish: false,
+        is_pinned: false,
+        pinned_at: null,
+        business_id: null,
+        category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
       });
 
-      if (insertError) throw insertError;
+      if (wallError) {
+        await supabase.from("ads").delete().eq("id", insertedAd.id);
+        throw wallError;
+      }
 
       setAdTitle("");
       setAdCategory(AD_CATEGORIES[0].slug);
