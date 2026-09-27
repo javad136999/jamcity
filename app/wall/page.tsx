@@ -1199,7 +1199,7 @@ function handleReply(message: WallMessage) {
           <div
             ref={scrollAreaRef}
             onScroll={handleScrollArea}
-            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#EAF1E7] px-2.5 pb-[100px] pt-2 sm:pb-2"
+            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#EAF1E7] px-2.5 pb-[120px] pt-2 sm:pb-2"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
