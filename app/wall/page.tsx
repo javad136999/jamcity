@@ -14,6 +14,7 @@ import WallGate from "@/components/WallGate";
 import { getOrCreateConversation } from "@/lib/conversations";
 import { AD_CATEGORIES } from "@/lib/constants";
 import { uploadImages } from "@/lib/upload";
+import { detectAdCategory } from "@/lib/wallAdCategory";
 
 type WallMessage = {
   id: string;
@@ -27,7 +28,7 @@ type WallMessage = {
   is_pinned: boolean;
   pinned_at: string | null;
   business_id: string | null;
-  category: "car" | "realestate" | null;
+  category: string | null;
   created_at: string;
   profiles?: { display_name: string; avatar_url: string | null } | null;
 };
@@ -82,7 +83,8 @@ export default function WallPage() {
   const [sendError, setSendError] = useState<string | null>(null);
   const [navigating, setNavigating] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
-  const [browse, setBrowse] = useState<{ query: string; category: "car" | "realestate" | null } | null>(null);
+  const [browse, setBrowse] = useState<{ query: string; category: string | null } | null>(null);
+  const [showCategories, setShowCategories] = useState(false);
   const [browseResultsData, setBrowseResultsData] = useState<WallMessage[] | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [browseIndex, setBrowseIndex] = useState(0);
@@ -860,6 +862,7 @@ export default function WallPage() {
   content: text.trim() || null,
   image_url,
   reply_to: replyingTo?.id ?? null,
+  category: detectAdCategory(text.trim(), null),
 };
 
 const { error } = await supabase
@@ -956,7 +959,7 @@ if (textareaRef.current) textareaRef.current.style.height = "auto";
     window.alert("گزارش شما برای بررسی به پنل مدیریت ارسال شد.");
   }
 
-  function startBrowse(query: string, category: "car" | "realestate" | null) {
+  function startBrowse(query: string, category: string | null) {
     setBrowse({ query: query.trim(), category });
     setBrowseResultsData(null);
     setBrowseIndex(0);
@@ -1010,27 +1013,15 @@ function handleReply(message: WallMessage) {
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <Link
-              href="/wall/car"
-              aria-label="آگهی‌های خودرو"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF2FF] text-xl shadow-sm transition hover:bg-[#DCE9FF]"
+            <button
+              type="button"
+              onClick={() => setShowCategories(true)}
+              aria-label="دسته‌بندی آگهی‌ها"
+              className="flex h-9 items-center gap-1.5 rounded-full bg-[#E3F3E9] px-3 text-[11px] font-black text-[#147A4B] shadow-sm transition hover:bg-[#D7EDDF]"
             >
-              🚗
-            </Link>
-            <Link
-              href="/wall/realestate"
-              aria-label="آگهی‌های املاک"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F4EAFF] text-xl shadow-sm transition hover:bg-[#EBDCFF]"
-            >
-              🏠
-            </Link>
-            <Link
-              href="/wall/construction"
-              aria-label="آگهی‌های خدمات ساختمانی"
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF3E0] text-xl shadow-sm transition hover:bg-[#FFE7C2]"
-            >
-              🛠️
-            </Link>
+              <span className="text-lg">▦</span>
+              <span>دسته‌بندی آگهی‌ها</span>
+            </button>
           </div>
         </div>
 
@@ -1511,6 +1502,49 @@ function handleReply(message: WallMessage) {
               ↓
             </button>
           )}
+        </div>
+      )}
+
+      {showCategories && (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/35 p-3 backdrop-blur-sm"
+          onClick={() => setShowCategories(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-[24px] border border-[#E3EBDE] bg-[#F8FAF6] p-4 shadow-[0_20px_60px_rgba(20,60,40,.24)]"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-black text-[#1D2B1F]">دسته‌بندی آگهی‌ها</h2>
+                <p className="mt-0.5 text-[10px] text-[#8A968C]">دسته موردنظر را انتخاب کنید</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowCategories(false)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#66766A] shadow-sm ring-1 ring-[#E3EBDE]"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2.5">
+              {AD_CATEGORIES.map((category) => (
+                <button
+                  key={category.slug}
+                  type="button"
+                  onClick={() => {
+                    setShowCategories(false);
+                    router.push("/wall/category/" + category.slug);
+                  }}
+                  className="flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#E3EBDE] bg-white px-2 py-3 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#F3FAF5] active:scale-[.98]"
+                >
+                  <span className="text-2xl">{category.icon}</span>
+                  <span className="text-[10px] font-black text-[#1D2B1F]">{category.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
