@@ -1,14 +1,14 @@
 import { AD_CATEGORIES } from "@/lib/constants";
 
-export type WallAdCategory = (typeof AD_CATEGORIES)[number]["slug"];
+export type WallAdCategory = (typeof AD_CATEGORIES)[number]["slug"] | "realestate" | "construction";
 
-export const CATEGORY_META: Record<WallAdCategory, { label: string; icon: string }> =
-  Object.fromEntries(
-    AD_CATEGORIES.map((category) => [
-      category.slug,
-      { label: category.name, icon: category.icon },
-    ])
-  ) as Record<WallAdCategory, { label: string; icon: string }>;
+export const CATEGORY_META: Record<WallAdCategory, { label: string; icon: string }> = {
+  ...Object.fromEntries(
+    AD_CATEGORIES.map((category) => [category.slug, { label: category.name, icon: category.icon }])
+  ),
+  realestate: { label: "املاک", icon: "🏠" },
+  construction: { label: "خدمات ساختمانی", icon: "🛠️" },
+} as Record<WallAdCategory, { label: string; icon: string }>;
 
 const CATEGORY_TERMS: Record<WallAdCategory, string[]> = {
   "real-estate": ["املاک", "آپارتمان", "اپارتمان", "خانه", "ویلا", "زمین", "مغازه", "ملک", "رهن", "اجاره"],
@@ -35,6 +35,8 @@ export function detectAdCategory(
   content: string | null,
   explicitCategory?: string | null
 ): WallAdCategory {
+  if (explicitCategory === "realestate") return "real-estate";
+  if (explicitCategory === "construction") return "services";
   if (explicitCategory && AD_CATEGORIES.some((c) => c.slug === explicitCategory)) {
     return explicitCategory as WallAdCategory;
   }
@@ -69,6 +71,8 @@ export function contentMatchesCategory(
 }
 
 export function buildCategoryOrFilter(category: WallAdCategory): string {
+  if (category === "realestate") category = "real-estate";
+  if (category === "construction") category = "services";
   if (category === "other") {
     return "category.eq.other,category.is.null";
   }
