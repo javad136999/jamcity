@@ -77,7 +77,7 @@ export default function CreateAdPage() {
       const { data: wallMessage, error: wallError } = await supabase.rpc("publish_ad_to_wall", {
         p_content: adText,
         p_image_url: images[0] ?? null,
-        p_category: category === "car" || category === "realestate" ? category : null,
+        p_category: category,
       });
 
       if (wallError || !wallMessage) {
