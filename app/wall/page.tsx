@@ -481,17 +481,20 @@ export default function WallPage() {
       ].filter(Boolean).join("\n");
 
       // انتشار در دیوار با همان ساختار پیام‌های عادی؛ ستون‌های دارای مقدار پیش‌فرض را دستی ارسال نکن.
-      const { error: wallError } = await supabase.from("wall_messages").insert({
-        user_id: user.id,
-        content: adText,
-        image_url: images[0] ?? null,
-        category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
-      });
+      const { data: wallMessage, error: wallError } = await supabase
+        .from("wall_messages")
+        .insert({
+          user_id: user.id,
+          content: adText,
+          image_url: images[0] ?? null,
+          category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
+        })
+        .select("id")
+        .single();
 
-      if (wallError) {
+      if (wallError || !wallMessage) {
         console.error("wall ad publish error", wallError);
-        // آگهی در بخش «آگهی‌های من» باقی می‌ماند تا اطلاعات کاربر از بین نرود.
-        throw wallError;
+        throw wallError ?? new Error("انتشار آگهی در دیوار انجام نشد");
       }
 
       setAdTitle("");
