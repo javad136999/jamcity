@@ -93,7 +93,6 @@ export default function WallPage() {
   const [navigating, setNavigating] = useState(false);
   const [memberCount, setMemberCount] = useState<number | null>(null);
   const [browse, setBrowse] = useState<{ query: string; category: string | null } | null>(null);
-  const [showCategories, setShowCategories] = useState(false);
   const [browseResultsData, setBrowseResultsData] = useState<WallMessage[] | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [browseIndex, setBrowseIndex] = useState(0);
@@ -1038,42 +1037,27 @@ function handleReply(message: WallMessage) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setShowCategories(true)}
-              aria-label="دسته‌بندی آگهی‌ها"
-              className="flex h-9 items-center gap-1.5 rounded-full bg-[#E3F3E9] px-3 text-[11px] font-black text-[#147A4B] shadow-sm transition hover:bg-[#D7EDDF]"
-            >
-              <span className="text-lg">▦</span>
-              <span>دسته‌بندی آگهی‌ها</span>
-            </button>
+          <div className="flex shrink-0 items-center gap-1.5">
+            <span className="text-[10px] font-black text-[#8A968C]">دسته‌بندی‌ها</span>
+          </div>
+        <div className="mt-2 overflow-x-auto pb-1 scrollbar-none" dir="rtl">
+          <div className="flex min-w-max items-center gap-2 px-0.5">
+            {AD_CATEGORIES.map((category) => (
+              <button
+                key={category.slug}
+                type="button"
+                onClick={() => router.push("/wall/category/" + category.slug)}
+                className="group flex min-w-[72px] shrink-0 flex-col items-center justify-center gap-1 rounded-2xl border border-[#E3EBDE] bg-[#F7F9F4] px-2.5 py-1.5 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#E3F3E9] active:scale-95"
+                aria-label={category.name}
+              >
+                <span className="text-xl leading-none transition group-hover:scale-110">{category.icon}</span>
+                <span className="max-w-[76px] truncate text-[9px] font-black text-[#1D2B1F]">
+                  {category.name}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (searchInput.trim()) startBrowse(searchInput, null);
-          }}
-          className="mx-auto mt-1.5 flex w-[88%] items-center gap-1.5"
-        >
-          <div className="flex min-w-0 flex-1 items-center gap-2 rounded-full border border-[#E3EBDE] bg-[#F7F9F4] px-3 py-1.5 transition focus-within:border-[#147A4B] focus-within:bg-white">
-            <span className="text-[12px] text-[#B0BAB1]">🔍</span>
-            <input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="جستجو در آگهی‌های دیوار..."
-              className="w-full bg-transparent text-[11px] text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
-            />
-          </div>
-          <button
-            type="submit"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_5px_14px_rgba(20,122,75,.25)] transition hover:brightness-110"
-          >
-            🔍
-          </button>
-        </form>
       </div>
 
       {/* =====================================================
@@ -1528,49 +1512,6 @@ function handleReply(message: WallMessage) {
               ↓
             </button>
           )}
-        </div>
-      )}
-
-      {showCategories && (
-        <div
-          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/35 p-3 backdrop-blur-sm"
-          onClick={() => setShowCategories(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-[24px] border border-[#E3EBDE] bg-[#F8FAF6] p-4 shadow-[0_20px_60px_rgba(20,60,40,.24)]"
-            dir="rtl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-black text-[#1D2B1F]">دسته‌بندی آگهی‌ها</h2>
-                <p className="mt-0.5 text-[10px] text-[#8A968C]">دسته موردنظر را انتخاب کنید</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowCategories(false)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#66766A] shadow-sm ring-1 ring-[#E3EBDE]"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-2.5">
-              {AD_CATEGORIES.map((category) => (
-                <button
-                  key={category.slug}
-                  type="button"
-                  onClick={() => {
-                    setShowCategories(false);
-                    router.push("/wall/category/" + category.slug);
-                  }}
-                  className="flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[#E3EBDE] bg-white px-2 py-3 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#F3FAF5] active:scale-[.98]"
-                >
-                  <span className="text-2xl">{category.icon}</span>
-                  <span className="text-[10px] font-black text-[#1D2B1F]">{category.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       )}
 
