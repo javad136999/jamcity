@@ -122,7 +122,7 @@ export default function WallPage() {
     try {
       const { data, error } = await supabase
         .from("wall_messages")
-        .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+        .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
         .lt("created_at", cursor)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -151,7 +151,7 @@ export default function WallPage() {
         missingReplyIds.length
           ? supabase
               .from("wall_messages")
-              .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+              .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
               .in("id", missingReplyIds)
           : Promise.resolve({ data: [] as unknown as WallMessage[] }),
       ]);
@@ -238,7 +238,7 @@ export default function WallPage() {
     // و در جای زمانی خودش به لیست اضافه می‌کنیم؛ آگهی جابه‌جا یا کپی نمی‌شود.
     const { data } = await supabase
       .from("wall_messages")
-      .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,is_pinned,pinned_at")
+      .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,is_pinned,pinned_at")
       .eq("id", message.id)
       .maybeSingle();
 
@@ -635,12 +635,12 @@ export default function WallPage() {
       const [messagesResult, pinnedResult] = await Promise.all([
         supabase
           .from("wall_messages")
-          .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+          .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
           .order("created_at", { ascending: false })
           .limit(20),
         (supabase as any)
           .from("wall_messages")
-          .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+          .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
           .eq("is_pinned", true)
           .order("pinned_at", { ascending: false })
           .limit(1),
@@ -683,7 +683,7 @@ export default function WallPage() {
       const replyTargetsResult = missingReplyIds.length
         ? await supabase
             .from("wall_messages")
-            .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,created_at,reply_to,is_pinned,pinned_at")
+            .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
             .in("id", missingReplyIds)
         : { data: [] };
 
