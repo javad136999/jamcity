@@ -1720,7 +1720,7 @@ function handleReply(message: WallMessage) {
       {/* =====================================================
           نوار ارسال پیام
       ====================================================== */}
-        <div className="fixed inset-x-0 bottom-0 z-40 shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 sm:sticky sm:bottom-0 sm:z-20 sm:pb-1.5">
+        <div className="fixed inset-x-0 bottom-[-10px] z-40 shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 sm:sticky sm:bottom-0 sm:z-20 sm:pb-1.5">
         {sendError && <ErrorState message={sendError} />}
         {voiceError && <ErrorState message={voiceError} />}
         {replyingTo && (
