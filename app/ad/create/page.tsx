@@ -61,9 +61,31 @@ export default function CreateAdPage() {
         .select("id")
         .single();
 
-      if (insertError || !data) throw insertError;
+      if (insertError || !data) throw insertError ?? new Error("ثبت آگهی ناموفق بود");
 
-      router.replace(`/ad/${data.id}`);
+      const adText = [
+        "📢 آگهی جدید",
+        `🔹 ${title.trim()}`,
+        `📂 ${AD_CATEGORIES.find((c) => c.slug === category)?.name ?? category}`,
+        `📍 ${region.trim()}`,
+        price ? `💰 ${Number(price).toLocaleString("fa-IR")} تومان` : "💰 قیمت: توافقی",
+        phone.trim() ? `📞 ${phone.trim()}` : "",
+        "",
+        description.trim(),
+      ].filter(Boolean).join("\n");
+
+      const { data: wallMessage, error: wallError } = await supabase.rpc("publish_ad_to_wall", {
+        p_content: adText,
+        p_image_url: images[0] ?? null,
+        p_category: category === "car" || category === "realestate" ? category : null,
+      });
+
+      if (wallError || !wallMessage) {
+        await supabase.from("ads").delete().eq("id", data.id).eq("user_id", user.id);
+        throw wallError ?? new Error("انتشار آگهی در دیوار انجام نشد");
+      }
+
+      router.replace("/profile");
     } catch {
       setError("ثبت آگهی با خطا مواجه شد. دوباره تلاش کنید.");
     } finally {
