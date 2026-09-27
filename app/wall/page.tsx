@@ -1189,7 +1189,7 @@ function handleReply(message: WallMessage) {
           <div
             ref={scrollAreaRef}
             onScroll={handleScrollArea}
-            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#EAF1E7] px-2.5 py-2"
+            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#EAF1E7] px-2.5 pb-[68px] pt-2 sm:pb-2"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
@@ -1720,7 +1720,7 @@ function handleReply(message: WallMessage) {
       {/* =====================================================
           نوار ارسال پیام
       ====================================================== */}
-        <div className="sticky bottom-0 z-20 shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-1.5 pt-1.5">
+        <div className="fixed inset-x-0 bottom-0 z-40 shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 sm:sticky sm:bottom-0 sm:z-20 sm:pb-1.5">
         {sendError && <ErrorState message={sendError} />}
         {voiceError && <ErrorState message={voiceError} />}
         {replyingTo && (
