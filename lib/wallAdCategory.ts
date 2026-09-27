@@ -10,7 +10,7 @@ export const CATEGORY_META: Record<WallAdCategory, { label: string; icon: string
   construction: { label: "خدمات ساختمانی", icon: "🛠️" },
 } as Record<WallAdCategory, { label: string; icon: string }>;
 
-const CATEGORY_TERMS: Record<WallAdCategory, string[]> = {
+const CATEGORY_TERMS: Record<(typeof AD_CATEGORIES)[number]["slug"], string[]> = {
   "real-estate": ["املاک", "آپارتمان", "اپارتمان", "خانه", "ویلا", "زمین", "مغازه", "ملک", "رهن", "اجاره"],
   car: ["خودرو", "ماشین", "پژو", "پراید", "سمند", "دنا", "تیبا", "کوییک", "شاهین", "ساینا", "رانا", "تارا", "206", "207", "405", "اتوگالری", "لاستیک", "کارواش", "قطعه خودرو"],
   mobile: ["موبایل", "گوشی", "آیفون", "سامسونگ", "شیائومی", "هواوی", "تبلت", "شارژر", "هندزفری"],
