@@ -177,14 +177,14 @@ export function buildCategoryOrFilter(category: WallAdCategory): string {
 }
 
 export function belongsToOtherCategory(
-  ad: { category: string | null; content: string | null },
+  ad: { category: string | null; content: string | null; ad_id?: string | null },
   category: WallAdCategory
 ) {
   if (category === "mobile") return !isMobilePhoneAd(ad.content, ad.category);
 
   // آگهی‌هایی که کاربر هنگام ثبت آگهی دسته‌بندی کرده، دست‌نخورده باقی می‌مانند.
   // فقط پیام‌های عمومی باید برای ورود به املاک شرط معامله + زمینه ملکی داشته باشند.
-  if (category === "real-estate" && !ad.category) {
+  if (category === "real-estate" && !("ad_id" in ad && ad.ad_id)) {
     return !isPublicRealEstateMessage(ad.content);
   }
 
