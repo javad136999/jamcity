@@ -29,6 +29,7 @@ type WallMessage = {
   pinned_at: string | null;
   business_id: string | null;
   category: string | null;
+  ad_id?: string | null;
   created_at: string;
   profiles?: { display_name: string; avatar_url: string | null } | null;
 };
@@ -495,6 +496,7 @@ export default function WallPage() {
         p_content: adText,
         p_image_url: images[0] ?? null,
         p_category: adCategory,
+        p_ad_id: insertedAd.id,
       });
 
       if (wallError || !wallMessage) {
@@ -932,15 +934,31 @@ if (textareaRef.current) textareaRef.current.style.height = "auto";
     );
     if (!confirmed) return;
 
-    const { error } = await supabase
-      .from("wall_messages")
-      .delete()
-      .eq("id", messageId);
+    // آگهیِ ثبت‌شده از فرم آگهی با wall_messages.ad_id به پیام دیوار متصل است.
+    // حذف آگهی باعث حذف خودکار پیام دیوار (ON DELETE CASCADE) می‌شود.
+    if (message?.ad_id) {
+      const { error: adError } = await supabase
+        .from("ads")
+        .delete()
+        .eq("id", message.ad_id)
+        .eq("user_id", message.user_id);
 
-    if (error) {
-      console.error("delete message error:", error);
-      alert("حذف پیام انجام نشد. دوباره تلاش کنید.");
-      return;
+      if (adError) {
+        console.error("delete linked ad error:", adError);
+        alert("حذف آگهی انجام نشد. دوباره تلاش کنید.");
+        return;
+      }
+    } else {
+      const { error } = await supabase
+        .from("wall_messages")
+        .delete()
+        .eq("id", messageId);
+
+      if (error) {
+        console.error("delete message error:", error);
+        alert("حذف پیام انجام نشد. دوباره تلاش کنید.");
+        return;
+      }
     }
 
     setMessages((prev) => prev?.filter((item) => item.id !== messageId) ?? prev);
