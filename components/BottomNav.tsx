@@ -1,5 +1,7 @@
 "use client";
 
+import React from "react";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -16,6 +18,19 @@ const items = [
 export default function BottomNav() {
   const pathname = usePathname();
   const { unreadCount, wallUnreadCount } = useAuth();
+  const isWall = pathname === "/wall" || pathname.startsWith("/wall/");
+
+  React.useEffect(() => {
+    const main = document.querySelector("main");
+    if (main) main.style.paddingBottom = isWall ? "0px" : "";
+    document.body.classList.toggle("wall-page", isWall);
+    return () => {
+      if (main) main.style.paddingBottom = "";
+      document.body.classList.remove("wall-page");
+    };
+  }, [isWall]);
+
+  if (isWall) return null;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 glass border-t border-black/5 pb-[env(safe-area-inset-bottom)] md:hidden">
