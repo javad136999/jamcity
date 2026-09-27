@@ -1199,7 +1199,7 @@ function handleReply(message: WallMessage) {
           <div
             ref={scrollAreaRef}
             onScroll={handleScrollArea}
-            className="min-h-0 flex-1 w-full space-y-1 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#EAF1E7] px-2.5 pb-[120px] pt-2 sm:pb-2"
+            className="min-h-0 flex-1 w-full space-y-2 overflow-y-auto overflow-x-hidden overscroll-contain bg-[#EAF1E7] px-2.5 pb-2 pt-2 sm:pb-2"
             style={{
               backgroundImage:
                 "radial-gradient(rgba(20,122,75,0.05) 1px, transparent 1px)",
@@ -1275,16 +1275,16 @@ function handleReply(message: WallMessage) {
                         </div>
                       </div>
                     ) : isAdCard ? (
-                      <div className={`flex min-w-0 max-w-full ${mine ? "justify-start" : "justify-end"} ${showMeta ? "mt-2" : "mt-0.5"}`}>
+                      <div className="flex min-w-0 w-full justify-center px-0.5 py-1">
                         <div
-                          className={`min-w-0 max-w-[80%] overflow-hidden rounded-2xl border border-[#F0DCB4] bg-white shadow-[0_4px_16px_rgba(20,60,40,.06)] ${bubbleTail}`}
+                          className={`w-full max-w-[430px] overflow-hidden rounded-[20px] border border-[#E7DEC9] bg-white shadow-[0_5px_18px_rgba(20,60,40,.08)] ${m.is_pinned ? "ring-2 ring-[#E2574C]/15" : ""}`}
                         >
                           <button type="button" onClick={() => setLightboxUrl(m.image_url)} className="block w-full">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={m.image_url!}
                               alt=""
-                              className="aspect-[4/3] max-h-72 w-full object-cover"
+                              className="aspect-[16/9] max-h-64 w-full object-cover"
                               loading="lazy"
                               decoding="async"
                               onLoad={() => {
@@ -1293,7 +1293,7 @@ function handleReply(message: WallMessage) {
                               }}
                             />
                           </button>
-                          <div className="min-w-0 space-y-2 p-3">
+                          <div className="min-w-0 p-3.5">
                             {quoted && (
                               <button
                                 type="button"
@@ -1312,22 +1312,29 @@ function handleReply(message: WallMessage) {
                                 </p>
                               </button>
                             )}
-                            <button
-                              onClick={() => openChatWith(m.user_id)}
-                              className="flex items-center gap-2 text-[11px] font-bold text-[#D98F2B]"
-                            >
-                              <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={20} />
-                              {m.profiles?.display_name || "کاربر"}
-                            </button>
-                            {m.category && (
-                              <span className="inline-block rounded-full bg-[#F3F6F1] px-2 py-0.5 text-[10px] font-bold text-[#66766A]">
-                                {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
-                              </span>
-                            )}
-                            <p className="whitespace-pre-wrap break-words text-sm font-bold leading-6 text-[#1D2B1F]">
-                              {m.content}
-                            </p>
-                            <div className="flex items-center justify-between pt-0.5">
+                            <div className="mb-2.5 flex items-center justify-between gap-2">
+                              <button
+                                onClick={() => openChatWith(m.user_id)}
+                                className="flex min-w-0 items-center gap-2 text-[11px] font-black text-[#D98F2B]"
+                              >
+                                <Avatar url={m.profiles?.avatar_url} name={m.profiles?.display_name} size={24} />
+                                <span className="truncate">{m.profiles?.display_name || "کاربر"}</span>
+                              </button>
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                {m.category && (
+                                  <span className="rounded-full bg-[#F3F6F1] px-2 py-1 text-[9px] font-bold text-[#66766A]">
+                                    {CATEGORY_META[m.category].icon} {CATEGORY_META[m.category].label}
+                                  </span>
+                                )}
+                                <span className="text-[9px] text-[#B0BAB1]">{timeAgo(m.created_at)}</span>
+                              </div>
+                            </div>
+                            <div className="mb-2 rounded-xl bg-[#FFF9ED] px-3 py-2">
+                              <p className="whitespace-pre-wrap break-words text-[13px] font-bold leading-6 text-[#1D2B1F]">
+                                {m.content}
+                              </p>
+                            </div>
+                            <div className="flex items-center justify-between border-t border-[#F0F3EE] pt-2">
                               <button
                                 type="button"
                                 onClick={() => handleReply(m)}
@@ -1523,6 +1530,7 @@ function handleReply(message: WallMessage) {
               </div>
             )}
 
+            <div className="h-[150px] shrink-0" aria-hidden="true" />
             <div ref={bottomRef} />
           </div>
 
