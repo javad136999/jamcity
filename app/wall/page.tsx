@@ -12,6 +12,8 @@ import Avatar from "@/components/Avatar";
 import EmojiPicker from "@/components/EmojiPicker";
 import WallGate from "@/components/WallGate";
 import { getOrCreateConversation } from "@/lib/conversations";
+import { AD_CATEGORIES } from "@/lib/constants";
+import { uploadImages } from "@/lib/upload";
 
 type WallMessage = {
   id: string;
@@ -408,6 +410,78 @@ export default function WallPage() {
   const recordedChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  // فرم ثبت آگهی داخل خود دیوار
+  const [showAdForm, setShowAdForm] = useState(false);
+  const [adTitle, setAdTitle] = useState("");
+  const [adCategory, setAdCategory] = useState<string>(AD_CATEGORIES[0].slug);
+  const [adDescription, setAdDescription] = useState("");
+  const [adPrice, setAdPrice] = useState("");
+  const [adRegion, setAdRegion] = useState("");
+  const [adPhone, setAdPhone] = useState("");
+  const [adStatus, setAdStatus] = useState("active");
+  const [adFiles, setAdFiles] = useState<File[]>([]);
+  const [adPreviews, setAdPreviews] = useState<string[]>([]);
+  const [adLoading, setAdLoading] = useState(false);
+  const [adError, setAdError] = useState<string | null>(null);
+
+  function handleAdFiles(e: React.ChangeEvent<HTMLInputElement>) {
+    const list = Array.from(e.target.files ?? []).slice(0, 6);
+    setAdFiles(list);
+    setAdPreviews(list.map((f) => URL.createObjectURL(f)));
+  }
+
+  function closeAdForm() {
+    if (adLoading) return;
+    setShowAdForm(false);
+    setAdError(null);
+  }
+
+  async function handleAdSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || adLoading) return;
+    setAdError(null);
+
+    if (!adTitle.trim() || !adDescription.trim() || !adRegion.trim()) {
+      setAdError("عنوان، توضیحات و منطقه الزامی است.");
+      return;
+    }
+
+    setAdLoading(true);
+    try {
+      const images = adFiles.length ? await uploadImages(adFiles, "ad-images", user.id) : [];
+
+      const { error: insertError } = await supabase.from("ads").insert({
+        user_id: user.id,
+        title: adTitle.trim(),
+        description: adDescription.trim(),
+        price: adPrice ? Number(adPrice) : null,
+        category: adCategory,
+        region: adRegion.trim(),
+        phone: adPhone.trim() || null,
+        status: adStatus as "active" | "reserved" | "sold" | "expired",
+        images,
+      });
+
+      if (insertError) throw insertError;
+
+      setAdTitle("");
+      setAdCategory(AD_CATEGORIES[0].slug);
+      setAdDescription("");
+      setAdPrice("");
+      setAdRegion("");
+      setAdPhone("");
+      setAdStatus("active");
+      setAdFiles([]);
+      setAdPreviews([]);
+      setShowAdForm(false);
+    } catch (error) {
+      console.error("wall ad create error", error);
+      setAdError("ثبت آگهی با خطا مواجه شد. دوباره تلاش کنید.");
+    } finally {
+      setAdLoading(false);
+    }
+  }
 
   async function startRecording() {
     setVoiceError(null);
@@ -1454,6 +1528,151 @@ function handleReply(message: WallMessage) {
         </div>
       )}
 
+      {showAdForm && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/35 p-2 backdrop-blur-sm sm:items-center sm:p-4"
+          onClick={closeAdForm}
+        >
+          <div
+            className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-[24px] border border-[#E3EBDE] bg-[#F8FAF6] p-4 shadow-[0_20px_60px_rgba(20,60,40,.24)] sm:p-5"
+            dir="rtl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-black text-[#1D2B1F]">ثبت آگهی جدید</h2>
+                <p className="mt-0.5 text-[10px] text-[#8A968C]">آگهی خود را برای دیوار جم ثبت کنید</p>
+              </div>
+              <button
+                type="button"
+                onClick={closeAdForm}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-[#66766A] shadow-sm ring-1 ring-[#E3EBDE]"
+                aria-label="بستن فرم ثبت آگهی"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAdSubmit} className="space-y-3">
+              {adError && <ErrorState message={adError} />}
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#66766A]">عنوان آگهی</label>
+                <input
+                  required
+                  value={adTitle}
+                  onChange={(e) => setAdTitle(e.target.value)}
+                  className="w-full rounded-xl border border-[#E3EBDE] bg-white px-3.5 py-3 text-sm text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                  placeholder="مثلاً پژو ۲۰۶ مدل ۹۸"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#66766A]">دسته‌بندی</label>
+                  <select
+                    value={adCategory}
+                    onChange={(e) => setAdCategory(e.target.value)}
+                    className="w-full rounded-xl border border-[#E3EBDE] bg-white px-3 py-3 text-sm text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                  >
+                    {AD_CATEGORIES.map((c) => (
+                      <option key={c.slug} value={c.slug}>
+                        {c.icon} {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#66766A]">وضعیت</label>
+                  <select
+                    value={adStatus}
+                    onChange={(e) => setAdStatus(e.target.value)}
+                    className="w-full rounded-xl border border-[#E3EBDE] bg-white px-3 py-3 text-sm text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                  >
+                    <option value="active">فعال</option>
+                    <option value="reserved">رزرو شده</option>
+                    <option value="sold">فروخته شده</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#66766A]">توضیحات</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={adDescription}
+                  onChange={(e) => setAdDescription(e.target.value)}
+                  className="w-full resize-none rounded-xl border border-[#E3EBDE] bg-white px-3.5 py-3 text-sm leading-6 text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                  placeholder="توضیح کامل آگهی..."
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#66766A]">قیمت (تومان)</label>
+                  <input
+                    type="number"
+                    value={adPrice}
+                    onChange={(e) => setAdPrice(e.target.value)}
+                    className="w-full rounded-xl border border-[#E3EBDE] bg-white px-3.5 py-3 text-sm text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                    placeholder="خالی = توافقی"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-[#66766A]">منطقه / محله</label>
+                  <input
+                    required
+                    value={adRegion}
+                    onChange={(e) => setAdRegion(e.target.value)}
+                    className="w-full rounded-xl border border-[#E3EBDE] bg-white px-3.5 py-3 text-sm text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                    placeholder="مثلاً بلوار امام"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-[#66766A]">شماره تماس</label>
+                <input
+                  value={adPhone}
+                  onChange={(e) => setAdPhone(e.target.value)}
+                  dir="ltr"
+                  className="w-full rounded-xl border border-[#E3EBDE] bg-white px-3.5 py-3 text-sm text-[#1D2B1F] outline-none focus:border-[#147A4B]"
+                  placeholder="09xxxxxxxxx"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[11px] font-bold text-[#66766A]">تصاویر (حداکثر ۶ عکس)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleAdFiles}
+                  className="w-full rounded-xl border border-dashed border-[#CBD8CC] bg-white px-3 py-4 text-xs text-[#66766A]"
+                />
+                {adPreviews.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {adPreviews.map((p, i) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={i} src={p} alt="preview" className="h-20 w-full rounded-xl object-cover" />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="submit"
+                disabled={adLoading}
+                className="w-full rounded-xl bg-[#147A4B] py-3.5 text-sm font-black text-white shadow-[0_8px_20px_rgba(20,122,75,.28)] transition hover:brightness-110 disabled:opacity-50"
+              >
+                {adLoading ? "در حال ثبت..." : "ثبت آگهی"}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* =====================================================
           نوار ارسال پیام
       ====================================================== */}
@@ -1523,6 +1742,18 @@ function handleReply(message: WallMessage) {
           </div>
         ) : (
           <div className="flex items-end gap-1 rounded-[20px] border border-[#E3EBDE] bg-[#F7F9F4] p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setAdError(null);
+                setShowAdForm(true);
+              }}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F5EC] text-base text-[#147A4B] shadow-sm ring-1 ring-[#D5E8D9] transition hover:bg-[#DDF0E3]"
+              title="ثبت آگهی جدید"
+              aria-label="ثبت آگهی جدید"
+            >
+              📋
+            </button>
             <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
               📷
               <input
