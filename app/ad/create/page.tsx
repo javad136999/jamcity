@@ -78,6 +78,7 @@ export default function CreateAdPage() {
         p_content: adText,
         p_image_url: images[0] ?? null,
         p_category: category,
+        p_ad_id: data.id,
       });
 
       if (wallError || !wallMessage) {
