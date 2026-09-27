@@ -1530,7 +1530,7 @@ function handleReply(message: WallMessage) {
               </div>
             )}
 
-            <div className="h-[150px] shrink-0" aria-hidden="true" />
+            <div className="h-[78px] shrink-0" aria-hidden="true" />
             <div ref={bottomRef} />
           </div>
 
