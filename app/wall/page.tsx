@@ -486,7 +486,7 @@ export default function WallPage() {
       const { data: wallMessage, error: wallError } = await supabase.rpc("publish_ad_to_wall", {
         p_content: adText,
         p_image_url: images[0] ?? null,
-        p_category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
+        p_category: adCategory,
       });
 
       if (wallError || !wallMessage) {
