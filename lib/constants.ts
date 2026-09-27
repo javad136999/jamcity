@@ -1,6 +1,6 @@
 export const AD_CATEGORIES = [
   { slug: "real-estate", name: "املاک", icon: "🏠" },
-  { slug: "car", name: "خودرو", icon: "🚗" },
+  { slug: "car", name: "وسایل نقلیه", icon: "🚗" },
   { slug: "mobile", name: "موبایل", icon: "📱" },
   { slug: "home-appliances", name: "لوازم خانه", icon: "🛋️" },
   { slug: "jobs", name: "استخدام", icon: "💼" },
