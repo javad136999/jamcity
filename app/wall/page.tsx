@@ -481,16 +481,11 @@ export default function WallPage() {
       ].filter(Boolean).join("\n");
 
       // انتشار در دیوار با همان ساختار پیام‌های عادی؛ ستون‌های دارای مقدار پیش‌فرض را دستی ارسال نکن.
-      const { data: wallMessage, error: wallError } = await supabase
-        .from("wall_messages")
-        .insert({
-          user_id: user.id,
-          content: adText,
-          image_url: images[0] ?? null,
-          category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
-        })
-        .select("id")
-        .single();
+      const { data: wallMessage, error: wallError } = await supabase.rpc("publish_ad_to_wall", {
+        p_content: adText,
+        p_image_url: images[0] ?? null,
+        p_category: adCategory === "car" || adCategory === "realestate" ? adCategory : null,
+      });
 
       if (wallError || !wallMessage) {
         console.error("wall ad publish error", wallError);
