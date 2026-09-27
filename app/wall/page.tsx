@@ -1037,20 +1037,37 @@ function handleReply(message: WallMessage) {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="text-[10px] font-black text-[#8A968C]">دسته‌بندی‌ها</span>
-          </div>
         </div>
-        <div className="mt-2 grid grid-cols-5 gap-1.5" dir="rtl">
-          {AD_CATEGORIES.map((category) => (
+        <div className="mt-1 grid grid-cols-4 gap-1" dir="rtl">
+          {AD_CATEGORIES.filter((category) =>
+            ["services", "market", "personal", "other"].includes(category.slug)
+          ).map((category) => (
             <button
               key={category.slug}
               type="button"
               onClick={() => router.push("/wall/category/" + category.slug)}
-              className="group flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl border border-[#E3EBDE] bg-[#F7F9F4] px-1 py-1 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#E3F3E9] active:scale-95"
+              className="group flex min-h-[38px] min-w-0 flex-col items-center justify-center gap-0 rounded-lg border border-[#E3EBDE] bg-[#F7F9F4] px-1 py-0.5 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#E3F3E9] active:scale-95"
               aria-label={category.name}
             >
-              <span className="text-lg leading-none transition group-hover:scale-110">{category.icon}</span>
+              <span className="text-base leading-none transition group-hover:scale-110">{category.icon}</span>
+              <span className="w-full truncate text-[8px] font-black text-[#1D2B1F]">
+                {category.name}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="mt-1 grid grid-cols-5 gap-1" dir="rtl">
+          {AD_CATEGORIES.filter((category) =>
+            ["real-estate", "car", "mobile", "home-appliances", "jobs"].includes(category.slug)
+          ).map((category) => (
+            <button
+              key={category.slug}
+              type="button"
+              onClick={() => router.push("/wall/category/" + category.slug)}
+              className="group flex min-h-[38px] min-w-0 flex-col items-center justify-center gap-0 rounded-lg border border-[#E3EBDE] bg-[#F7F9F4] px-1 py-0.5 text-center shadow-sm transition hover:border-[#BFD6C4] hover:bg-[#E3F3E9] active:scale-95"
+              aria-label={category.name}
+            >
+              <span className="text-base leading-none transition group-hover:scale-110">{category.icon}</span>
               <span className="w-full truncate text-[8px] font-black text-[#1D2B1F]">
                 {category.name}
               </span>
