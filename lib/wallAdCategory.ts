@@ -31,15 +31,19 @@ function normalize(text: string) {
     .replace(/ۀ/g, "ه");
 }
 
+function canonicalCategory(category: string | null | undefined): WallAdCategory | null {
+  if (category === "realestate") return "real-estate";
+  if (category === "construction") return "services";
+  if (category && AD_CATEGORIES.some((c) => c.slug === category)) return category as WallAdCategory;
+  return null;
+}
+
 export function detectAdCategory(
   content: string | null,
   explicitCategory?: string | null
 ): WallAdCategory {
-  if (explicitCategory === "realestate") return "real-estate";
-  if (explicitCategory === "construction") return "services";
-  if (explicitCategory && AD_CATEGORIES.some((c) => c.slug === explicitCategory)) {
-    return explicitCategory as WallAdCategory;
-  }
+  const explicit = canonicalCategory(explicitCategory);
+  if (explicit) return explicit;
 
   const text = normalize(content ?? "");
   if (!text.trim()) return "other";
@@ -88,7 +92,7 @@ export function belongsToOtherCategory(
   ad: { category: string | null; content: string | null },
   category: WallAdCategory
 ) {
-  return !contentMatchesCategory(ad.content, category, ad.category);
+  return detectAdCategory(ad.content, ad.category) !== detectAdCategory(null, category);
 }
 
 export function dedupeAndSortNewestFirst<
