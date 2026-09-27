@@ -152,10 +152,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       const makeIcon = (marker: MapMarker) => {
         const theme = markerTheme(marker);
         const emoji = escapeHtml(marker.emoji || "📍");
-        const rating = marker.rating && marker.rating > 0 ? marker.rating.toFixed(1) : "";
         return L.divIcon({
           className: "jam-fantasy-marker",
-          html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div>${rating ? `<div class="jam-marker-rating">★ ${rating}</div>` : ""}</div>`,
+          html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div></div>`,
           iconSize: [22, 22],
           iconAnchor: [11, 11],
           tooltipAnchor: [0, -11],
@@ -392,7 +391,6 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:22px; height:22px; font-size:16px; }
         .jam-marker-body span { transform:translateY(-1px); font-size:16px; }
         .jam-marker-pulse { position:absolute; inset:1px; border:1px solid var(--marker-ring); border-radius:50%; opacity:.35; animation:jamMarkerPulse 2.4s ease-out infinite; }
-        .jam-marker-rating { position:absolute; z-index:6; bottom:-5px; left:-6px; border:1px solid #fff; border-radius:999px; background:var(--marker-main); color:#fff; padding:1px 3px; font:900 7px Vazirmatn,sans-serif; direction:ltr; }
         .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.15); }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
         .jam-business-tooltip { z-index:1000 !important; padding:0 !important; border:0 !important; background:transparent !important; box-shadow:none !important; pointer-events:auto; transition:opacity .18s ease, transform .18s ease; }
@@ -422,3 +420,5 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
     </div>
   );
 }
+
+
