@@ -111,6 +111,7 @@ export function belongsToOtherCategory(
   ad: { category: string | null; content: string | null },
   category: WallAdCategory
 ) {
+  if (category === "mobile") return !isMobilePhoneAd(ad.content, ad.category);
   return detectAdCategory(ad.content, ad.category) !== detectAdCategory(null, category);
 }
 
