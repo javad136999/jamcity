@@ -34,7 +34,15 @@ type WallMessage = {
 };
 
 const CATEGORY_META: Record<string, { label: string; icon: string }> = {
+  "real-estate": { label: "املاک", icon: "🏠" },
   car: { label: "خودرو", icon: "🚗" },
+  mobile: { label: "موبایل و تبلت", icon: "📱" },
+  "home-appliances": { label: "لوازم خانگی", icon: "🏠" },
+  jobs: { label: "استخدام و کاریابی", icon: "💼" },
+  services: { label: "خدمات", icon: "🛠️" },
+  market: { label: "خرید و فروش", icon: "🛍️" },
+  personal: { label: "وسایل شخصی", icon: "👕" },
+  other: { label: "سایر", icon: "📦" },
   realestate: { label: "املاک", icon: "🏠" },
   construction: { label: "خدمات ساختمانی", icon: "🛠️" },
 };
