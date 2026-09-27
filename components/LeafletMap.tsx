@@ -155,9 +155,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         return L.divIcon({
           className: "jam-fantasy-marker",
           html: `<div class="jam-marker-wrap" style="--marker-main:${theme.main};--marker-soft:${theme.soft};--marker-ring:${theme.ring};"><div class="jam-marker-pulse"></div><div class="jam-marker-body"><span>${emoji}</span></div></div>`,
-          iconSize: [20, 20],
-          iconAnchor: [10, 10],
-          tooltipAnchor: [0, -10],
+          iconSize: [18, 18],
+          iconAnchor: [9, 9],
+          tooltipAnchor: [0, -9],
         });
       };
 
@@ -368,7 +368,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .jam-map-category-copy { display:flex; min-width:0; flex-direction:column; align-items:flex-start; line-height:1.25; }
         .jam-map-category-copy b { max-width:220px; overflow:hidden; font-size:10px; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
         .jam-map-category-copy small { margin-top:2px; color:#8b9b8f; font-size:7px; font-weight:700; }
-        .jam-map-category-chevron { margin-right:3px; color:#62816d; font-size:15px; transition:transform .2s ease; }
+        .jam-map-category-chevron { margin-right:3px; color:#62816d; font-size:14px; transition:transform .2s ease; }
         .jam-map-category-button.is-open .jam-map-category-chevron { transform:rotate(180deg); }
         .jam-map-category-menu { position:absolute; top:calc(100% + 6px); right:0; z-index:1300; width:min(330px,calc(100vw - 32px)); max-height:250px; overflow:auto; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; padding:7px; border:1px solid #e2eadf; border-radius:18px; background:rgba(255,255,255,.98); box-shadow:0 16px 38px rgba(31,69,47,.18); backdrop-filter:blur(14px); }
         .jam-map-category-item { display:flex; align-items:center; gap:6px; min-width:0; min-height:38px; padding:6px 7px; border:1px solid #edf1eb; border-radius:12px; background:#fafcf9; color:#415247; cursor:pointer; text-align:right; transition:.16s ease; }
@@ -387,9 +387,9 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         .legend-zoom { color:#b09e8e; }
         .jam-fantasy-marker { background:transparent !important; border:0 !important; }
         .jam-fantasy-marker > .jam-marker-wrap { transform:var(--jam-marker-offset,translate(0,0)); transform-origin:center; transition:transform .18s ease; }
-        .jam-marker-wrap { position:relative; width:20px; height:20px; filter:drop-shadow(0 2px 3px rgba(61,39,23,.25)); }
-        .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:20px; height:20px; font-size:16px; }
-        .jam-marker-body span { transform:translateY(-1px); font-size:15px; filter:drop-shadow(1px 0 0 #35524a) drop-shadow(-1px 0 0 #35524a) drop-shadow(0 1px 0 #35524a) drop-shadow(0 -1px 0 #35524a); }
+        .jam-marker-wrap { position:relative; width:18px; height:18px; filter:drop-shadow(0 2px 3px rgba(61,39,23,.25)); }
+        .jam-marker-body { position:absolute; z-index:3; inset:0; display:flex; align-items:center; justify-content:center; width:18px; height:18px; font-size:16px; }
+        .jam-marker-body span { transform:translateY(-1px); font-size:14px; filter:drop-shadow(1px 0 0 #35524a) drop-shadow(-1px 0 0 #35524a) drop-shadow(0 1px 0 #35524a) drop-shadow(0 -1px 0 #35524a); }
         .jam-marker-pulse { position:absolute; inset:1px; border:0; border-radius:50%; opacity:0; animation:none; }
         .jam-fantasy-marker.jam-marker-active .jam-marker-body { transform:scale(1.15); }
         @keyframes jamMarkerPulse { 0% { transform:scale(.7); opacity:.55; } 75%,100% { transform:scale(1.35); opacity:0; } }
