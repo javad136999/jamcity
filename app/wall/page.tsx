@@ -1777,11 +1777,12 @@ function handleReply(message: WallMessage) {
                 setAdError(null);
                 setShowAdForm(true);
               }}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E8F5EC] text-base text-[#147A4B] shadow-sm ring-1 ring-[#D5E8D9] transition hover:bg-[#DDF0E3]"
+              className="relative flex h-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-red-300 bg-gradient-to-r from-red-600 via-red-500 to-rose-600 px-3 text-[11px] font-black text-white shadow-[0_0_8px_rgba(239,68,68,.75),0_0_18px_rgba(239,68,68,.45)] transition hover:scale-[1.03] hover:shadow-[0_0_12px_rgba(239,68,68,.9),0_0_24px_rgba(239,68,68,.55)] active:scale-95"
               title="ثبت آگهی جدید"
               aria-label="ثبت آگهی جدید"
             >
-              📋
+              <span className="absolute inset-0 animate-pulse bg-white/10" />
+              <span className="relative">ثبت آگهی</span>
             </button>
             <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
               📷
