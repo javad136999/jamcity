@@ -13,7 +13,15 @@ export const CATEGORY_META: Record<WallAdCategory, { label: string; icon: string
 const CATEGORY_TERMS: Record<(typeof AD_CATEGORIES)[number]["slug"], string[]> = {
   "real-estate": ["املاک", "آپارتمان", "اپارتمان", "خانه", "ویلا", "زمین", "مغازه", "ملک", "رهن", "اجاره"],
   car: ["خودرو", "ماشین", "پژو", "پراید", "سمند", "دنا", "تیبا", "کوییک", "شاهین", "ساینا", "رانا", "تارا", "206", "207", "405", "اتوگالری", "لاستیک", "کارواش", "قطعه خودرو"],
-  mobile: ["موبایل", "گوشی", "آیفون", "سامسونگ", "شیائومی", "هواوی", "تبلت", "شارژر", "هندزفری"],
+  mobile: [
+    "موبایل", "گوشی", "آیفون", "iphone", "سامسونگ", "samsung", "شیائومی", "xiaomi", "هواوی", "huawei",
+    "نوکیا", "nokia", "وان پلاس", "oneplus", "آنر", "honor", "موتورولا", "motorola", "گوگل پیکسل", "pixel",
+    "ردمی", "redmi", "پوکو", "poco", "ریلمی", "realme", "اس 23", "s23", "اس 24", "s24", "اس 25", "s25",
+    "اس 26", "s26", "a12", "a13", "a14", "a15", "a16", "a17", "a22", "a23", "a24", "a25", "a26",
+    "note 10", "note 11", "note 12", "note 13", "note 14", "ردمی نوت", "پوکو x", "مک‌بوک", "آیفون 11",
+    "آیفون 12", "آیفون 13", "آیفون 14", "آیفون 15", "آیفون 16", "آیفون 17", "iphone 11", "iphone 12",
+    "iphone 13", "iphone 14", "iphone 15", "iphone 16", "iphone 17"
+  ],
   "home-appliances": ["لوازم خانگی", "یخچال", "فریزر", "تلویزیون", "لباسشویی", "ظرفشویی", "جاروبرقی", "کولر", "اجاق", "مایکروویو"],
   jobs: ["استخدام", "استخدامی", "نیروی کار", "کارگر", "کارمند", "فروشنده", "رزومه", "شغل", "نیازمند نیرو", "همکار"],
   services: ["خدمات", "تعمیر", "آرایشگاه", "دندانپزشکی", "پزشک", "آموزش", "کلاس", "نظافت", "پیک", "عکاسی", "تبلیغات"],
@@ -66,11 +74,22 @@ export function detectAdCategory(
   return best;
 }
 
+const MOBILE_PHONE_TERMS = CATEGORY_TERMS.mobile;
+
+export function isMobilePhoneAd(
+  content: string | null,
+  explicitCategory?: string | null
+) {
+  const text = normalize(content ?? "");
+  return MOBILE_PHONE_TERMS.some((term) => text.includes(normalize(term)));
+}
+
 export function contentMatchesCategory(
   content: string | null,
   category: WallAdCategory,
   explicitCategory?: string | null
 ) {
+  if (category === "mobile") return isMobilePhoneAd(content, explicitCategory);
   return detectAdCategory(content, explicitCategory) === category;
 }
 
