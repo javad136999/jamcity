@@ -36,7 +36,7 @@ type WallMessage = {
 
 const CATEGORY_META: Record<string, { label: string; icon: string }> = {
   "real-estate": { label: "املاک", icon: "🏠" },
-  car: { label: "خودرو", icon: "🚗" },
+  car: { label: "وسایل نقلیه", icon: "🚗" },
   mobile: { label: "موبایل و تبلت", icon: "📱" },
   "home-appliances": { label: "لوازم خانگی", icon: "🏠" },
   jobs: { label: "استخدام و کاریابی", icon: "💼" },
@@ -1020,22 +1020,34 @@ function handleReply(message: WallMessage) {
           هدر دیوار — جمع‌وجور، سفید، تم روشن
       ====================================================== */}
       <div className="shrink-0 border-b border-[#E3EBDE] bg-white/95 px-2.5 pb-1 pt-1.5 backdrop-blur">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#E3F3E9] text-sm">
+        <div className="relative flex min-h-8 items-center justify-between gap-2" dir="rtl">
+          <span className="min-w-0 truncate text-right text-[10px] font-black text-[#147A4B]">
+            بدون محدودیت آگهی بذار
+          </span>
+
+          <div className="absolute left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap">
+            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#E3F3E9] text-sm">
               💬
             </span>
-            <div className="min-w-0">
-              <h1 className="truncate text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
-              <p className="flex items-center gap-2 text-[10px] font-bold">
-                {memberCount !== null && (
-                  <span className="font-black text-[#E2574C]">· {memberCount.toLocaleString("fa-IR")} عضو</span>
-                )}
+            <div className="text-center">
+              <h1 className="text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
+              <p className="text-[9px] font-bold text-[#E2574C]">
+                {memberCount !== null ? `${memberCount.toLocaleString("fa-IR")} عضو` : "عضو"}
               </p>
             </div>
           </div>
 
+          <button
+            type="button"
+            onClick={() => router.push("/")}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-[#E3EBDE] bg-[#F7F9F4] text-sm font-black text-[#66766A] shadow-sm transition hover:bg-[#E3F3E9] active:scale-95"
+            aria-label="بازگشت به صفحه اصلی"
+            title="بازگشت به صفحه اصلی"
+          >
+            ✕
+          </button>
         </div>
+
         <div className="mt-1 grid grid-cols-4 gap-1" dir="rtl">
           {AD_CATEGORIES.filter((category) =>
             ["services", "market", "personal", "other"].includes(category.slug)
