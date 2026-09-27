@@ -19,12 +19,6 @@ export default function ProfilePage() {
   const [ads, setAds] = useState<Ad[] | null>(null);
   const [deletingAdId, setDeletingAdId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (profile) {
-      setDisplayName(profile.display_name);
-      setUsername(profile.username);
-    }
-  }, [profile]);
 
   useEffect(() => {
     if (!user) return;
