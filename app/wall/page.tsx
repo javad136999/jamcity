@@ -1040,6 +1040,7 @@ function handleReply(message: WallMessage) {
           <div className="flex shrink-0 items-center gap-1.5">
             <span className="text-[10px] font-black text-[#8A968C]">دسته‌بندی‌ها</span>
           </div>
+        </div>
         <div className="mt-2 grid grid-cols-5 gap-1.5" dir="rtl">
           {AD_CATEGORIES.map((category) => (
             <button
