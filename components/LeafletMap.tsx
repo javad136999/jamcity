@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type L from "leaflet";
-import type { City } from "@/lib/cities";
+import { cityBounds, type City } from "@/lib/cities";
 
 type CategoryOption = { slug: string; name: string; icon: string };
 
@@ -284,7 +284,7 @@ export default function LeafletMap({ markers, city }: { markers: MapMarker[]; ci
           });
         }
       } else {
-        map.fitBounds(JAM_BOUNDS, {
+        map.fitBounds(cityBounds(city), {
           animate: false,
           padding: [18, 18],
         });
@@ -416,5 +416,4 @@ export default function LeafletMap({ markers, city }: { markers: MapMarker[]; ci
     </div>
   );
 }
-
 

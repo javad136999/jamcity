@@ -6,9 +6,10 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import InsurancePanel from "@/components/InsurancePanel";
+import CitySelector from "@/components/CitySelector";
 
 export default function Header() {
-  const { user, profile, unreadCount, wallUnreadCount, isAdmin, city, cities, setCity } = useAuth();
+  const { user, profile, unreadCount, wallUnreadCount, isAdmin, city } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [insuranceOpen, setInsuranceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -40,45 +41,56 @@ export default function Header() {
       >
         <a
           href="tel:09030827988"
-          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-[#FFF5F5] px-2 py-1.5 text-[9px] font-black text-red-500 shadow-sm transition hover:bg-red-50 sm:h-10 sm:px-3 sm:text-[11px]"
+          aria-label="تماس با مدیر"
+          title="تماس با مدیر"
+          className="flex h-9 w-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-[#FFF5F5] p-1.5 text-[9px] font-black text-red-500 shadow-sm transition hover:bg-red-50 sm:h-10 sm:w-auto sm:justify-center sm:px-3 sm:py-1.5 sm:text-[11px]"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-xs">☎️</span>
-          <span className="sm:hidden">تماس</span>
-          <span className="hidden sm:inline">تماس با مدیر</span>
+          <span className="sr-only sm:not-sr-only">تماس با مدیر</span>
         </a>
 
         <Link
           href="/business/manage"
-          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-[#D8B66A] bg-[#FFF9E8] px-2 py-1.5 text-[9px] font-black text-[#8B691F] shadow-sm transition hover:bg-[#FFF3C9] sm:h-10 sm:px-3 sm:text-[11px]"
+          aria-label="پنل کسب‌وکار"
+          title="پنل کسب‌وکار"
+          className="flex h-9 w-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-xl border border-[#D8B66A] bg-[#FFF9E8] p-1.5 text-[9px] font-black text-[#8B691F] shadow-sm transition hover:bg-[#FFF3C9] sm:h-10 sm:w-auto sm:px-3 sm:py-1.5 sm:text-[11px]"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F5E5B7] text-xs">🏬</span>
-          <span>پنل کسب‌وکار</span>
+          <span className="sr-only sm:not-sr-only">پنل کسب‌وکار</span>
         </Link>
 
         <Link
           href="/news"
-          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#BFD7F2] bg-[#F3F8FF] px-2 py-1.5 text-[9px] font-black text-[#35658F] shadow-sm transition hover:bg-[#EAF3FF] sm:h-10 sm:px-3 sm:text-[11px]"
+          aria-label="اخبار"
+          title="اخبار"
+          className="flex h-9 w-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-[#BFD7F2] bg-[#F3F8FF] p-1.5 text-[9px] font-black text-[#35658F] shadow-sm transition hover:bg-[#EAF3FF] sm:h-10 sm:w-auto sm:px-3 sm:py-1.5 sm:text-[11px]"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DCEBFA] text-xs">📰</span>
-          <span>اخبار</span>
+          <span className="sr-only sm:not-sr-only">اخبار</span>
         </Link>
 
         <button
           type="button"
           onClick={() => setInsuranceOpen(true)}
-          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#CBE2D1] bg-[#F2FAF4] px-2 py-1.5 text-[9px] font-black text-[#35704A] shadow-sm transition hover:bg-[#EAF6EC] sm:h-10 sm:px-3 sm:text-[11px]"
+          aria-label="بیمه"
+          title="بیمه"
+          className="flex h-9 w-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-[#CBE2D1] bg-[#F2FAF4] p-1.5 text-[9px] font-black text-[#35704A] shadow-sm transition hover:bg-[#EAF6EC] sm:h-10 sm:w-auto sm:px-3 sm:py-1.5 sm:text-[11px]"
         >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DCEFD9] text-xs">🛡️</span>
-          <span>بیمه</span>
+          <span className="sr-only sm:not-sr-only">بیمه</span>
         </button>
+
+        <CitySelector />
 
         {!user ? (
           <Link
             href="/login"
-            className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#D7DFD9] bg-[#F7F9F7] px-2 py-1.5 text-[9px] font-black text-[#4B5A4E] shadow-sm transition hover:bg-[#EEF4EF] sm:h-10 sm:px-2.5 sm:text-[11px]"
+            aria-label="ورود به پروفایل"
+            title="ورود به پروفایل"
+            className="flex h-9 w-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-[#D7DFD9] bg-[#F7F9F7] p-1.5 text-[9px] font-black text-[#4B5A4E] shadow-sm transition hover:bg-[#EEF4EF] sm:h-10 sm:w-auto sm:px-2.5 sm:py-1.5 sm:text-[11px]"
           >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E5ECE7] text-xs">👤</span>
-            <span>پروفایل</span>
+            <span className="sr-only sm:not-sr-only">پروفایل</span>
           </Link>
         ) : (
           <div className="relative shrink-0" ref={menuRef}>
@@ -99,14 +111,7 @@ export default function Header() {
             {menuOpen && (
               <div className="fade-in absolute left-0 top-10 z-50 w-52 overflow-hidden rounded-xl2 border border-red-100 bg-white shadow-soft">
                 <div className="border-b border-red-50 px-4 py-2.5">
-                  <label className="block text-[10px] font-bold text-slate-400">شهر فعال</label>
-                  <select
-                    value={city.id || ""}
-                    onChange={async (e) => { await setCity(e.target.value); setMenuOpen(false); router.refresh(); }}
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-black text-slate-800 outline-none"
-                  >
-                    {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
-                  </select>
+                  <span className="block text-[10px] font-bold text-slate-400">شهر فعال: {city.name}</span>
                   <span className="block text-[10px] text-slate-400">{profile?.display_name || "کاربر"}</span>
                 </div>
                 <Link href="/profile" className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50" onClick={() => setMenuOpen(false)}>پروفایل من</Link>
@@ -152,6 +157,7 @@ export default function Header() {
           </Link>
         )}
       </nav>
+
     </header>
   );
 }

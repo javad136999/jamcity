@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestCityId } from "@/lib/city-context-server";
 import { categoryLabel, formatPrice, statusMeta, timeAgo } from "@/lib/constants";
 import AdActions from "./AdActions";
 import AdGallery from "./AdGallery";
@@ -9,11 +10,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
+  const cityId = await getRequestCityId(supabase);
 
   const { data: ad } = await supabase
     .from("ads")
     .select("*")
     .eq("id", params.id)
+    .eq("city_id", cityId)
     .maybeSingle();
 
   if (!ad) notFound();

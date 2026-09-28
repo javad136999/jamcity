@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 type NewsItem = {
   id: string;
@@ -36,7 +37,7 @@ const sections = [
   },
   {
     key: "jam",
-    title: "اخبار جم",
+    title: "اخبار شهر",
     icon: "📍",
     active: "bg-amber-500 text-white shadow-md",
   },
@@ -49,6 +50,7 @@ const sections = [
 ];
 
 export default function NewsPage() {
+  const { city } = useAuth();
   const searchParams = useSearchParams();
 
   const sectionFromUrl = searchParams.get("section");
@@ -71,13 +73,17 @@ export default function NewsPage() {
     try {
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("jamcity_content")
         .select(
           "id,section,title,summary,content,source_name,source_url,image_url,symbol,sentiment,target_price,published_at"
         )
         .eq("is_published", true)
-        .eq("section", section)
+        .eq("section", section);
+      query = section === "jam"
+        ? query.eq("city_id", city.id)
+        : query.or(`city_id.is.null,city_id.eq.${city.id}`);
+      const { data, error } = await query
         .order("published_at", { ascending: false })
         .limit(30);
 
@@ -96,7 +102,7 @@ export default function NewsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [city.id]);
 
   useEffect(() => {
     if (
@@ -108,7 +114,7 @@ export default function NewsPage() {
   }, [sectionFromUrl]);
 
   useEffect(() => {
-    loadNews(activeSection);
+    if (city.id) loadNews(activeSection);
   }, [activeSection, loadNews]);
 
   const handleSectionChange = (section: string) => {
@@ -131,11 +137,11 @@ export default function NewsPage() {
         </p>
 
         <h1 className="mt-1 text-2xl font-black text-slate-800">
-          📰 اخبار جم‌سیتی
+          📰 اخبار {city.name}‌سیتی
         </h1>
 
         <p className="mt-2 text-[10px] leading-6 text-slate-400">
-          آخرین اخبار ایران، اقتصاد، جهان، جم و فرصت‌های شغلی
+          آخرین اخبار ایران، اقتصاد، جهان، {city.name} و فرصت‌های شغلی
         </p>
       </section>
 
@@ -357,4 +363,3 @@ export default function NewsPage() {
     </main>
   );
 }
-

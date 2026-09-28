@@ -24,7 +24,7 @@ const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
 });
 
 export default function BusinessRegisterPage() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, city, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
@@ -52,6 +52,12 @@ export default function BusinessRegisterPage() {
     if (!user) return;
     setError(null);
 
+    const businessCityId = city.id || profile?.city_id || "";
+    if (!businessCityId) {
+      setError("شهر حساب کاربری هنوز آماده نیست. لطفاً دوباره تلاش کنید.");
+      return;
+    }
+
     if (!name.trim() || !address.trim() || !lat || !lng) {
       setError("نام، آدرس و موقعیت روی نقشه الزامی است.");
       return;
@@ -70,7 +76,7 @@ export default function BusinessRegisterPage() {
         .from("businesses")
         .insert({
           owner_id: user.id,
-          city_id: profile?.city_id,
+          city_id: businessCityId,
           name: name.trim(),
           category,
           icon,

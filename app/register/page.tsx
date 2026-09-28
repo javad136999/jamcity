@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { ErrorState } from "@/components/Feedback";
 import { createClient } from "@/lib/supabase/client";
 import type { City } from "@/lib/cities";
+import { useAuth } from "@/lib/auth-context";
 
 export default function RegisterPage() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { city: activeCity } = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
@@ -24,9 +26,10 @@ export default function RegisterPage() {
       const rows = (data ?? []) as City[];
       setCities(rows);
       const jam = rows.find((city) => city.slug === "jam");
-      if (jam) setCityId(jam.id);
+      const selected = rows.find((city) => city.id === activeCity.id) ?? jam;
+      if (selected) setCityId(selected.id);
     });
-  }, [supabase]);
+  }, [supabase, activeCity.id]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {

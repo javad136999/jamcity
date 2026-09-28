@@ -104,7 +104,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 };
 
 export default function AdminPage() {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { isAdmin, city, loading: authLoading } = useAuth();
   // برخی جداول جدید در Database تایپ نشده‌اند؛ این cast مانع خطای never می‌شود.
   const supabase = useMemo(() => createClient() as any, []);
 
@@ -1008,8 +1008,11 @@ export default function AdminPage() {
           پنل مدیریت
         </h1>
         <p className="text-sm text-slate-500">
-          بررسی، تایید و مدیریت بخش‌های شهر جم
+          بررسی، تایید و مدیریت بخش‌های شهر {city.name}
         </p>
+        <Link href="/admin/cities" className="mt-3 inline-flex rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
+          مدیریت شهرها، کاربران، آگهی‌ها و کسب‌وکارها
+        </Link>
       </div>
 
       <div className="rounded-xl2 glass p-4 shadow-soft">

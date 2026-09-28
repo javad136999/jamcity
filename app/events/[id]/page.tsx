@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 type CityEvent = {
   id: string;
@@ -27,6 +28,7 @@ export default function EventDetailPage() {
       : "";
 
   const supabase = createClient() as any;
+  const { city } = useAuth();
 
   const [event, setEvent] =
     useState<CityEvent | null>(null);
@@ -38,10 +40,10 @@ export default function EventDetailPage() {
     useState(false);
 
   useEffect(() => {
-    if (eventId) {
+    if (eventId && city.id) {
       loadEvent(eventId);
     }
-  }, [eventId]);
+  }, [eventId, city.id]);
 
   async function loadEvent(id: string) {
     setLoading(true);
@@ -52,6 +54,7 @@ export default function EventDetailPage() {
         "id,title,description,image_url,category,event_date,event_time,location,is_published,is_featured"
       )
       .eq("id", id)
+      .eq("city_id", city.id)
       .eq("is_published", true)
       .maybeSingle();
 

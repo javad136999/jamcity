@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import MarketTicker from "@/components/MarketTicker";
+import { useAuth } from "@/lib/auth-context";
 
 type NewsItem = {
   id: string;
@@ -193,6 +194,7 @@ function NewsCard({ item, sectionKey }: { item: NewsItem; sectionKey: string }) 
 }
 
 export default function NewsPage() {
+  const { city } = useAuth();
   const [news, setNews] = useState<NewsItem[]>([]);
   const [activeSection, setActiveSection] = useState("economic");
   const [loading, setLoading] = useState(true);
@@ -205,13 +207,17 @@ export default function NewsPage() {
     try {
       const supabase = createClient();
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("jamcity_content")
         .select(
           "id,section,title,summary,content,source_name,source_url,image_url,symbol,sentiment,target_price,published_at"
         )
         .eq("is_published", true)
-        .eq("section", section)
+        .eq("section", section);
+      query = section === "jam"
+        ? query.eq("city_id", city.id)
+        : query.or(`city_id.is.null,city_id.eq.${city.id}`);
+      const { data, error } = await query
         .order("published_at", { ascending: false })
         .limit(30);
 
@@ -230,10 +236,10 @@ export default function NewsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [city.id]);
 
   useEffect(() => {
-    loadNews(activeSection);
+    if (city.id) loadNews(activeSection);
   }, [activeSection, loadNews]);
 
   const activeMeta = findSectionMeta(activeSection);
@@ -251,7 +257,7 @@ export default function NewsPage() {
           📰
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-[15px] font-black text-[#1D2B1F]">اخبار جم‌سیتی</h1>
+          <h1 className="text-[15px] font-black text-[#1D2B1F]">اخبار {city.name}‌سیتی</h1>
           <p className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#8A968C]">
             <span className="flex items-center gap-1 text-[#147A4B]">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#147A4B]" />
@@ -280,7 +286,7 @@ export default function NewsPage() {
                 }`}
               >
                 <div className="text-base">{section.icon}</div>
-                <div className="mt-1 text-[10px] font-black">{section.title}</div>
+                <div className="mt-1 text-[10px] font-black">{section.key === "jam" ? `اخبار ${city.name}` : section.title}</div>
               </button>
             );
           })}
@@ -290,7 +296,7 @@ export default function NewsPage() {
       {/* CURRENT CATEGORY */}
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-black text-[#1D2B1F]">
-          {activeMeta.title}
+          {activeSection === "jam" ? `اخبار ${city.name}` : activeMeta.title}
         </h2>
 
         {!loading && (

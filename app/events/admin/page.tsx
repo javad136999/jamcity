@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 type CityEvent = {
   id: string;
@@ -44,6 +45,7 @@ const emptyForm: EventForm = {
 
 export default function EventsAdminPage() {
   const supabase = createClient() as any;
+  const { city } = useAuth();
 
   const [events, setEvents] = useState<CityEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,8 +61,8 @@ export default function EventsAdminPage() {
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
-    checkAdmin();
-  }, []);
+    if (city.id) checkAdmin();
+  }, [city.id]);
 
   async function checkAdmin() {
     setCheckingUser(true);
@@ -120,6 +122,7 @@ export default function EventsAdminPage() {
       .select(
         "id,title,description,image_url,category,event_date,event_time,location,is_published,is_featured,created_at,updated_at"
       )
+      .eq("city_id", city.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -201,6 +204,7 @@ export default function EventsAdminPage() {
       location: form.location.trim() || null,
       is_published: form.is_published,
       is_featured: form.is_featured,
+      city_id: city.id,
       updated_at: new Date().toISOString(),
     };
 
@@ -421,7 +425,7 @@ export default function EventsAdminPage() {
                 </h1>
               </div>
               <p className="text-xs text-[#6A786E]">
-                افزودن و مدیریت رویدادهای محلی شهر جم
+                افزودن و مدیریت رویدادهای محلی شهر {city.name}
               </p>
             </div>
 
@@ -526,7 +530,7 @@ export default function EventsAdminPage() {
                   onChange={(e) =>
                     updateForm("title", e.target.value)
                   }
-                  placeholder="مثلاً جشنواره خرما در شهر جم"
+                  placeholder={`مثلاً جشنواره خرما در شهر ${city.name}`}
                   className="w-full rounded-2xl border border-[#D8E5DA] bg-[#FBFDFC] px-4 py-3 text-sm text-black placeholder:text-gray-500 outline-none transition focus:border-[#2E8B57]"
                 />
               </div>
@@ -562,7 +566,7 @@ export default function EventsAdminPage() {
                   onChange={(e) =>
                     updateForm("location", e.target.value)
                   }
-                  placeholder="مثلاً فرهنگسرای شهر جم"
+                  placeholder={`مثلاً فرهنگسرای شهر ${city.name}`}
                   className="w-full rounded-2xl border border-[#D8E5DA] bg-[#FBFDFC] px-4 py-3 text-sm text-black placeholder:text-gray-500 outline-none focus:border-[#2E8B57]"
                 />
               </div>
@@ -734,7 +738,7 @@ export default function EventsAdminPage() {
                 هنوز رویدادی ثبت نشده
               </h3>
               <p className="mt-2 text-xs text-[#718078]">
-                اولین رویداد شهر جم را اضافه کنید.
+                اولین رویداد شهر {city.name} را اضافه کنید.
               </p>
               <button
                 type="button"

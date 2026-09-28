@@ -88,7 +88,12 @@ export default function MapPage() {
           BUSINESS_CATEGORIES.find((c) => c.slug === b.category)?.icon ||
           b.icon ||
           "📍",
-        tier: b.subscription_tier,
+        tier:
+          b.subscription_tier === "gold" ||
+          b.subscription_tier === "silver" ||
+          b.subscription_tier === "bronze"
+            ? b.subscription_tier
+            : null,
         rating: b.rating_avg,
       }));
 

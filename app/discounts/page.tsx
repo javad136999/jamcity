@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestCityId } from "@/lib/city-context-server";
 import { formatPrice } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -22,25 +23,27 @@ type BizRow = {
 
 export default async function DiscountsPage() {
   const supabase = createClient();
+  const cityId = await getRequestCityId(supabase);
 
-  const { data: rawProducts } = await supabase
-    .from("business_products")
-    .select("id, business_id, name, price, image_url, discount_percent")
-    .not("discount_percent", "is", null)
-    .gt("discount_percent", 0)
-    .order("discount_percent", { ascending: false });
+  const { data: rawBiz } = await supabase
+    .from("businesses")
+    .select("id, name, icon, subscription_status")
+    .eq("city_id", cityId)
+    .eq("subscription_status", "approved");
+  const cityBusinesses = (rawBiz as BizRow[]) ?? [];
+  const businessIds = cityBusinesses.map((business) => business.id);
+  const bizMap = new Map(cityBusinesses.map((business) => [business.id, business]));
 
-  const products = (rawProducts as ProductRow[]) ?? [];
-
-  let bizMap = new Map<string, BizRow>();
-  if (products.length > 0) {
-    const businessIds = Array.from(new Set(products.map((p) => p.business_id)));
-    const { data: rawBiz } = await supabase
-      .from("businesses")
-      .select("id, name, icon, subscription_status")
-      .in("id", businessIds)
-      .eq("subscription_status", "approved");
-    bizMap = new Map(((rawBiz as BizRow[]) ?? []).map((b) => [b.id, b]));
+  let products: ProductRow[] = [];
+  if (businessIds.length > 0) {
+    const { data: rawProducts } = await supabase
+      .from("business_products")
+      .select("id, business_id, name, price, image_url, discount_percent")
+      .in("business_id", businessIds)
+      .not("discount_percent", "is", null)
+      .gt("discount_percent", 0)
+      .order("discount_percent", { ascending: false });
+    products = (rawProducts as ProductRow[]) ?? [];
   }
 
   const visibleProducts = products.filter((p) => bizMap.has(p.business_id));
@@ -48,8 +51,8 @@ export default async function DiscountsPage() {
   return (
     <div className="fade-in space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold text-red-500">🏷️ تخفیف‌های ویژه شهر جم</h1>
-        <p className="text-sm text-slate-500">محصولات و خدمات با تخفیف از کسب‌وکارهای شهر جم</p>
+        <h1 className="text-2xl font-extrabold text-red-500">🏷️ تخفیف‌های ویژه شهر شما</h1>
+        <p className="text-sm text-slate-500">محصولات و خدمات با تخفیف از کسب‌وکارهای شهر انتخاب‌شده</p>
       </div>
 
       {visibleProducts.length === 0 ? (

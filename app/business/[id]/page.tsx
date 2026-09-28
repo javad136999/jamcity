@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getRequestCityId } from "@/lib/city-context-server";
 import { businessCategoryLabel, tierMeta, formatPrice } from "@/lib/constants";
 import BusinessRating from "@/components/BusinessRating";
 
@@ -14,10 +15,12 @@ export default async function BusinessDetailPage({
   params: { id: string };
 }) {
   const supabase = createClient();
+  const cityId = await getRequestCityId(supabase);
   const { data: business } = await supabase
     .from("businesses")
     .select("*")
     .eq("id", params.id)
+    .eq("city_id", cityId)
     .maybeSingle();
 
   if (!business) notFound();

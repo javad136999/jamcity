@@ -325,6 +325,7 @@ export type Database = {
           min_zoom: number
           name: string
           north_lat: number
+          province: string
           slug: string
           south_lat: number
           west_lng: number
@@ -341,6 +342,7 @@ export type Database = {
           min_zoom?: number
           name: string
           north_lat: number
+          province?: string
           slug: string
           south_lat: number
           west_lng: number
@@ -357,6 +359,7 @@ export type Database = {
           min_zoom?: number
           name?: string
           north_lat?: number
+          province?: string
           slug?: string
           south_lat?: number
           west_lng?: number
@@ -440,6 +443,7 @@ export type Database = {
       events: {
         Row: {
           category: string | null
+          city_id: string
           created_at: string
           description: string | null
           event_date: string | null
@@ -454,6 +458,7 @@ export type Database = {
         }
         Insert: {
           category?: string | null
+          city_id: string
           created_at?: string
           description?: string | null
           event_date?: string | null
@@ -468,6 +473,7 @@ export type Database = {
         }
         Update: {
           category?: string | null
+          city_id?: string
           created_at?: string
           description?: string | null
           event_date?: string | null
@@ -889,6 +895,7 @@ export type Database = {
       }
       jamcity_content: {
         Row: {
+          city_id: string | null
           content: string | null
           created_at: string
           id: string
@@ -907,6 +914,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          city_id?: string | null
           content?: string | null
           created_at?: string
           id?: string
@@ -925,6 +933,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          city_id?: string | null
           content?: string | null
           created_at?: string
           id?: string

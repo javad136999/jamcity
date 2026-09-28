@@ -2,6 +2,7 @@ export type City = {
   id: string;
   name: string;
   slug: string;
+  province: string;
   center_lat: number;
   center_lng: number;
   zoom: number;
@@ -14,10 +15,21 @@ export type City = {
   is_active: boolean;
 };
 
+export const CITY_SLUG_ALIASES: Record<string, string> = {
+  // «دیر» و «دیّر» دو نگارش از یک شهر هستند؛ داده فقط یک رکورد canonical دارد.
+  deir: "deyr",
+  dir: "deyr",
+};
+
+export function canonicalCitySlug(slug: string): string {
+  return CITY_SLUG_ALIASES[slug] ?? slug;
+}
+
 export const FALLBACK_JAM_CITY: City = {
   id: "",
   name: "جم",
   slug: "jam",
+  province: "بوشهر",
   center_lat: 27.8194,
   center_lng: 52.3242,
   zoom: 14,

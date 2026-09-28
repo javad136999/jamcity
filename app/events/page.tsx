@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 
 type CityEvent = {
   id: string;
@@ -19,13 +20,14 @@ type CityEvent = {
 
 export default function EventsPage() {
   const supabase = createClient() as any;
+  const { city } = useAuth();
 
   const [events, setEvents] = useState<CityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadEvents();
-  }, []);
+    if (city.id) loadEvents();
+  }, [city.id]);
 
   async function loadEvents() {
     const { data, error } = await supabase
@@ -34,6 +36,7 @@ export default function EventsPage() {
         "id,title,description,image_url,category,event_date,event_time,location,is_published,is_featured"
       )
       .eq("is_published", true)
+      .eq("city_id", city.id)
       .order("is_featured", { ascending: false })
       .order("event_date", { ascending: true });
 
@@ -97,12 +100,12 @@ export default function EventsPage() {
                 <span className="text-2xl">📅</span>
 
                 <h1 className="text-xl font-black text-black">
-                  رویدادهای جم
+                  رویدادهای {city.name}
                 </h1>
               </div>
 
               <p className="mt-1 text-xs text-[#68736C]">
-                آخرین رویدادها و برنامه‌های شهر جم
+                آخرین رویدادها و برنامه‌های شهر {city.name}
               </p>
             </div>
 
@@ -132,7 +135,7 @@ export default function EventsPage() {
             </h2>
 
             <p className="mt-2 text-xs text-[#68736C]">
-              به‌زودی رویدادهای جدید شهر جم در این بخش قرار می‌گیرند.
+              به‌زودی رویدادهای جدید شهر {city.name} در این بخش قرار می‌گیرند.
             </p>
 
           </div>

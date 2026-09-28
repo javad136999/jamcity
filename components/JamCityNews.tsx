@@ -1,6 +1,9 @@
 ﻿"use client";
 
+import { useAuth } from "@/lib/auth-context";
+
 export default function JamCityNews() {
+ const { city } = useAuth();
  return (
   <section className="mt-3 overflow-hidden rounded-2xl border border-green-400/30 bg-[#050806] p-3 shadow-[0_0_25px_rgba(34,197,94,0.12)]">
 
@@ -16,7 +19,7 @@ export default function JamCityNews() {
         <div className="flex items-center gap-2">
 
           <h2 className="text-sm font-black text-green-300">
-            اخبار روز جم
+            اخبار روز {city.name}
           </h2>
 
           <span className="flex items-center gap-1 rounded-full border border-green-400/20 bg-green-400/10 px-2 py-0.5 text-[7px] font-bold text-green-400">
@@ -44,11 +47,11 @@ export default function JamCityNews() {
         </div>
 
         <p className="mt-1 text-[9px] font-bold text-green-200">
-          مرکز اخبار جم‌سیتی
+          مرکز اخبار {city.name}‌سیتی
         </p>
 
         <p className="mt-0.5 text-[7px] text-slate-500">
-          اخبار جم، اقتصاد، ایران و جهان
+          اخبار {city.name}، اقتصاد، ایران و جهان
         </p>
 
       </div>

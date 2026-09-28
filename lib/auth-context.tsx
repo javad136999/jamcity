@@ -8,9 +8,26 @@ import {
   useState,
   useCallback,
 } from "react";
+import { usePathname } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
-import { FALLBACK_JAM_CITY, type City } from "@/lib/cities";
+import { canonicalCitySlug, FALLBACK_JAM_CITY, type City } from "@/lib/cities";
+
+const CITY_COOKIE = "jamcity_city_slug";
+
+function persistCitySlug(slug: string, cityId?: string) {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  const attributes = `Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  document.cookie = `${CITY_COOKIE}=${encodeURIComponent(slug)}; ${attributes}`;
+  if (cityId) document.cookie = `jamcity_city_id=${encodeURIComponent(cityId)}; ${attributes}`;
+}
+
+function readCitySlug() {
+  if (typeof document === "undefined") return null;
+  const entry = document.cookie.split(";").map((item) => item.trim()).find((item) => item.startsWith(`${CITY_COOKIE}=`));
+  return entry ? decodeURIComponent(entry.slice(CITY_COOKIE.length + 1)) : null;
+}
 
 type Profile = {
   id: string;
@@ -37,6 +54,7 @@ type AuthContextValue = {
   city: City;
   cities: City[];
   setCity: (cityId: string) => Promise<void>;
+  refreshCities: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue>({
@@ -51,10 +69,12 @@ const AuthContext = createContext<AuthContextValue>({
   city: FALLBACK_JAM_CITY,
   cities: [],
   setCity: async () => {},
+  refreshCities: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
+  const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [cities, setCities] = useState<City[]>([]);
@@ -71,10 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", uid)
         .maybeSingle();
       const p = data as Profile | null;
-      if (p?.city_id) {
-        const { data: cityRow } = await supabase.from("cities").select("*").eq("id", p.city_id).maybeSingle();
-        if (cityRow) setCityState(cityRow as City);
-      }
       if (p?.banned) {
         setProfile(p);
         await supabase.auth.signOut();
@@ -114,6 +130,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadWallUnread = useCallback(
     async (uid: string) => {
+      if (!city.id) {
+        setWallUnreadCount(0);
+        return;
+      }
       const { data: state, error: stateError } = await supabase
         .from("wall_read_state")
         .select("last_read_at")
@@ -140,6 +160,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from("wall_messages")
         .select("id", { count: "exact", head: true })
         .gt("created_at", state.last_read_at)
+        .eq("city_id", city.id)
         .neq("user_id", uid);
 
       if (countError) {
@@ -150,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setWallUnreadCount(count ?? 0);
     },
-    [supabase]
+    [supabase, city.id]
   );
 
   const markWallRead = useCallback(
@@ -175,25 +196,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const setCity = useCallback(async (cityId: string) => {
-    if (!user) return;
     const selected = cities.find((item) => item.id === cityId);
     if (!selected) return;
-    const { error } = await supabase.from("profiles").update({ city_id: cityId }).eq("id", user.id);
-    if (error) { console.error("city update error", error); return; }
     setCityState(selected);
-    await loadProfile(user.id);
-  }, [supabase, user, cities, loadProfile]);
+    persistCitySlug(selected.slug, selected.id);
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ city_id: cityId }).eq("id", user.id);
+    if (error) console.error("city update error", error);
+  }, [supabase, user, cities]);
 
   const refreshProfile = useCallback(async () => {
     if (user) await loadProfile(user.id);
   }, [user, loadProfile]);
 
+  const refreshCities = useCallback(async () => {
+    const { data } = await supabase.from("cities").select("*").eq("is_active", true).order("name");
+    if (data?.length) setCities(data as City[]);
+  }, [supabase]);
+
   useEffect(() => {
     let mounted = true;
 
-    supabase.from("cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
-      if (data?.length) setCities(data as City[]);
-    });
+    void refreshCities();
 
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return;
@@ -224,7 +248,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sub.subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refreshCities]);
+
+  useEffect(() => {
+    if (user && city.id) void loadWallUnread(user.id);
+  }, [user, city.id, loadWallUnread]);
+
+  useEffect(() => {
+    if (!cities.length) return;
+
+    const firstPathSegment = pathname.split("/").filter(Boolean)[0] ?? "";
+    const routeSlug = canonicalCitySlug(firstPathSegment);
+    const routeCity = cities.find((item) => item.slug === routeSlug);
+    const savedSlug = readCitySlug();
+    const savedCity = savedSlug
+      ? cities.find((item) => item.slug === canonicalCitySlug(savedSlug))
+      : undefined;
+    const profileCity = profile?.city_id
+      ? cities.find((item) => item.id === profile.city_id)
+      : undefined;
+    const jamCity = cities.find((item) => item.slug === "jam");
+    const nextCity = routeCity ?? savedCity ?? profileCity ?? jamCity ?? cities[0];
+
+    setCityState(nextCity);
+    persistCitySlug(nextCity.slug, nextCity.id);
+  }, [cities, pathname, profile?.city_id]);
 
   useEffect(() => {
     if (!user) return;
@@ -283,6 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         city,
         cities,
         setCity,
+        refreshCities,
       }}
     >
       {children}
