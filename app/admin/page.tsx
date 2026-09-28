@@ -122,6 +122,8 @@ export default function AdminPage() {
   const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
   const [editingBusinessName, setEditingBusinessName] = useState("");
   const [editingBusinessIcon, setEditingBusinessIcon] = useState("");
+  const [editingBusinessImageFile, setEditingBusinessImageFile] = useState<File | null>(null);
+  const [editingBusinessImagePreview, setEditingBusinessImagePreview] = useState<string | null>(null);
   const [visitCounts, setVisitCounts] = useState<{
     today: number;
     month: number;
@@ -694,6 +696,98 @@ export default function AdminPage() {
   }
 
   async function updateBusinessTitleAndIcon(id: string) {
+    setBusyId(id);
+
+    try {
+      const name = editingBusinessName.trim();
+      const icon = editingBusinessIcon.trim();
+
+      if (!name) {
+        alert("❌ عنوان کسب‌وکار نمی‌تواند خالی باشد.");
+        return;
+      }
+
+      let image_url: string | undefined;
+
+      if (editingBusinessImageFile) {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError || !userData.user) {
+          alert("❌ دسترسی کاربر مدیریت تأیید نشد.");
+          return;
+        }
+
+        if (!editingBusinessImageFile.type.startsWith("image/")) {
+          alert("❌ فقط فایل تصویری انتخاب کنید.");
+          return;
+        }
+
+        if (editingBusinessImageFile.size > 5 * 1024 * 1024) {
+          alert("❌ حجم عکس باید حداکثر ۵ مگابایت باشد.");
+          return;
+        }
+
+        const ext = editingBusinessImageFile.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = userData.user.id + "/admin-business/" + id + "-" + Date.now() + "." + ext;
+
+        const { error: uploadError } = await supabase.storage
+          .from("business-images")
+          .upload(path, editingBusinessImageFile, {
+            cacheControl: "31536000",
+            upsert: false,
+            contentType: editingBusinessImageFile.type,
+          });
+
+        if (uploadError) {
+          console.error("UPLOAD BUSINESS IMAGE ERROR:", uploadError);
+          alert("❌ آپلود عکس انجام نشد:\n" + uploadError.message);
+          return;
+        }
+
+        const { data: publicData } = supabase.storage
+          .from("business-images")
+          .getPublicUrl(path);
+
+        image_url = publicData.publicUrl;
+      }
+
+      const updatePayload: Record<string, string> = {
+        name,
+        icon: icon || "🏪",
+      };
+
+      if (image_url) updatePayload.image_url = image_url;
+
+      const { error } = await supabase
+        .from("businesses")
+        .update(updatePayload)
+        .eq("id", id);
+
+      if (error) {
+        console.error("UPDATE BUSINESS TITLE/ICON ERROR:", error);
+        alert("❌ ذخیره انجام نشد:\n" + error.message);
+        return;
+      }
+
+      setBusinesses((prev) =>
+        (prev ?? []).map((b) =>
+          b.id === id
+            ? { ...b, ...updatePayload }
+            : b
+        )
+      );
+
+      setEditingBusinessId(null);
+      setEditingBusinessImageFile(null);
+      setEditingBusinessImagePreview(null);
+      alert("✅ اطلاعات کسب‌وکار ذخیره شد.");
+    } catch (error) {
+      console.error("UPDATE BUSINESS TITLE/ICON UNEXPECTED ERROR:", error);
+      alert("❌ خطای غیرمنتظره هنگام ذخیره.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
     setBusyId(id);
 
     try {
@@ -1814,9 +1908,39 @@ export default function AdminPage() {
                     className="space-y-3 rounded-xl2 glass p-4 shadow-soft"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-2xl shadow">
-                        {b.icon}
-                      </span>
+                      <label
+                        className="relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white text-2xl shadow"
+                        title="برای انتخاب عکس مغازه کلیک کنید"
+                      >
+                        {editingBusinessImagePreview && editingBusinessId === b.id ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={editingBusinessImagePreview} alt="" className="h-full w-full object-cover" />
+                        ) : b.image_url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={b.image_url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          b.icon
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] ?? null;
+                            if (!file) return;
+                            if (file.size > 5 * 1024 * 1024) {
+                              alert("❌ حجم عکس باید حداکثر ۵ مگابایت باشد.");
+                              e.currentTarget.value = "";
+                              return;
+                            }
+                            setEditingBusinessId(b.id);
+                            setEditingBusinessName(b.name);
+                            setEditingBusinessIcon(b.icon || "🏪");
+                            setEditingBusinessImageFile(file);
+                            setEditingBusinessImagePreview(URL.createObjectURL(file));
+                          }}
+                        />
+                      </label>
 
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-bold text-slate-800">
@@ -1892,6 +2016,8 @@ export default function AdminPage() {
                               setEditingBusinessId(b.id);
                               setEditingBusinessName(b.name);
                               setEditingBusinessIcon(b.icon || "🏪");
+                              setEditingBusinessImageFile(null);
+                              setEditingBusinessImagePreview(null);
                             }}
                             className="rounded-xl bg-jam-navy px-3 py-2 text-[10px] font-bold text-white"
                           >
