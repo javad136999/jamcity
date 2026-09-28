@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/Feedback";
 
 export default function OnboardingPage() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, city } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
@@ -64,7 +64,7 @@ export default function OnboardingPage() {
         <span className="mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full bg-orange-500 text-3xl text-white shadow-soft">
           👋
         </span>
-        <h1 className="text-2xl font-extrabold text-slate-800">خوش آمدید به شهر جم</h1>
+        <h1 className="text-2xl font-extrabold text-slate-800">خوش آمدید به شهر {city.name}</h1>
         <p className="mt-1 text-sm text-slate-400">
           یک نام کاربری انتخاب کنید تا ثبت‌نام شما تکمیل شود
         </p>
@@ -85,7 +85,7 @@ export default function OnboardingPage() {
             placeholder="ali_reza"
           />
           <p className="text-[11px] text-slate-400">
-            این نام کاربری به عنوان نام نمایشی شما در دیوار شهر جم و چت‌ها استفاده می‌شود.
+            این نام کاربری به عنوان نام نمایشی شما در دیوار شهر {city.name} و چت‌ها استفاده می‌شود.
           </p>
         </div>
 
@@ -94,7 +94,7 @@ export default function OnboardingPage() {
           disabled={loading}
           className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50"
         >
-          {loading ? "در حال ثبت..." : "ورود به شهر جم"}
+          {loading ? "در حال ثبت..." : `ورود به شهر ${city.name}`}
         </button>
       </form>
     </div>

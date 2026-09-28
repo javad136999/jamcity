@@ -421,7 +421,7 @@ export default function EventsAdminPage() {
               <div className="mb-1 flex items-center gap-2">
                 <span className="text-2xl">📅</span>
                 <h1 className="text-xl font-black">
-                  مدیریت رویدادهای جم
+                  مدیریت رویدادهای {city.name}
                 </h1>
               </div>
               <p className="text-xs text-[#6A786E]">

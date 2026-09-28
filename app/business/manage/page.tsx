@@ -74,7 +74,7 @@ const STATUS_META: Record<string, { label: string; color: string }> = {
 };
 
 export default function BusinessManagePage() {
-  const { user } = useAuth();
+  const { user, city } = useAuth();
   const router = useRouter();
   const supabase = createClient();
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
@@ -385,7 +385,7 @@ export default function BusinessManagePage() {
             <EmptyState
               icon="🏬"
               title="هنوز کسب و کاری ثبت نکرده‌اید"
-              description="با ثبت کسب و کار، آن را روی نقشه شهر جم نمایش دهید"
+              description={`با ثبت کسب و کار، آن را روی نقشه شهر ${city.name} نمایش دهید`}
               action={
                 <Link
                   href="/business/register"

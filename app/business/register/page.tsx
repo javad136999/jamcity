@@ -121,7 +121,7 @@ export default function BusinessRegisterPage() {
       <div>
         <h1 className="text-2xl font-extrabold text-slate-800">ثبت کسب و کار</h1>
         <p className="text-sm text-slate-500">
-          مشخصات کسب و کار خود را وارد کنید تا روی نقشه شهر جم نمایش داده شود
+          مشخصات کسب و کار خود را وارد کنید تا روی نقشه شهر {city.name} نمایش داده شود
         </p>
       </div>
 
@@ -131,7 +131,7 @@ export default function BusinessRegisterPage() {
         <div className="space-y-3 rounded-xl2 border border-yellow-200 bg-yellow-50 p-6 text-center text-sm text-yellow-700">
           <p>
             برای ثبت کسب و کار باید با ایمیل واقعی یا حساب گوگل وارد شوید. حساب فعلی شما
-            فقط برای دیوار شهر جم است.
+            فقط برای دیوار شهر {city.name} است.
           </p>
           <Link
             href="/login"

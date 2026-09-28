@@ -98,7 +98,7 @@ export default function CreateAdPage() {
     <div className="fade-in mx-auto max-w-2xl space-y-6 py-4">
       <div>
         <h1 className="text-2xl font-extrabold text-slate-800">ثبت آگهی جدید</h1>
-        <p className="text-sm text-slate-400">آگهی خود را برای دیوار جم ثبت کنید</p>
+        <p className="text-sm text-slate-400">آگهی خود را برای دیوار {city.name} ثبت کنید</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4 rounded-xl2 glass p-6 shadow-soft">

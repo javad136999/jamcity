@@ -520,7 +520,7 @@ export default function AdminPage() {
   }
 
   async function banUser(userId: string) {
-    if (!confirm("این کاربر از دیوار شهر جم مسدود شود؟")) return;
+    if (!confirm(`این کاربر از دیوار شهر ${city.name} مسدود شود؟`)) return;
 
     setBusyId(userId);
 
@@ -1729,7 +1729,7 @@ export default function AdminPage() {
 
                     <span className="rounded-full bg-black/5 px-2 py-0.5 font-bold text-slate-600">
                       {r.context === "wall"
-                        ? "دیوار شهر جم"
+                        ? `دیوار شهر ${city.name}`
                         : "چت خصوصی"}
                     </span>
                   </div>

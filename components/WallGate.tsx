@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/Feedback";
 
@@ -9,6 +10,7 @@ function sanitizeUsername(raw: string) {
 }
 
 export default function WallGate() {
+  const { city } = useAuth();
   const supabase = createClient();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -66,7 +68,7 @@ export default function WallGate() {
           <span className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-3xl shadow-[0_10px_30px_rgba(20,122,75,.15)] ring-1 ring-[#E3EBDE]">
             💬
           </span>
-          <h1 className="text-xl font-black text-[#1D2B1F]">دیوار شهر جم</h1>
+          <h1 className="text-xl font-black text-[#1D2B1F]">دیوار شهر {city.name}</h1>
           <p className="mt-1.5 text-[12px] leading-6 text-[#8A968C]">
             یک نام کاربری و رمز عبور انتخاب کنید تا وارد گفتگو شوید
           </p>

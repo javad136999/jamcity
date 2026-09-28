@@ -40,7 +40,7 @@ const sections = [
   },
   {
     key: "jam",
-    title: "اخبار جم",
+    title: "اخبار محلی",
     icon: "📍",
     tint: "#D98F2B",
     tintSoft: "#FBEEDA",

@@ -88,7 +88,7 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
       <div className="w-full max-w-lg overflow-hidden rounded-[24px] border border-[#E3EBDE] bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#E3EBDE] bg-[#F7FAF6] px-4 py-3">
           <div>
-            <h2 className="text-sm font-black text-[#1D2B1F]">بیمه جم</h2>
+            <h2 className="text-sm font-black text-[#1D2B1F]">خدمات بیمه</h2>
             <p className="mt-0.5 text-[9px] font-bold text-[#7A887D]">نوع بیمه موردنظر را انتخاب کنید</p>
           </div>
           <button type="button" onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-sm shadow-sm">✕</button>

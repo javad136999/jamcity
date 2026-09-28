@@ -5,8 +5,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/Feedback";
+import { useAuth } from "@/lib/auth-context";
 
 function LoginForm() {
+  const { city } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const supabase = createClient();
@@ -45,7 +47,7 @@ function LoginForm() {
     <div className="fade-in mx-auto flex max-w-md flex-col gap-6 py-10">
       <div className="text-center">
         <h1 className="text-2xl font-extrabold text-slate-800">
-          ورود به شهر جم
+          ورود به شهر {city.name}
         </h1>
         <p className="mt-1 text-sm text-slate-400">
           برای ورود، شماره موبایل و رمز عبور خود را وارد کنید

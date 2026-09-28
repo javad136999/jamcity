@@ -12,7 +12,7 @@ export default function NotFound() {
         href="/wall"
         className="rounded-xl2 bg-jam-green px-5 py-2.5 text-sm font-bold text-slate-800 shadow-glow"
       >
-        بازگشت به دیوار جم
+        بازگشت به دیوار
       </Link>
     </div>
   );
