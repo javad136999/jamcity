@@ -197,7 +197,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setCities(activeCities);
         setCityState((current) => {
           if (current.id && activeCities.some((item) => item.id === current.id)) return current;
-          return activeCities.find((item) => item.slug === "jam") ?? activeCities[0];
+          const jamCity = activeCities.find((item) => item.slug === "jam");
+          return jamCity ?? activeCities[0] ?? current;
         });
       }
     });
