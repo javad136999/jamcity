@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { AD_CATEGORIES } from "@/lib/constants";
 import { uploadImages } from "@/lib/upload";
 import { ErrorState } from "@/components/Feedback";
@@ -12,6 +13,7 @@ export default function CreateAdPage() {
   const { user } = useAuth();
   const router = useRouter();
   const supabase = createClient();
+  const { city } = useAuth();
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<string>(AD_CATEGORIES[0].slug);
@@ -49,6 +51,7 @@ export default function CreateAdPage() {
         .from("ads")
         .insert({
           user_id: user.id,
+          city_id: city.id,
           title: title.trim(),
           description: description.trim(),
           price: price ? Number(price) : null,
