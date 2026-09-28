@@ -5,13 +5,11 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
-import InsurancePanel from "@/components/InsurancePanel";
 import CitySelector from "@/components/CitySelector";
 
 export default function Header() {
   const { user, profile, unreadCount, wallUnreadCount, isAdmin, city } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [insuranceOpen, setInsuranceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -70,17 +68,6 @@ export default function Header() {
           <span className="sr-only sm:not-sr-only">اخبار</span>
         </Link>
 
-        <button
-          type="button"
-          onClick={() => setInsuranceOpen(true)}
-          aria-label="بیمه"
-          title="بیمه"
-          className="flex h-9 w-9 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full border border-[#CBE2D1] bg-[#F2FAF4] p-1.5 text-[9px] font-black text-[#35704A] shadow-sm transition hover:bg-[#EAF6EC] sm:h-10 sm:w-auto sm:px-3 sm:py-1.5 sm:text-[11px]"
-        >
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DCEFD9] text-xs">🛡️</span>
-          <span className="sr-only sm:not-sr-only">بیمه</span>
-        </button>
-
         <CitySelector />
 
         {!user ? (
@@ -134,7 +121,6 @@ export default function Header() {
         )}
       </div>
 
-      {insuranceOpen && <InsurancePanel userId={user?.id ?? null} onClose={() => setInsuranceOpen(false)} />}
 
       {!pathname.startsWith("/wall") && (
         <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
