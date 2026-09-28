@@ -70,6 +70,7 @@ export default function BusinessRegisterPage() {
         .from("businesses")
         .insert({
           owner_id: user.id,
+          city_id: profile?.city_id,
           name: name.trim(),
           category,
           icon,
