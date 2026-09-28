@@ -77,7 +77,7 @@ function formatSeconds(total: number) {
 export default function WallPage() {
   const supabase = createClient();
   const router = useRouter();
-  const { user, profile, loading: authLoading, wallUnreadCount, markWallRead } = useAuth();
+  const { user, profile, city, loading: authLoading, wallUnreadCount, markWallRead } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<WallMessage | null>(null);
   const [pinMenuMessage, setPinMenuMessage] = useState<WallMessage | null>(null);
@@ -122,6 +122,7 @@ export default function WallPage() {
       const { data, error } = await supabase
         .from("wall_messages")
         .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
         .lt("created_at", cursor)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -151,6 +152,7 @@ export default function WallPage() {
           ? supabase
               .from("wall_messages")
               .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
               .in("id", missingReplyIds)
           : Promise.resolve({ data: [] as unknown as WallMessage[] }),
       ]);
@@ -238,6 +240,8 @@ export default function WallPage() {
     const { data } = await supabase
       .from("wall_messages")
       .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,is_pinned,pinned_at")
+      .eq("city_id", city.id)
+      .eq("city_id", city.id)
       .eq("id", message.id)
       .maybeSingle();
 
@@ -333,9 +337,9 @@ export default function WallPage() {
   const myTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !city.id) return;
 
-    const channel = supabase.channel("wall-presence", {
+    const channel = supabase.channel(`wall-presence:${city.id}`, {
       config: { presence: { key: user.id } },
     });
 
@@ -381,7 +385,7 @@ export default function WallPage() {
       presenceChannelRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, city.id]);
 
   function broadcastTyping(typing: boolean) {
     if (!user || !presenceChannelRef.current) return;
@@ -465,6 +469,7 @@ export default function WallPage() {
         .from("ads")
         .insert({
           user_id: user.id,
+          city_id: city.id,
           title: adTitle.trim(),
           description: adDescription.trim(),
           price: adPrice ? Number(adPrice) : null,
@@ -567,6 +572,7 @@ export default function WallPage() {
 
       const messageData = {
         user_id: user.id,
+        city_id: city.id,
         content: null,
         audio_url,
         reply_to: replyingTo?.id ?? null,
@@ -634,11 +640,13 @@ export default function WallPage() {
         supabase
           .from("wall_messages")
           .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
           .order("created_at", { ascending: false })
           .limit(20),
         (supabase as any)
           .from("wall_messages")
           .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
           .eq("is_pinned", true)
           .order("pinned_at", { ascending: false })
           .limit(1),
@@ -682,6 +690,7 @@ export default function WallPage() {
         ? await supabase
             .from("wall_messages")
             .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
             .in("id", missingReplyIds)
         : { data: [] };
 
@@ -811,7 +820,7 @@ export default function WallPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, city.id]);
 
   // =====================================================
   // اسکرول اولیه به آخرین پیام
@@ -867,6 +876,7 @@ export default function WallPage() {
       }
       const messageData = {
   user_id: user.id,
+  city_id: city.id,
   content: text.trim() || null,
   image_url,
   reply_to: replyingTo?.id ?? null,
@@ -1030,7 +1040,7 @@ function handleReply(message: WallMessage) {
               💬
             </span>
             <div className="text-center">
-              <h1 className="text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
+              <h1 className="text-[13px] font-black text-[#1D2B1F]">دیوار شهر {city.name}</h1>
               <p className="text-[9px] font-bold text-[#E2574C]">
                 {memberCount !== null ? `${memberCount.toLocaleString("fa-IR")} عضو` : "عضو"}
               </p>
@@ -1602,7 +1612,7 @@ function handleReply(message: WallMessage) {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-black text-[#1D2B1F]">ثبت آگهی جدید</h2>
-                <p className="mt-0.5 text-[10px] text-[#8A968C]">آگهی خود را برای دیوار جم ثبت کنید</p>
+                <p className="mt-0.5 text-[10px] text-[#8A968C]">آگهی خود را برای دیوار {city.name} ثبت کنید</p>
               </div>
               <button
                 type="button"

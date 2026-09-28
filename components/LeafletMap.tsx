@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type L from "leaflet";
+import type { City } from "@/lib/cities";
 
 type CategoryOption = { slug: string; name: string; icon: string };
 
@@ -17,11 +18,6 @@ export type MapMarker = {
   rating?: number | null;
 };
 
-const JAM_CENTER: [number, number] = [27.8194, 52.3242];
-const JAM_BOUNDS: [[number, number], [number, number]] = [
-  [27.78, 52.27],
-  [27.87, 52.38],
-];
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'\\"]/g, (character) => ({
@@ -48,7 +44,7 @@ function markerTheme(marker: MapMarker) {
   return { main: "#2f7657", soft: "#e8f5ed", ring: "#99cdb0", label: "کسب‌وکار" };
 }
 
-export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
+export default function LeafletMap({ markers, city }: { markers: MapMarker[]; city: City }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
@@ -102,10 +98,10 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       const container = containerRef.current;
       if ((container as HTMLDivElement & { _leaflet_id?: number })._leaflet_id) return;
       map = L.map(container, {
-        center: JAM_CENTER,
-        zoom: 14,
-        minZoom: 10,
-        maxZoom: 18,
+        center: [city.center_lat, city.center_lng],
+        zoom: city.zoom,
+        minZoom: city.min_zoom,
+        maxZoom: city.max_zoom,
         zoomControl: false,
         scrollWheelZoom: false,
         dragging: false,
@@ -113,7 +109,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
         touchZoom: true,
         boxZoom: false,
         keyboard: false,
-        maxBounds: JAM_BOUNDS,
+        maxBounds: [[city.south_lat, city.west_lng], [city.north_lat, city.east_lng]],
         maxBoundsViscosity: 1,
         zoomAnimation: true,
         fadeAnimation: true,
@@ -137,7 +133,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       }
       map = null;
     };
-  }, []);
+  }, [city]);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,7 +347,7 @@ export default function LeafletMap({ markers }: { markers: MapMarker[] }) {
       };
     })();
     return () => { cancelled = true; };
-  }, [markers]);
+  }, [markers, city]);
 
   return (
     <div className="jam-map-frame">

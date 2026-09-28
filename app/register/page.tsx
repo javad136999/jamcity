@@ -1,18 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ErrorState } from "@/components/Feedback";
+import { createClient } from "@/lib/supabase/client";
+import type { City } from "@/lib/cities";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
 
   const [displayName, setDisplayName] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [recoveryPhrase, setRecoveryPhrase] = useState("");
   const [referralCode, setReferralCode] = useState("");
+  const [cities, setCities] = useState<City[]>([]);
+  const [cityId, setCityId] = useState("");
+
+  useEffect(() => {
+    supabase.from("cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
+      const rows = (data ?? []) as City[];
+      setCities(rows);
+      const jam = rows.find((city) => city.slug === "jam");
+      if (jam) setCityId(jam.id);
+    });
+  }, [supabase]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -41,6 +55,7 @@ export default function RegisterPage() {
           password,
           recoveryPhrase,
           referralCode,
+          cityId,
         }),
       });
 
@@ -70,7 +85,7 @@ export default function RegisterPage() {
         </span>
 
         <h1 className="text-2xl font-extrabold text-slate-800">
-          ساخت حساب در شهر جم
+          ساخت حساب در جم‌سیتی
         </h1>
 
         <p className="mt-2 text-sm text-slate-400">
@@ -119,6 +134,22 @@ export default function RegisterPage() {
             placeholder="09123456789"
             className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
           />
+        </div>
+
+        <div className="space-y-1">
+          <label className="text-xs font-bold text-slate-600">شهر مورد نظر شما</label>
+          <select
+            required
+            value={cityId}
+            onChange={(e) => setCityId(e.target.value)}
+            className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
+          >
+            <option value="" disabled>انتخاب شهر</option>
+            {cities.map((city) => (
+              <option key={city.id} value={city.id}>{city.name}</option>
+            ))}
+          </select>
+          <p className="text-xs leading-5 text-slate-400">بعد از ورود، نقشه، دیوار و کسب‌وکارهای همین شهر به‌صورت پیش‌فرض نمایش داده می‌شود.</p>
         </div>
 
         <div className="space-y-1">

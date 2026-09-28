@@ -40,7 +40,7 @@ export default function WallCategoryPage({
 }) {
   const supabase = createClient();
   const router = useRouter();
-  const { user, loading: authLoading } = useAuth();
+  const { user, city, loading: authLoading } = useAuth();
   const meta = CATEGORY_META[category];
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -64,6 +64,7 @@ export default function WallCategoryPage({
         .select(
           "id,user_id,content,image_url,business_id,category,ad_id,source_message_id,created_at"
         )
+        .eq("city_id", city.id)
         .or(buildCategoryOrFilter(category))
         .order("created_at", { ascending: false })
         .limit(1000);
@@ -126,7 +127,7 @@ export default function WallCategoryPage({
     return () => {
       cancelled = true;
     };
-  }, [user, category, supabase]);
+  }, [user, category, city.id, supabase]);
 
   const visibleAds = useMemo(() => {
     if (!ads) return null;

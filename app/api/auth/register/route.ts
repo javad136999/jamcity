@@ -41,6 +41,8 @@ export async function POST(request: Request) {
       body.recoveryPhrase || ""
     ).trim();
 
+    const cityId = String(body.cityId || "").trim();
+
     /*
      * دریافت کد معرفی
      *
@@ -104,6 +106,21 @@ export async function POST(request: Request) {
         },
         { status: 400 }
       );
+    }
+
+    if (!cityId) {
+      return NextResponse.json({ error: "لطفاً شهر مورد نظر را انتخاب کنید." }, { status: 400 });
+    }
+
+    const { data: selectedCity, error: cityError } = await supabaseAdmin
+      .from("cities")
+      .select("id")
+      .eq("id", cityId)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (cityError || !selectedCity) {
+      return NextResponse.json({ error: "شهر انتخاب‌شده معتبر نیست." }, { status: 400 });
     }
 
     // بررسی عبارت بازیابی
@@ -303,6 +320,7 @@ export async function POST(request: Request) {
           ),
         onboarded: true,
         referred_by: referrerId,
+        city_id: cityId,
       })
       .eq("id", userId);
 

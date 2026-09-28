@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import InsurancePanel from "@/components/InsurancePanel";
 
 export default function Header() {
-  const { user, profile, unreadCount, wallUnreadCount, isAdmin } = useAuth();
+  const { user, profile, unreadCount, wallUnreadCount, isAdmin, city, cities, setCity } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [insuranceOpen, setInsuranceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -99,7 +99,14 @@ export default function Header() {
             {menuOpen && (
               <div className="fade-in absolute left-0 top-10 z-50 w-52 overflow-hidden rounded-xl2 border border-red-100 bg-white shadow-soft">
                 <div className="border-b border-red-50 px-4 py-2.5">
-                  <span className="block text-[11px] font-bold text-slate-800">شهر جم</span>
+                  <label className="block text-[10px] font-bold text-slate-400">شهر فعال</label>
+                  <select
+                    value={city.id || ""}
+                    onChange={async (e) => { await setCity(e.target.value); setMenuOpen(false); router.refresh(); }}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-black text-slate-800 outline-none"
+                  >
+                    {cities.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                  </select>
                   <span className="block text-[10px] text-slate-400">{profile?.display_name || "کاربر"}</span>
                 </div>
                 <Link href="/profile" className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50" onClick={() => setMenuOpen(false)}>پروفایل من</Link>
@@ -126,7 +133,7 @@ export default function Header() {
       <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
         <Link href="/" className="transition hover:text-red-500">خانه</Link>
         <Link href="/wall" className="relative transition hover:text-red-500">
-          دیوار شهر جم
+          دیوار شهر {city.name}
           {user && wallUnreadCount > 0 && (
             <span className="absolute -left-4 -top-2 rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
               {wallUnreadCount > 99 ? "۹۹+" : wallUnreadCount}

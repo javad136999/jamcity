@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import {
   BUSINESS_CATEGORIES,
   businessCategoryLabel,
@@ -50,6 +51,7 @@ type Product = {
 
 export default function MapPage() {
   const supabase = createClient();
+  const { city } = useAuth();
 
   const [markers, setMarkers] = useState<MapMarker[] | null>(null);
   const [goldBusinesses, setGoldBusinesses] = useState<GoldBusiness[]>([]);
@@ -65,12 +67,14 @@ export default function MapPage() {
           "id, name, category, address, description, image_url, icon, lat, lng, subscription_tier, subscription_status, rating_avg, rating_count"
         )
         .not("lat", "is", null)
-        .not("lng", "is", null);
+        .not("lng", "is", null)
+        .eq("city_id", city.id);
 
       const { data: ads } = await supabase
         .from("ads")
         .select("id, title, category, lat, lng")
         .eq("status", "active")
+        .eq("city_id", city.id)
         .not("lat", "is", null)
         .not("lng", "is", null);
              const businessMarkers: MapMarker[] = (businesses ?? []).map((b) => ({
@@ -123,7 +127,7 @@ export default function MapPage() {
     }
 
     load();
-  }, [supabase]);
+  }, [supabase, city.id]);
 
   /*
    * تعویض خودکار کارت‌ها
@@ -167,7 +171,7 @@ export default function MapPage() {
       {/* عنوان */}
       <div>
         <h1 className="text-2xl font-extrabold text-slate-800">
-          نقشه جم
+          نقشه {city.name}
         </h1>
 
         <p className="text-sm text-slate-400">
@@ -179,7 +183,7 @@ export default function MapPage() {
       {markers === null ? (
         <Spinner label="در حال بارگذاری موقعیت‌ها..." />
       ) : (
-        <LeafletMap markers={markers} />
+        <LeafletMap markers={markers} city={city} />
       )}
 
       {/* =====================================================
@@ -200,12 +204,12 @@ export default function MapPage() {
                 <span className="text-lg">👑</span>
 
                 <h2 className="text-sm font-extrabold text-slate-800">
-                  پیشنهادهای طلایی جم
+                  پیشنهادهای طلایی {city.name}
                 </h2>
               </div>
 
               <p className="mt-0.5 text-[9px] text-slate-400">
-                پیشنهادهای ویژه کسب‌وکارهای منتخب شهر جم
+                پیشنهادهای ویژه کسب‌وکارهای منتخب شهر {city.name}
               </p>
             </div>
 
