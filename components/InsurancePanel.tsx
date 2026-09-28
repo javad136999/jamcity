@@ -37,6 +37,7 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
     const normalizedPhone = phone.replace(/\s/g, "");
     if (!/^09\d{9}$/.test(normalizedPhone)) return setError("شماره تماس را به‌صورت ۱۱ رقمی وارد کنید.");
     if (needsVehicleCard && !cardFile) return setError("برای ثبت درخواست، عکس کارت خودرو را وارد کنید.");
+    if (!discount) return setError("میزان تخفیف بیمه‌نامه قبلی را انتخاب کنید.");
     if (cardFile && (!cardFile.type.startsWith("image/") || cardFile.size > 6 * 1024 * 1024)) {
       return setError("عکس کارت خودرو باید تصویری و حداکثر ۶ مگابایت باشد.");
     }
