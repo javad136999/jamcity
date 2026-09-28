@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
+import InsurancePanel from "@/components/InsurancePanel";
 
 export default function Header() {
   const { user, profile, unreadCount, wallUnreadCount, isAdmin } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [insuranceOpen, setInsuranceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -114,6 +116,8 @@ export default function Header() {
           </div>
         )}
       </div>
+
+      {insuranceOpen && <InsurancePanel userId={user?.id ?? null} onClose={() => setInsuranceOpen(false)} />}
 
       <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
         <Link href="/" className="transition hover:text-red-500">خانه</Link>
