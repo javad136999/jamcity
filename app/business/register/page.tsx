@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useState } from "react";
@@ -20,7 +20,7 @@ import { ErrorState, Spinner } from "@/components/Feedback";
 
 const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
   ssr: false,
-  loading: () => <Spinner label="در حال بارگذاری نقشه..." />,
+  loading: () => <Spinner label="Ø¯Ø± Ø­Ø§Ù„ Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ù‚Ø´Ù‡..." />,
 });
 
 export default function BusinessRegisterPage() {
@@ -45,19 +45,24 @@ export default function BusinessRegisterPage() {
 
   const selectedTier = SUBSCRIPTION_TIERS.find((t) => t.value === tier)!;
   const selectedPlan = SUBSCRIPTION_PLANS[tier].find((p) => p.months === months)!;
-  const icon = BUSINESS_CATEGORIES.find((c) => c.slug === category)?.icon ?? "🏬";
+  const icon = BUSINESS_CATEGORIES.find((c) => c.slug === category)?.icon ?? "ðŸ¬";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
     setError(null);
 
+    if (!profile?.city_id) {
+      setError("شهر حساب کاربری مشخص نشده است.");
+      return;
+    }
+
     if (!name.trim() || !address.trim() || !lat || !lng) {
-      setError("نام، آدرس و موقعیت روی نقشه الزامی است.");
+      setError("Ù†Ø§Ù…ØŒ Ø¢Ø¯Ø±Ø³ Ùˆ Ù…ÙˆÙ‚Ø¹ÛŒØª Ø±ÙˆÛŒ Ù†Ù‚Ø´Ù‡ Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª.");
       return;
     }
     if (!receipt) {
-      setError("لطفاً فیش واریزی را آپلود کنید.");
+      setError("Ù„Ø·ÙØ§Ù‹ ÙÛŒØ´ ÙˆØ§Ø±ÛŒØ²ÛŒ Ø±Ø§ Ø¢Ù¾Ù„ÙˆØ¯ Ú©Ù†ÛŒØ¯.");
       return;
     }
 
@@ -102,8 +107,8 @@ export default function BusinessRegisterPage() {
           : null;
       setError(
         msg
-          ? `ثبت کسب و کار با خطا مواجه شد: ${msg}`
-          : "ثبت کسب و کار با خطا مواجه شد. دوباره تلاش کنید."
+          ? `Ø«Ø¨Øª Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø± Ø¨Ø§ Ø®Ø·Ø§ Ù…ÙˆØ§Ø¬Ù‡ Ø´Ø¯: ${msg}`
+          : "Ø«Ø¨Øª Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø± Ø¨Ø§ Ø®Ø·Ø§ Ù…ÙˆØ§Ø¬Ù‡ Ø´Ø¯. Ø¯ÙˆØ¨Ø§Ø±Ù‡ ØªÙ„Ø§Ø´ Ú©Ù†ÛŒØ¯."
       );
     } finally {
       setLoading(false);
@@ -113,25 +118,25 @@ export default function BusinessRegisterPage() {
   return (
     <div className="fade-in mx-auto max-w-2xl space-y-6 py-4">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-800">ثبت کسب و کار</h1>
+        <h1 className="text-2xl font-extrabold text-slate-800">Ø«Ø¨Øª Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø±</h1>
         <p className="text-sm text-slate-500">
-          مشخصات کسب و کار خود را وارد کنید تا روی نقشه شهر جم نمایش داده شود
+          Ù…Ø´Ø®ØµØ§Øª Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø± Ø®ÙˆØ¯ Ø±Ø§ ÙˆØ§Ø±Ø¯ Ú©Ù†ÛŒØ¯ ØªØ§ Ø±ÙˆÛŒ Ù†Ù‚Ø´Ù‡ Ø´Ù‡Ø± Ø¬Ù… Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ø´ÙˆØ¯
         </p>
       </div>
 
       {authLoading ? (
-        <Spinner label="در حال بررسی حساب کاربری..." />
+        <Spinner label="Ø¯Ø± Ø­Ø§Ù„ Ø¨Ø±Ø±Ø³ÛŒ Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ..." />
       ) : profile?.is_wall_account ? (
         <div className="space-y-3 rounded-xl2 border border-yellow-200 bg-yellow-50 p-6 text-center text-sm text-yellow-700">
           <p>
-            برای ثبت کسب و کار باید با ایمیل واقعی یا حساب گوگل وارد شوید. حساب فعلی شما
-            فقط برای دیوار شهر جم است.
+            Ø¨Ø±Ø§ÛŒ Ø«Ø¨Øª Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø± Ø¨Ø§ÛŒØ¯ Ø¨Ø§ Ø§ÛŒÙ…ÛŒÙ„ ÙˆØ§Ù‚Ø¹ÛŒ ÛŒØ§ Ø­Ø³Ø§Ø¨ Ú¯ÙˆÚ¯Ù„ ÙˆØ§Ø±Ø¯ Ø´ÙˆÛŒØ¯. Ø­Ø³Ø§Ø¨ ÙØ¹Ù„ÛŒ Ø´Ù…Ø§
+            ÙÙ‚Ø· Ø¨Ø±Ø§ÛŒ Ø¯ÛŒÙˆØ§Ø± Ø´Ù‡Ø± Ø¬Ù… Ø§Ø³Øª.
           </p>
           <Link
             href="/login"
             className="inline-block rounded-xl2 bg-jam-green px-5 py-2 text-sm font-bold text-white shadow-glow"
           >
-            ورود با ایمیل یا گوگل
+            ÙˆØ±ÙˆØ¯ Ø¨Ø§ Ø§ÛŒÙ…ÛŒÙ„ ÛŒØ§ Ú¯ÙˆÚ¯Ù„
           </Link>
         </div>
       ) : (
@@ -139,53 +144,53 @@ export default function BusinessRegisterPage() {
         {error && <ErrorState message={error} />}
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">نام کسب و کار</label>
-          <input required value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="مثلاً رستوران الف" />
+          <label className="text-xs text-slate-500">Ù†Ø§Ù… Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø±</label>
+          <input required value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="Ù…Ø«Ù„Ø§Ù‹ Ø±Ø³ØªÙˆØ±Ø§Ù† Ø§Ù„Ù" />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">دسته‌بندی</label>
+            <label className="text-xs text-slate-500">Ø¯Ø³ØªÙ‡â€ŒØ¨Ù†Ø¯ÛŒ</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green">
               {BUSINESS_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.icon} {c.name}</option>)}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">ساعات کاری</label>
-            <input value={hours} onChange={(e) => setHours(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="مثلاً ۹ صبح تا ۱۱ شب" />
+            <label className="text-xs text-slate-500">Ø³Ø§Ø¹Ø§Øª Ú©Ø§Ø±ÛŒ</label>
+            <input value={hours} onChange={(e) => setHours(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="Ù…Ø«Ù„Ø§Ù‹ Û¹ ØµØ¨Ø­ ØªØ§ Û±Û± Ø´Ø¨" />
           </div>
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">آدرس</label>
+          <label className="text-xs text-slate-500">Ø¢Ø¯Ø±Ø³</label>
           <input required value={address} onChange={(e) => setAddress(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">شماره تماس</label>
+          <label className="text-xs text-slate-500">Ø´Ù…Ø§Ø±Ù‡ ØªÙ…Ø§Ø³</label>
           <input value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" placeholder="09xxxxxxxxx" />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">توضیحات</label>
+          <label className="text-xs text-slate-500">ØªÙˆØ¶ÛŒØ­Ø§Øª</label>
           <textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-jam-green" />
         </div>
 
         <div className="space-y-1">
-          <label className="text-xs text-slate-500">تصویر کسب و کار</label>
+          <label className="text-xs text-slate-500">ØªØµÙˆÛŒØ± Ú©Ø³Ø¨ Ùˆ Ú©Ø§Ø±</label>
           <input type="file" accept="image/*" onChange={(e) => setImageFile(e.target.files?.[0] ?? null)} className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500" />
         </div>
 
         <div className="space-y-2">
-          <label className="text-xs text-slate-500">موقعیت روی نقشه (روی نقشه کلیک کنید)</label>
+          <label className="text-xs text-slate-500">Ù…ÙˆÙ‚Ø¹ÛŒØª Ø±ÙˆÛŒ Ù†Ù‚Ø´Ù‡ (Ø±ÙˆÛŒ Ù†Ù‚Ø´Ù‡ Ú©Ù„ÛŒÚ© Ú©Ù†ÛŒØ¯)</label>
           <LocationPicker lat={lat} lng={lng} onChange={(la, ln) => { setLat(la); setLng(ln); }} />
-          {lat && lng && <p className="text-xs text-slate-400">موقعیت انتخاب شد: {lat.toFixed(5)}, {lng.toFixed(5)}</p>}
+          {lat && lng && <p className="text-xs text-slate-400">Ù…ÙˆÙ‚Ø¹ÛŒØª Ø§Ù†ØªØ®Ø§Ø¨ Ø´Ø¯: {lat.toFixed(5)}, {lng.toFixed(5)}</p>}
         </div>
 
         <div className="space-y-4 rounded-[22px] border border-slate-200 bg-white p-4 shadow-sm">
           <div>
-            <label className="text-sm font-black text-slate-800">انتخاب اشتراک</label>
-            <p className="mt-1 text-[11px] text-slate-500">مدت و نوع اشتراک را انتخاب کنید.</p>
+            <label className="text-sm font-black text-slate-800">Ø§Ù†ØªØ®Ø§Ø¨ Ø§Ø´ØªØ±Ø§Ú©</label>
+            <p className="mt-1 text-[11px] text-slate-500">Ù…Ø¯Øª Ùˆ Ù†ÙˆØ¹ Ø§Ø´ØªØ±Ø§Ú© Ø±Ø§ Ø§Ù†ØªØ®Ø§Ø¨ Ú©Ù†ÛŒØ¯.</p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -205,11 +210,11 @@ export default function BusinessRegisterPage() {
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-base font-black">{t.name}</p>
-                      {selected && <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-jam-green">انتخاب شده</span>}
+                      {selected && <span className="rounded-full bg-white/80 px-2 py-1 text-[9px] font-black text-jam-green">Ø§Ù†ØªØ®Ø§Ø¨ Ø´Ø¯Ù‡</span>}
                     </div>
                     <div className="mt-2 space-y-1">
                       {t.perks.map((perk) => (
-                        <p key={perk} className="text-[10px] font-bold leading-5 text-slate-800">✓ {perk}</p>
+                        <p key={perk} className="text-[10px] font-bold leading-5 text-slate-800">âœ“ {perk}</p>
                       ))}
                     </div>
                   </button>
@@ -227,7 +232,7 @@ export default function BusinessRegisterPage() {
                           {"badge" in p && p.badge && <span className="absolute -top-2 right-1/2 translate-x-1/2 whitespace-nowrap rounded-full bg-jam-navy px-2 py-0.5 text-[8px] font-black text-white">{p.badge}</span>}
                           <span className="block text-[10px] font-black text-slate-800">{p.label}</span>
                           <span className="mt-2 block text-[13px] font-black text-slate-950">{formatPrice(p.price)}</span>
-                          {p.months > 1 && <span className="mt-1 block text-[8px] font-bold text-slate-600">ماهی {formatPrice(Math.round(p.price / p.months))}</span>}
+                          {p.months > 1 && <span className="mt-1 block text-[8px] font-bold text-slate-600">Ù…Ø§Ù‡ÛŒ {formatPrice(Math.round(p.price / p.months))}</span>}
                         </button>
                       );
                     })}
@@ -238,23 +243,24 @@ export default function BusinessRegisterPage() {
           </div>
 
           <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-            <p>مبلغ <strong className="text-jam-navy">{formatPrice(selectedPlan.price)}</strong> بابت <strong>{selectedTier.name} — {selectedPlan.label}</strong> را به شماره کارت زیر واریز کرده و تصویر فیش واریزی را آپلود کنید.</p>
+            <p>Ù…Ø¨Ù„Øº <strong className="text-jam-navy">{formatPrice(selectedPlan.price)}</strong> Ø¨Ø§Ø¨Øª <strong>{selectedTier.name} â€” {selectedPlan.label}</strong> Ø±Ø§ Ø¨Ù‡ Ø´Ù…Ø§Ø±Ù‡ Ú©Ø§Ø±Øª Ø²ÛŒØ± ÙˆØ§Ø±ÛŒØ² Ú©Ø±Ø¯Ù‡ Ùˆ ØªØµÙˆÛŒØ± ÙÛŒØ´ ÙˆØ§Ø±ÛŒØ²ÛŒ Ø±Ø§ Ø¢Ù¾Ù„ÙˆØ¯ Ú©Ù†ÛŒØ¯.</p>
             <p dir="ltr" className="mt-2 text-center text-lg font-extrabold tracking-widest text-jam-navy">{PAYMENT_CARD_NUMBER}</p>
-            <p className="text-center text-xs text-slate-500">به نام {PAYMENT_CARD_HOLDER}</p>
+            <p className="text-center text-xs text-slate-500">Ø¨Ù‡ Ù†Ø§Ù… {PAYMENT_CARD_HOLDER}</p>
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">فیش واریزی</label>
+            <label className="text-xs text-slate-500">ÙÛŒØ´ ÙˆØ§Ø±ÛŒØ²ÛŒ</label>
             <input required type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files?.[0] ?? null)} className="w-full rounded-xl2 border border-dashed border-slate-300 bg-white px-4 py-4 text-sm text-slate-500" />
           </div>
         </div>
 
         <button type="submit" disabled={loading} className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50">
-          {loading ? "در حال ارسال..." : "ارسال درخواست ثبت"}
+          {loading ? "Ø¯Ø± Ø­Ø§Ù„ Ø§Ø±Ø³Ø§Ù„..." : "Ø§Ø±Ø³Ø§Ù„ Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø«Ø¨Øª"}
         </button>
-        <p className="text-center text-xs text-slate-400">درخواست شما برای بررسی به پنل مدیریت ارسال می‌شود و پس از تایید روی نقشه نمایش داده می‌شود.</p>
+        <p className="text-center text-xs text-slate-400">Ø¯Ø±Ø®ÙˆØ§Ø³Øª Ø´Ù…Ø§ Ø¨Ø±Ø§ÛŒ Ø¨Ø±Ø±Ø³ÛŒ Ø¨Ù‡ Ù¾Ù†Ù„ Ù…Ø¯ÛŒØ±ÛŒØª Ø§Ø±Ø³Ø§Ù„ Ù…ÛŒâ€ŒØ´ÙˆØ¯ Ùˆ Ù¾Ø³ Ø§Ø² ØªØ§ÛŒÛŒØ¯ Ø±ÙˆÛŒ Ù†Ù‚Ø´Ù‡ Ù†Ù…Ø§ÛŒØ´ Ø¯Ø§Ø¯Ù‡ Ù…ÛŒâ€ŒØ´ÙˆØ¯.</p>
       </form>
       )}
     </div>
   );
 }
+
