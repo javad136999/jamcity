@@ -1908,7 +1908,8 @@ export default function AdminPage() {
                     className="space-y-3 rounded-xl2 glass p-4 shadow-soft"
                   >
                     <div className="flex items-center gap-3">
-                      <label
+                      {b.subscription_status === "approved" ? (
+                        <label
                         className="relative flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full bg-white text-2xl shadow"
                         title="برای انتخاب عکس مغازه کلیک کنید"
                       >
@@ -1940,7 +1941,12 @@ export default function AdminPage() {
                             setEditingBusinessImagePreview(URL.createObjectURL(file));
                           }}
                         />
-                      </label>
+                        </label>
+                      ) : (
+                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-2xl shadow">
+                          {b.icon}
+                        </span>
+                      )}
 
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-bold text-slate-800">
