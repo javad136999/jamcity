@@ -121,7 +121,7 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
 
                 <label className="block text-[9px] font-black text-[#4B5A4E]">شماره تماس</label>
                 <input value={phone} onChange={(event) => setPhone(event.target.value)} inputMode="tel" maxLength={11}
-                  placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷" className="mt-1.5 w-full rounded-xl border border-[#DCE5DE] bg-white px-3 py-2.5 text-xs outline-none focus:border-[#147A4B]" />
+                  placeholder="مثلاً ۰۹۱۲۱۲۳۴۵۶۷" className="mt-1.5 w-full rounded-xl border border-[#DCE5DE] bg-white px-3 py-2.5 text-xs text-black outline-none focus:border-[#147A4B]" />
 
                 {needsVehicleCard && (
                   <>
