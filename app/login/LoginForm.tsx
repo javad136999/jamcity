@@ -7,6 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/Feedback";
 import { useAuth } from "@/lib/auth-context";
 
+function normalizePhone(value: string) {
+  return value
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/D/g, "");
+}
+
 function LoginForm() {
   const { city } = useAuth();
   const router = useRouter();
@@ -23,17 +30,36 @@ function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const cleanPhone = phone.replace(/\D/g, "");
-    const email = `${cleanPhone}@wall.jamcity.local`;
+    const cleanPhone = normalizePhone(phone);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    if (!/^09d{9}$/.test(cleanPhone)) {
+      setLoading(false);
+      setError("شماره موبایل صحیح نیست.");
+      return;
+    }
+
+    const resolveResponse = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: cleanPhone }),
+    });
+
+    const resolveData = await resolveResponse.json().catch(() => ({}));
+
+    if (!resolveResponse.ok || !resolveData.email) {
+      setLoading(false);
+      setError(resolveData.error || "حساب کاربری پیدا نشد.");
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: resolveData.email,
       password,
     });
 
     setLoading(false);
 
-    if (error) {
+    if (signInError) {
       setError("شماره موبایل یا رمز عبور اشتباه است.");
       return;
     }
@@ -59,60 +85,37 @@ function LoginForm() {
           {error && <ErrorState message={error} />}
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">
-              شماره موبایل
-            </label>
-            <input
-              type="tel"
-              required
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              dir="ltr"
+            <label className="text-xs text-slate-500">شماره موبایل</label>
+            <input type="tel" required value={phone}
+              onChange={(e) => setPhone(e.target.value)} dir="ltr"
               inputMode="numeric"
               className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
-              placeholder="09123456789"
-            />
+              placeholder="09123456789" />
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">
-              رمز عبور
-            </label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              dir="ltr"
+            <label className="text-xs text-slate-500">رمز عبور</label>
+            <input type="password" required value={password}
+              onChange={(e) => setPassword(e.target.value)} dir="ltr"
               className="w-full rounded-xl2 border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-jam-green"
-              placeholder="••••••••"
-            />
+              placeholder="••••••••" />
           </div>
 
           <div className="flex justify-end">
-            <Link
-              href="/reset-password"
-              className="text-xs text-jam-green hover:underline"
-            >
+            <Link href="/reset-password" className="text-xs text-jam-green hover:underline">
               رمز عبور را فراموش کرده‌اید؟
             </Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading}
+            className="w-full rounded-xl2 bg-jam-green py-3 text-sm font-bold text-white shadow-glow transition hover:brightness-110 disabled:opacity-50">
             {loading ? "در حال ورود..." : "ورود"}
           </button>
         </form>
 
         <p className="text-center text-xs text-slate-400">
           حساب ندارید؟{" "}
-          <Link
-            href="/register"
-            className="font-bold text-jam-green hover:underline"
-          >
+          <Link href="/register" className="font-bold text-jam-green hover:underline">
             ثبت‌نام کنید
           </Link>
         </p>
