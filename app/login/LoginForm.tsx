@@ -7,6 +7,13 @@ import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/Feedback";
 import { useAuth } from "@/lib/auth-context";
 
+function normalizePhone(value: string) {
+  return value
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/\D/g, "");
+}
+
 function LoginForm() {
   const { city } = useAuth();
   const router = useRouter();
@@ -23,17 +30,39 @@ function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const cleanPhone = phone.replace(/\D/g, "");
-    const email = `${cleanPhone}@wall.jamcity.local`;
+    const cleanPhone = normalizePhone(phone);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    if (!/^09\d{9}$/.test(cleanPhone)) {
+      setLoading(false);
+      setError("شماره موبایل صحیح نیست.");
+      return;
+    }
+
+    // Resolve the existing Auth account from the phone/profile first.
+    // This preserves every previously created account even if its internal
+    // Auth email differs from the current wall.jamcity.local convention.
+    const resolveResponse = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: cleanPhone }),
+    });
+
+    const resolveData = await resolveResponse.json().catch(() => ({}));
+
+    if (!resolveResponse.ok || !resolveData.email) {
+      setLoading(false);
+      setError(resolveData.error || "حساب کاربری پیدا نشد.");
+      return;
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: resolveData.email,
       password,
     });
 
     setLoading(false);
 
-    if (error) {
+    if (signInError) {
       setError("شماره موبایل یا رمز عبور اشتباه است.");
       return;
     }
@@ -59,9 +88,7 @@ function LoginForm() {
           {error && <ErrorState message={error} />}
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">
-              شماره موبایل
-            </label>
+            <label className="text-xs text-slate-500">شماره موبایل</label>
             <input
               type="tel"
               required
@@ -75,9 +102,7 @@ function LoginForm() {
           </div>
 
           <div className="space-y-1">
-            <label className="text-xs text-slate-500">
-              رمز عبور
-            </label>
+            <label className="text-xs text-slate-500">رمز عبور</label>
             <input
               type="password"
               required
@@ -90,10 +115,7 @@ function LoginForm() {
           </div>
 
           <div className="flex justify-end">
-            <Link
-              href="/reset-password"
-              className="text-xs text-jam-green hover:underline"
-            >
+            <Link href="/reset-password" className="text-xs text-jam-green hover:underline">
               رمز عبور را فراموش کرده‌اید؟
             </Link>
           </div>
@@ -109,10 +131,7 @@ function LoginForm() {
 
         <p className="text-center text-xs text-slate-400">
           حساب ندارید؟{" "}
-          <Link
-            href="/register"
-            className="font-bold text-jam-green hover:underline"
-          >
+          <Link href="/register" className="font-bold text-jam-green hover:underline">
             ثبت‌نام کنید
           </Link>
         </p>
