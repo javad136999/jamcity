@@ -2011,7 +2011,7 @@ export default function AdminPage() {
                                 {editingBusinessImagePreview || b.image_url ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
-                                    src={editingBusinessImagePreview || b.image_url}
+                                    src={editingBusinessImagePreview || b.image_url || undefined}
                                     alt="عکس مغازه"
                                     className="h-full w-full object-cover"
                                   />
