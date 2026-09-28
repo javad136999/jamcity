@@ -119,6 +119,9 @@ export default function AdminPage() {
     useState<Business[] | null>(null);
 
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [editingBusinessId, setEditingBusinessId] = useState<string | null>(null);
+  const [editingBusinessName, setEditingBusinessName] = useState("");
+  const [editingBusinessIcon, setEditingBusinessIcon] = useState("");
   const [visitCounts, setVisitCounts] = useState<{
     today: number;
     month: number;
@@ -685,6 +688,45 @@ export default function AdminPage() {
         "❌ خطای غیرمنتظره هنگام تغییر وضعیت:\n" +
           (error?.message || "خطای نامشخص")
       );
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function updateBusinessTitleAndIcon(id: string) {
+    setBusyId(id);
+
+    try {
+      const name = editingBusinessName.trim();
+      const icon = editingBusinessIcon.trim();
+
+      if (!name) {
+        alert("❌ عنوان کسب‌وکار نمی‌تواند خالی باشد.");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("businesses")
+        .update({ name, icon: icon || "🏪" })
+        .eq("id", id);
+
+      if (error) {
+        console.error("UPDATE BUSINESS TITLE/ICON ERROR:", error);
+        alert("❌ ذخیره انجام نشد:\n" + error.message);
+        return;
+      }
+
+      setBusinesses((prev) =>
+        (prev ?? []).map((b) =>
+          b.id === id ? { ...b, name, icon: icon || "🏪" } : b
+        )
+      );
+
+      setEditingBusinessId(null);
+      alert("✅ عنوان و آیکون کسب‌وکار ذخیره شد.");
+    } catch (error) {
+      console.error("UPDATE BUSINESS TITLE/ICON UNEXPECTED ERROR:", error);
+      alert("❌ خطای غیرمنتظره هنگام ذخیره.");
     } finally {
       setBusyId(null);
     }
@@ -1832,6 +1874,57 @@ export default function AdminPage() {
                           className="h-40 w-full rounded-xl2 border border-slate-200 object-cover"
                         />
                       </a>
+                    )}
+
+                    {b.subscription_status === "approved" && (
+                      <div className="space-y-2 rounded-xl2 border border-emerald-100 bg-emerald-50/40 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-bold text-slate-600">
+                            ویرایش اطلاعات نمایشی
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (editingBusinessId === b.id) {
+                                setEditingBusinessId(null);
+                                return;
+                              }
+                              setEditingBusinessId(b.id);
+                              setEditingBusinessName(b.name);
+                              setEditingBusinessIcon(b.icon || "🏪");
+                            }}
+                            className="rounded-xl bg-jam-navy px-3 py-2 text-[10px] font-bold text-white"
+                          >
+                            ✏️ ویرایش
+                          </button>
+                        </div>
+
+                        {editingBusinessId === b.id && (
+                          <div className="grid gap-2 sm:grid-cols-[1fr_110px_auto]">
+                            <input
+                              value={editingBusinessName}
+                              onChange={(e) => setEditingBusinessName(e.target.value)}
+                              placeholder="عنوان کسب‌وکار"
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none"
+                            />
+                            <input
+                              value={editingBusinessIcon}
+                              onChange={(e) => setEditingBusinessIcon(e.target.value)}
+                              placeholder="🏪"
+                              maxLength={8}
+                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-lg outline-none"
+                            />
+                            <button
+                              type="button"
+                              disabled={busyId === b.id}
+                              onClick={() => updateBusinessTitleAndIcon(b.id)}
+                              className="rounded-xl bg-jam-green px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                            >
+                              {busyId === b.id ? "در حال ذخیره..." : "💾 ذخیره"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     )}
 
                     <div className="space-y-2 rounded-xl2 border border-slate-200 bg-white/70 p-3">
