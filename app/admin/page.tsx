@@ -1994,28 +1994,72 @@ export default function AdminPage() {
                         </div>
 
                         {editingBusinessId === b.id && (
-                          <div className="grid gap-2 sm:grid-cols-[1fr_110px_auto]">
+                          <div className="space-y-3">
                             <input
                               value={editingBusinessName}
                               onChange={(e) => setEditingBusinessName(e.target.value)}
                               placeholder="عنوان کسب‌وکار"
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none"
                             />
-                            <input
-                              value={editingBusinessIcon}
-                              onChange={(e) => setEditingBusinessIcon(e.target.value)}
-                              placeholder="🏪"
-                              maxLength={8}
-                              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-lg outline-none"
-                            />
-                            <button
-                              type="button"
-                              disabled={busyId === b.id}
-                              onClick={() => updateBusinessTitleAndIcon(b.id)}
-                              className="rounded-xl bg-jam-green px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-                            >
-                              {busyId === b.id ? "در حال ذخیره..." : "💾 ذخیره"}
-                            </button>
+
+                            <div className="flex items-center gap-3">
+                              <label
+                                htmlFor={`business-image-${b.id}`}
+                                className="relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-2xl border-2 border-dashed border-emerald-300 bg-white text-3xl shadow-sm"
+                                title="برای انتخاب عکس مغازه کلیک کنید"
+                              >
+                                {editingBusinessImagePreview || b.image_url ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img
+                                    src={editingBusinessImagePreview || b.image_url}
+                                    alt="عکس مغازه"
+                                    className="h-full w-full object-cover"
+                                  />
+                                ) : (
+                                  <span>{editingBusinessIcon || "🏪"}</span>
+                                )}
+                                <span className="absolute bottom-0 left-0 right-0 bg-black/60 py-1 text-center text-[9px] font-bold text-white">
+                                  📷 تغییر عکس
+                                </span>
+                              </label>
+
+                              <input
+                                id={`business-image-${b.id}`}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null;
+                                  if (!file) return;
+                                  setEditingBusinessImageFile(file);
+                                  setEditingBusinessImagePreview(URL.createObjectURL(file));
+                                }}
+                              />
+
+                              <div className="text-[10px] leading-5 text-slate-500">
+                                <p className="font-bold text-slate-700">عکس مغازه</p>
+                                <p>روی تصویر کلیک کنید و عکس را از گوشی انتخاب کنید.</p>
+                                <p>حداکثر ۵ مگابایت</p>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <input
+                                value={editingBusinessIcon}
+                                onChange={(e) => setEditingBusinessIcon(e.target.value)}
+                                placeholder="🏪"
+                                maxLength={8}
+                                className="w-24 rounded-xl border border-slate-200 bg-white px-3 py-2 text-center text-lg outline-none"
+                              />
+                              <button
+                                type="button"
+                                disabled={busyId === b.id}
+                                onClick={() => updateBusinessTitleAndIcon(b.id)}
+                                className="flex-1 rounded-xl bg-jam-green px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
+                              >
+                                {busyId === b.id ? "در حال ذخیره..." : "💾 ذخیره"}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </div>
