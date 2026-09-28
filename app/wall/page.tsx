@@ -1540,7 +1540,7 @@ function handleReply(message: WallMessage) {
               </div>
             )}
 
-            <div className="h-3 shrink-0" aria-hidden="true" />
+            <div className="h-[78px] shrink-0" aria-hidden="true" />
             <div ref={bottomRef} />
           </div>
 
@@ -1743,6 +1743,142 @@ function handleReply(message: WallMessage) {
           </div>
         </div>
       )}
+
+      {/* =====================================================
+          نوار ارسال پیام
+      ====================================================== */}
+        <div className="fixed inset-x-0 bottom-[-10px] z-40 shrink-0 space-y-1 border-t border-[#E3EBDE] bg-white px-2 pb-[max(6px,env(safe-area-inset-bottom))] pt-1.5 sm:sticky sm:bottom-0 sm:z-20 sm:pb-1.5">
+        {sendError && <ErrorState message={sendError} />}
+        {voiceError && <ErrorState message={voiceError} />}
+        {replyingTo && (
+          <div className="flex items-center justify-between rounded-xl border-r-4 border-[#147A4B] bg-[#F7F9F4] px-3 py-2">
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-[#147A4B]">
+                در حال پاسخ به {replyingTo.profiles?.display_name || "کاربر"}
+              </p>
+              <p className="truncate text-[11px] text-[#8A968C]">
+                {replyingTo.content || "📷 تصویر"}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setReplyingTo(null)}
+              className="mr-2 shrink-0 rounded-full bg-white px-2 py-1 text-xs text-[#66766A] shadow-sm"
+              title="لغو پاسخ"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {recordedBlob ? (
+          // پیش‌نمایش پیام صوتی ضبط‌شده، قبل از ارسال
+          <div className="flex items-center gap-2 rounded-[22px] border border-[#E3EBDE] bg-[#F7F9F4] p-2">
+            <button
+              type="button"
+              onClick={cancelRecordedVoice}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#E2574C] shadow-sm"
+              title="لغو"
+            >
+              ✕
+            </button>
+            <audio controls src={URL.createObjectURL(recordedBlob)} className="h-9 flex-1" />
+            <button
+              type="button"
+              onClick={sendVoiceMessage}
+              disabled={sending}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.35)] disabled:opacity-50"
+              title="ارسال پیام صوتی"
+            >
+              ➤
+            </button>
+          </div>
+        ) : isRecording ? (
+          // در حال ضبط
+          <div className="flex items-center gap-2 rounded-[22px] border border-[#F7D4D0] bg-[#FFF5F4] p-2">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E2574C] text-white">
+              <span className="jam-rec-dot h-2.5 w-2.5 rounded-full bg-white" />
+            </span>
+            <p className="flex-1 text-[12px] font-bold text-[#E2574C]">
+              در حال ضبط صدا... {formatSeconds(recordSeconds)}
+            </p>
+            <button
+              type="button"
+              onClick={stopRecording}
+              className="rounded-full bg-[#E2574C] px-4 py-1.5 text-[11px] font-bold text-white shadow-sm"
+            >
+              ⏹ پایان ضبط
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-end gap-1 rounded-[20px] border border-[#E3EBDE] bg-[#F7F9F4] p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setAdError(null);
+                setShowAdForm(true);
+              }}
+              className="relative flex h-9 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-red-300 bg-gradient-to-r from-red-600 via-red-500 to-rose-600 px-3 text-[11px] font-black text-white shadow-[0_0_8px_rgba(239,68,68,.75),0_0_18px_rgba(239,68,68,.45)] transition hover:scale-[1.03] hover:shadow-[0_0_12px_rgba(239,68,68,.9),0_0_24px_rgba(239,68,68,.55)] active:scale-95"
+              title="ثبت آگهی جدید"
+              aria-label="ثبت آگهی جدید"
+            >
+              <span className="absolute inset-0 animate-pulse bg-white/10" />
+              <span className="relative">ثبت آگهی</span>
+            </button>
+            <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-white text-base shadow-sm transition hover:bg-[#F3FAF5]">
+              📷
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <div className="shrink-0">
+              <EmojiPicker onPick={(emoji) => handleTextChange(text + emoji)} />
+            </div>
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => handleTextChange(e.target.value)}
+              placeholder="پیام خود را بنویسید..."
+              rows={1}
+              className="max-h-28 flex-1 resize-none rounded-xl bg-white px-3 py-2 text-sm text-[#1D2B1F] outline-none placeholder:text-[#B0BAB1]"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            {text.trim() || image ? (
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={sending}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#147A4B] text-white shadow-[0_6px_16px_rgba(20,122,75,.35)] transition hover:brightness-110 disabled:opacity-50"
+              >
+                ➤
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={startRecording}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-base text-[#147A4B] shadow-sm ring-1 ring-[#E3EBDE] transition hover:bg-[#F3FAF5]"
+                title="ضبط پیام صوتی"
+              >
+                🎙️
+              </button>
+            )}
+          </div>
+        )}
+        {image && (
+          <p className="flex items-center gap-1 text-[10px] text-[#8A968C]">
+            📎 تصویر انتخاب شد: {image.name}
+          </p>
+        )}
+      </div>
 
       {/* لایت‌باکس تمام‌صفحهٔ تصویر */}
       {lightboxUrl && (
