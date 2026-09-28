@@ -109,7 +109,7 @@ export default function AdminPage() {
   const supabase = useMemo(() => createClient() as any, []);
 
   const [view, setView] = useState<
-    "businesses" | "stats" | "reports" | "referrals"
+    "businesses" | "stats" | "reports" | "referrals" | "insurance"
   >("businesses");
 
   const [tab, setTab] =
@@ -141,6 +141,30 @@ export default function AdminPage() {
   const [referralStatusFilter, setReferralStatusFilter] = useState<"all" | "pending" | "paid">("all");
   const [referralMessage, setReferralMessage] = useState<{ text: string; type: "ok" | "err" } | null>(null);
   const [referralActionLoading, setReferralActionLoading] = useState<string | null>(null);
+
+  const [insuranceRequests, setInsuranceRequests] = useState<any[] | null>(null);
+  const [insuranceLoading, setInsuranceLoading] = useState(false);
+
+  const INSURANCE_LABELS: Record<string, string> = {
+    "car-third-party-installment": "شخص ثالث خودرو (اقساطی)",
+    "car-body": "بدنه خودرو",
+    "motorcycle-third-party-installment": "شخص ثالث موتور (اقساطی)",
+    "motorcycle-body": "بدنه موتور",
+  };
+
+  const DISCOUNT_LABELS: Record<number, string> = {
+    0: "ندارم",
+    5: "۵٪",
+    10: "۱۰٪",
+    15: "۱۵٪",
+    20: "۲۰٪",
+    25: "۲۵٪",
+    30: "۳۰٪",
+    35: "۳۵٪",
+    40: "۴۰٪",
+    45: "۴۵٪",
+    50: "۵۰٪",
+  };
 
   useEffect(() => {
     if (!isAdmin || view !== "stats") return;
@@ -395,6 +419,41 @@ export default function AdminPage() {
     loadReferrers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAdmin, view]);
+
+  useEffect(() => {
+    if (!isAdmin || view !== "insurance") return;
+
+    async function loadInsuranceRequests() {
+      setInsuranceLoading(true);
+      const { data, error } = await supabase
+        .from("insurance_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("INSURANCE ADMIN ERROR:", error);
+        setInsuranceRequests([]);
+        setInsuranceLoading(false);
+        return;
+      }
+
+      const rows = (data ?? []) as any[];
+      const withImages = await Promise.all(
+        rows.map(async (row) => {
+          if (!row.vehicle_card_image_path) return row;
+          const { data: signed } = await supabase.storage
+            .from("insurance-documents")
+            .createSignedUrl(row.vehicle_card_image_path, 60 * 60);
+          return { ...row, vehicle_card_image_url: signed?.signedUrl ?? null };
+        })
+      );
+
+      setInsuranceRequests(withImages);
+      setInsuranceLoading(false);
+    }
+
+    loadInsuranceRequests();
+  }, [isAdmin, view, supabase]);
 
 
   async function publishAutoAdNow() {
@@ -945,9 +1004,87 @@ export default function AdminPage() {
         >
           🎁 مدیریت معرفی‌ها
         </button>
+        <button
+          type="button"
+          onClick={() => setView("insurance")}
+          className={`rounded-full px-4 py-2 text-sm font-bold transition ${
+            view === "insurance"
+              ? "bg-jam-green text-white shadow-glow"
+              : "bg-black/5 text-slate-500 hover:bg-jam-green hover:text-white"
+          }`}
+        >
+          🛡️ بیمه
+        </button>
+
+
       </div>
 
-      {view === "referrals" ? (
+      {view === "insurance" ? (
+        <div className="space-y-4">
+          <div className="rounded-2xl bg-white/70 p-4 shadow-soft">
+            <h2 className="text-lg font-black text-slate-800">🛡️ درخواست‌های بیمه</h2>
+            <p className="mt-1 text-xs text-slate-500">اطلاعات ثبت‌شده توسط کاربران در این بخش نمایش داده می‌شود.</p>
+          </div>
+
+          {insuranceLoading || insuranceRequests === null ? (
+            <Spinner label="در حال بارگذاری درخواست‌های بیمه..." />
+          ) : insuranceRequests.length === 0 ? (
+            <EmptyState icon="🛡️" title="هنوز درخواست بیمه‌ای ثبت نشده است" />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {insuranceRequests.map((request) => (
+                <div key={request.id} className="space-y-3 rounded-2xl bg-white p-4 shadow-soft">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black text-slate-800">
+                        {INSURANCE_LABELS[request.insurance_type] ?? request.insurance_type}
+                      </p>
+                      <p className="mt-1 text-[10px] text-slate-400">
+                        {new Date(request.created_at).toLocaleString("fa-IR")}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-[9px] font-black text-amber-700">
+                      {request.status === "pending" ? "در انتظار تماس" : request.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="rounded-xl bg-slate-50 p-3">
+                      <p className="text-[9px] text-slate-400">شماره تماس</p>
+                      <p dir="ltr" className="mt-1 font-black text-slate-700">{request.phone}</p>
+                    </div>
+                    <div className="rounded-xl bg-slate-50 p-3">
+                      <p className="text-[9px] text-slate-400">تخفیف قبلی</p>
+                      <p className="mt-1 font-black text-slate-700">
+                        {request.previous_discount_percent == null
+                          ? "نامشخص"
+                          : DISCOUNT_LABELS[request.previous_discount_percent] ?? `${request.previous_discount_percent}٪`}
+                      </p>
+                    </div>
+                  </div>
+
+                  {request.vehicle_card_image_url ? (
+                    <a href={request.vehicle_card_image_url} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={request.vehicle_card_image_url}
+                        alt="کارت خودرو"
+                        className="h-56 w-full rounded-xl border border-slate-200 object-contain bg-slate-50"
+                      />
+                      <p className="mt-1 text-center text-[9px] font-bold text-jam-green">مشاهده عکس کارت خودرو</p>
+                    </a>
+                  ) : (
+                    <div className="rounded-xl bg-slate-50 p-3 text-center text-[9px] text-slate-400">
+                      عکس کارت خودرو ثبت نشده است.
+                    </div>
+                  )}
+
+                  <p className="break-all text-[8px] text-slate-300">شناسه کاربر: {request.user_id}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : view === "referrals" ? (
         <div className="space-y-4">
       {/* Message */}
       {referralMessage && (
