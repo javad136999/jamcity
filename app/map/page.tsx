@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -50,7 +50,7 @@ type Product = {
 };
 
 export default function MapPage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const { city } = useAuth();
 
   const [markers, setMarkers] = useState<MapMarker[] | null>(null);
@@ -60,7 +60,13 @@ export default function MapPage() {
   const [loadingGold, setLoadingGold] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
+      if (!city.id) return;
+      setMarkers(null);
+      setLoadingGold(true);
+
       const { data: businesses } = await supabase
         .from("businesses")
         .select(
@@ -77,7 +83,9 @@ export default function MapPage() {
         .eq("city_id", city.id)
         .not("lat", "is", null)
         .not("lng", "is", null);
-             const businessMarkers: MapMarker[] = (businesses ?? []).map((b) => ({
+      if (cancelled) return;
+
+      const businessMarkers: MapMarker[] = (businesses ?? []).map((b) => ({
         id: `b-${b.id}`,
         lat: b.lat as number,
         lng: b.lng as number,
@@ -106,6 +114,8 @@ export default function MapPage() {
         href: `/ad/${a.id}`,
       }));
 
+      setMarkers([...businessMarkers, ...adMarkers]);
+
       const approvedGold = (businesses ?? []).filter(
         (b) =>
           b.subscription_tier === "gold" &&
@@ -125,13 +135,26 @@ export default function MapPage() {
           .in("business_id", businessIds)
           .order("created_at", { ascending: false });
 
-        setProducts((productData ?? []) as Product[]);
+        if (!cancelled) setProducts((productData ?? []) as Product[]);
+      } else {
+        setProducts([]);
       }
 
-      setLoadingGold(false);
+      if (!cancelled) setLoadingGold(false);
     }
 
-    load();
+    void load().catch((error) => {
+      console.error("MAP LOAD ERROR:", error);
+      if (cancelled) return;
+      setMarkers([]);
+      setGoldBusinesses([]);
+      setProducts([]);
+      setLoadingGold(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [supabase, city.id]);
 
   /*
