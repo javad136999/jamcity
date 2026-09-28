@@ -18,7 +18,7 @@ const items = [
 export default function BottomNav() {
   const pathname = usePathname();
   const { unreadCount, wallUnreadCount } = useAuth();
-  const isWall = pathname === "/wall" || pathname.startsWith("/wall/");
+  const isWall = pathname.split("/").includes("wall");
 
   React.useEffect(() => {
     const main = document.querySelector("main");
