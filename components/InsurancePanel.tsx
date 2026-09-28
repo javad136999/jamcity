@@ -28,7 +28,7 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
 
-  const needsVehicleCard = selected === "car-third-party-installment";
+  const needsVehicleCard = Boolean(selected);
 
   async function submitRequest() {
     setError("");
@@ -36,7 +36,7 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
     if (!selected) return setError("نوع بیمه را انتخاب کنید.");
     const normalizedPhone = phone.replace(/\s/g, "");
     if (!/^09\d{9}$/.test(normalizedPhone)) return setError("شماره تماس را به‌صورت ۱۱ رقمی وارد کنید.");
-    if (needsVehicleCard && !cardFile) return setError("برای شخص ثالث خودرو، عکس کارت خودرو را وارد کنید.");
+    if (needsVehicleCard && !cardFile) return setError("برای ثبت درخواست، عکس کارت خودرو را وارد کنید.");
     if (cardFile && (!cardFile.type.startsWith("image/") || cardFile.size > 6 * 1024 * 1024)) {
       return setError("عکس کارت خودرو باید تصویری و حداکثر ۶ مگابایت باشد.");
     }
@@ -97,7 +97,7 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
           <div className="px-5 py-10 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#E3F3E9] text-3xl">✓</div>
             <h3 className="mt-4 text-base font-black text-[#1D2B1F]">درخواست شما ثبت شد</h3>
-            <p className="mt-2 text-[10px] leading-5 text-[#66766A]">کارشناس بیمه برای پیگیری درخواست با شما تماس می‌گیرد.</p>
+            <p className="mt-2 text-[10px] leading-5 text-[#66766A]">منتظر تماس کارشناس بیمه باشید.</p>
             <button type="button" onClick={onClose} className="mt-5 rounded-xl bg-[#147A4B] px-5 py-2.5 text-[10px] font-black text-white">بستن</button>
           </div>
         ) : (
