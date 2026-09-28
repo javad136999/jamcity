@@ -38,10 +38,9 @@ export default function CitySelector() {
         aria-haspopup="listbox"
         aria-expanded={open}
         title="انتخاب شهر"
-        className="flex h-9 w-9 items-center justify-center gap-1 rounded-full border border-[#CFE3D5] bg-[#F3FAF5] text-base shadow-sm transition hover:bg-[#EAF6EC] focus:outline-none focus:ring-2 focus:ring-jam-green/30 sm:h-10 sm:w-auto sm:px-2.5"
+        className="flex h-9 items-center justify-center gap-1.5 rounded-full border border-[#CFE3D5] bg-[#F3FAF5] px-3 text-[11px] font-black text-[#35704A] shadow-sm transition hover:bg-[#EAF6EC] focus:outline-none focus:ring-2 focus:ring-jam-green/30 sm:h-10 sm:px-3.5"
       >
-        <span aria-hidden="true">🏙️</span>
-        <span className="sr-only text-[10px] font-black text-[#35704A] sm:not-sr-only">انتخاب شهر</span>
+        <span>انتخاب شهر</span>
       </button>
 
       {open && (
