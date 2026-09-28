@@ -35,7 +35,7 @@ function saveInstallState() {
   try {
     window.localStorage.setItem(INSTALL_STATE_KEY, "true");
   } catch {
-    // Ignore storage errors; standalone/appinstalled checks still protect the UI.
+    // Ignore storage errors.
   }
 }
 
@@ -50,17 +50,13 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
       setAlreadyInstalled(true);
       return;
     }
-    // نصب بودن PWA در خود صفحهٔ مرورگر همیشه با display-mode=standalone
-    // قابل تشخیص نیست؛ بنابراین فلگ localStorage را تا زمان دریافت
-    // سیگنال واقعیِ beforeinstallprompt نگه می‌داریم.
-    const savedInstallState = hasSavedInstallState();
 
-    // در صفحه اصلی، اگر قبلاً نصب ثبت شده، ابتدا دکمه مخفی می‌ماند.
-    // بعد از حذف PWA، مرورگر دوباره beforeinstallprompt را می‌فرستد و
-    // همان‌جا فلگ قدیمی پاک و دکمه دوباره نمایش داده می‌شود.
-    if (placement === "home" && !savedInstallState) setShowButton(true);
+    // iPhone/iPad do not expose beforeinstallprompt; keep the install button
+    // available so the user can open the native Add to Home Screen guide.
+    if (isIOS() && !hasSavedInstallState()) {
+      setShowButton(true);
+    }
 
-    // اندروید/کروم/دسکتاپ: مرورگر رویداد beforeinstallprompt را می‌فرستد
     function handleBeforeInstallPrompt(e: Event) {
       e.preventDefault();
 
@@ -69,9 +65,9 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         return;
       }
 
-      // اگر نصب قبلاً در این مرورگر ثبت شده، این رویداد به تنهایی
-      // نباید باعث نمایش مجدد دکمه در Refresh شود؛ بعضی مرورگرها
-      // beforeinstallprompt را حتی بعد از نصب هم دوباره ارسال می‌کنند.
+      // The browser is explicitly telling us that installation is available.
+      // Only now do we show the install button; this prevents a dead button
+      // from appearing before the browser has supplied a prompt event.
       if (hasSavedInstallState()) {
         setAlreadyInstalled(true);
         setShowButton(false);
@@ -79,8 +75,8 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         return;
       }
 
-      setAlreadyInstalled(false);
       setDeferredPrompt(e as BeforeInstallPromptEvent);
+      setAlreadyInstalled(false);
       setShowButton(true);
     }
 
@@ -96,13 +92,13 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         saveInstallState();
         setAlreadyInstalled(true);
         setShowButton(false);
+        setDeferredPrompt(null);
       }
     }
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-
 
     return () => {
       window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
@@ -118,23 +114,28 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
     }
 
     if (!deferredPrompt) {
-      if (typeof window !== "undefined") {
-        window.alert("برای نصب جم‌سیتی، از منوی مرورگر گزینه «افزودن به صفحه اصلی» یا «Install app» را انتخاب کنید.");
-      }
+      // Installation is not currently available in this browser/device.
+      // Do not pretend the button will install the app.
       return;
     }
 
-    await deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
 
-    // بعد از تأیید نصب، وضعیت را دائمی ذخیره می‌کنیم تا با رفرش دوباره دکمه برنگردد.
-    if (outcome === "accepted") {
-      saveInstallState();
-      setAlreadyInstalled(true);
+      if (outcome === "accepted") {
+        // Hide immediately after the user accepts. appinstalled below is
+        // still the authoritative signal and also persists the state.
+        saveInstallState();
+        setAlreadyInstalled(true);
+        setShowButton(false);
+      } else {
+        // If the user cancels, keep the button available for a later try.
+        setShowButton(true);
+      }
+    } finally {
+      setDeferredPrompt(null);
     }
-
-    setDeferredPrompt(null);
-    setShowButton(false);
   }
 
   if (alreadyInstalled || !showButton) return null;
@@ -184,8 +185,8 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
       <style jsx>{`
         .jam-install-home { animation: jamInstallHome 2.2s ease-in-out infinite; }
         @keyframes jamInstallHome {
-          0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 12px 40px rgba(220,38,38,.30), 0 0 0 5px rgba(255,255,255,.78); }
-          50% { transform: translateX(-50%) scale(1.045); box-shadow: 0 16px 48px rgba(220,38,38,.46), 0 0 0 7px rgba(255,255,255,.86), 0 0 28px rgba(255,70,70,.55); }
+          0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 12px 40px rgba(220,38,76,.30), 0 0 0 5px rgba(255,255,255,.78); }
+          50% { transform: translateX(-50%) scale(1.045); box-shadow: 0 16px 48px rgba(220,38,76,.46), 0 0 0 7px rgba(255,255,255,.86), 0 0 28px rgba(255,70,70,.55); }
         }
         @media (max-width: 640px) {
           .jam-install-home { top: 156px; max-width: calc(100vw - 28px); padding: 15px 24px; border-radius: 20px; }
@@ -193,8 +194,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
         @media (prefers-reduced-motion: reduce) { .jam-install-home { animation: none; } }
 
         @keyframes jamInstallGlow {
-          0%,
-          100% {
+          0%, 100% {
             box-shadow: 0 0 10px 2px rgba(16, 185, 129, 0.5),
               0 0 0 1px rgba(16, 185, 129, 0.35);
           }
@@ -203,9 +203,7 @@ export default function InstallAppButton({ placement = "header" }: { placement?:
               0 0 0 1px rgba(16, 185, 129, 0.6);
           }
         }
-        .jam-install-glow {
-          animation: jamInstallGlow 2.1s ease-in-out infinite;
-        }
+        .jam-install-glow { animation: jamInstallGlow 2.1s ease-in-out infinite; }
       `}</style>
     </>
   );
