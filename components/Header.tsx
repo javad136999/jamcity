@@ -81,7 +81,17 @@ export default function Header() {
             <span>پروفایل</span>
           </Link>
         ) : (
-          <div className="relative shrink-0" ref={menuRef}>
+          <div className="relative flex shrink-0 items-center gap-1" ref={menuRef}>
+            <button
+              type="button"
+              onClick={() => setMenuOpen(true)}
+              aria-label={`انتخاب شهر: ${city.name}`}
+              title={`شهر فعال: ${city.name}`}
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-[#CFE3D5] bg-[#F3FAF5] text-base shadow-sm transition hover:bg-[#EAF6EC] sm:h-10 sm:w-10"
+            >
+              🏙️
+            </button>
+
             <button
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
