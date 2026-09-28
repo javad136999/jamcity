@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { FALLBACK_JAM_CITY, type City } from "@/lib/cities";
 
 type Profile = {
   id: string;
@@ -21,6 +22,7 @@ type Profile = {
   banned: boolean;
   is_admin: boolean;
   created_at: string;
+  city_id: string;
 };
 
 type AuthContextValue = {
@@ -32,6 +34,9 @@ type AuthContextValue = {
   isAdmin: boolean;
   markWallRead: (seenAt?: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  city: City;
+  cities: City[];
+  setCity: (cityId: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue>({
@@ -43,12 +48,17 @@ const AuthContext = createContext<AuthContextValue>({
   isAdmin: false,
   markWallRead: async () => {},
   refreshProfile: async () => {},
+  city: FALLBACK_JAM_CITY,
+  cities: [],
+  setCity: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [cities, setCities] = useState<City[]>([]);
+  const [city, setCityState] = useState<City>(FALLBACK_JAM_CITY);
   const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
   const [wallUnreadCount, setWallUnreadCount] = useState(0);
@@ -61,6 +71,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .eq("id", uid)
         .maybeSingle();
       const p = data as Profile | null;
+      if (p?.city_id) {
+        const { data: cityRow } = await supabase.from("cities").select("*").eq("id", p.city_id).maybeSingle();
+        if (cityRow) setCityState(cityRow as City);
+      }
       if (p?.banned) {
         setProfile(p);
         await supabase.auth.signOut();
@@ -160,12 +174,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [supabase, user]
   );
 
+  const setCity = useCallback(async (cityId: string) => {
+    if (!user) return;
+    const selected = cities.find((item) => item.id === cityId);
+    if (!selected) return;
+    const { error } = await supabase.from("profiles").update({ city_id: cityId }).eq("id", user.id);
+    if (error) { console.error("city update error", error); return; }
+    setCityState(selected);
+    await loadProfile(user.id);
+  }, [supabase, user, cities, loadProfile]);
+
   const refreshProfile = useCallback(async () => {
     if (user) await loadProfile(user.id);
   }, [user, loadProfile]);
 
   useEffect(() => {
     let mounted = true;
+
+    supabase.from("cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
+      if (data?.length) setCities(data as City[]);
+    });
 
     supabase.auth.getUser().then(({ data }) => {
       if (!mounted) return;
@@ -252,6 +280,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAdmin,
         markWallRead,
         refreshProfile,
+        city,
+        cities,
+        setCity,
       }}
     >
       {children}
