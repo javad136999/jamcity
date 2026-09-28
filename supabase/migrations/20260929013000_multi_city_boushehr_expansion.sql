@@ -1,36 +1,31 @@
 -- Additive expansion of the existing Jam/Kangan multi-city schema.
 -- Existing city IDs and city assignments are intentionally preserved.
+-- Map bounds are deliberately city-scale: each city opens on its urban area,
+-- not the surrounding county/region.
 
 alter table public.cities
   add column if not exists province text not null default 'بوشهر';
 
--- One canonical row per physical city. «دیر» و «دیّر» نگارش‌های یک شهرند؛
--- مسیرهای جایگزین در lib/cities.ts به slug=deyr نگاشت می‌شوند.
-with city_seed(name, slug, lat, lng) as (
+with city_seed(name, slug, lat, lng, zoom, min_zoom, lat_span, lng_span) as (
   values
-    ('جم',          'jam',          27.8194::double precision, 52.3242::double precision),
-    ('عسلویه',      'assaluyeh',    27.4760, 52.6090),
-    ('کنگان',       'kangan',       27.8343, 52.0631),
-    ('دیر',         'deyr',         27.8390, 51.9388),
-    ('بوشهر',       'bushehr',      28.9234, 50.8203),
-    ('برازجان',     'borazjan',     29.2670, 51.2180),
-    ('خورموج',      'khormuj',      28.6530, 51.3760),
-    ('گناوه',       'ganaveh',      29.5790, 50.5170),
-    ('دیلم',        'deylam',       30.1180, 50.1690),
-    ('اهرم',        'ahram',        28.8830, 51.2750),
-    ('کلمه',        'kalameh',      28.3100, 51.5100),
-    ('نخل تقی',     'nakhl-taqi',   27.5000, 52.5900),
-    ('چاه مبارک',   'chah-mobarak', 27.1400, 52.3200),
-    ('سیراف',       'siraf',        27.6600, 52.3450)
+    ('جم',          'jam',          27.8194::double precision, 52.3242::double precision, 14, 12, 0.0400, 0.0500),
+    ('عسلویه',      'assaluyeh',    27.4760, 52.6090, 15, 13, 0.0200, 0.0300),
+    ('کنگان',       'kangan',       27.8343, 52.0631, 15, 13, 0.0250, 0.0350),
+    ('دیر',         'deyr',         27.8390, 51.9388, 15, 13, 0.0220, 0.0300),
+    ('بوشهر',       'bushehr',      28.9234, 50.8203, 14, 12, 0.0500, 0.0650),
+    ('برازجان',     'borazjan',     29.2670, 51.2180, 14, 12, 0.0400, 0.0550),
+    ('خورموج',      'khormuj',      28.6530, 51.3760, 15, 13, 0.0250, 0.0350),
+    ('گناوه',       'ganaveh',      29.5790, 50.5170, 14, 12, 0.0350, 0.0500),
+    ('دیلم',        'deylam',       30.1180, 50.1690, 14, 12, 0.0300, 0.0400),
+    ('اهرم',        'ahram',        28.8830, 51.2750, 15, 13, 0.0220, 0.0300),
+    ('کلمه',        'kalameh',      28.3100, 51.5100, 15, 13, 0.0200, 0.0250),
+    ('نخل تقی',     'nakhl-taqi',   27.5000, 52.5900, 15, 13, 0.0180, 0.0250),
+    ('چاه مبارک',   'chah-mobarak', 27.1400, 52.3200, 15, 13, 0.0180, 0.0250),
+    ('سیراف',       'siraf',        27.6600, 52.3450, 15, 13, 0.0180, 0.0300)
 ), city_rows as (
   select
-    name,
-    slug,
-    lat as center_lat,
-    lng as center_lng,
-    case when slug in ('bushehr', 'borazjan', 'ganaveh', 'deylam') then 13 else 14 end as zoom,
-    case when slug in ('bushehr', 'borazjan', 'ganaveh', 'deylam') then 0.10 else 0.055 end as lat_span,
-    case when slug in ('bushehr', 'borazjan', 'ganaveh', 'deylam') then 0.12 else 0.075 end as lng_span
+    name, slug, lat as center_lat, lng as center_lng, zoom, min_zoom,
+    18 as max_zoom, lat_span, lng_span
   from city_seed
 )
 insert into public.cities (
@@ -38,12 +33,22 @@ insert into public.cities (
   south_lat, west_lng, north_lat, east_lng, is_active
 )
 select
-  name, slug, 'بوشهر', center_lat, center_lng, zoom, 10, 18,
+  name, slug, 'بوشهر', center_lat, center_lng, zoom, min_zoom, max_zoom,
   center_lat - lat_span, center_lng - lng_span,
   center_lat + lat_span, center_lng + lng_span, true
 from city_rows
 on conflict (slug) do update
-set province = excluded.province,
+set name = excluded.name,
+    province = excluded.province,
+    center_lat = excluded.center_lat,
+    center_lng = excluded.center_lng,
+    zoom = excluded.zoom,
+    min_zoom = excluded.min_zoom,
+    max_zoom = excluded.max_zoom,
+    south_lat = excluded.south_lat,
+    west_lng = excluded.west_lng,
+    north_lat = excluded.north_lat,
+    east_lng = excluded.east_lng,
     is_active = true;
 
 -- Events are city-scoped. Existing events remain assigned to Jam, matching
@@ -98,7 +103,6 @@ create policy cities_admin_update
 grant select on public.cities to anon, authenticated;
 grant insert, update on public.cities to authenticated;
 
--- Narrow RPC avoids granting broad profile-update rights to administrators.
 create or replace function public.admin_set_user_city(p_user_id uuid, p_city_id uuid)
 returns void
 language plpgsql
