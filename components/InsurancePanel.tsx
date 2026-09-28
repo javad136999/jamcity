@@ -84,8 +84,8 @@ export default function InsurancePanel({ userId, onClose }: { userId: string | n
   }
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end justify-center bg-[#1D2B1F]/45 p-0 backdrop-blur-sm sm:items-center sm:p-4" dir="rtl" onClick={onClose}>
-      <div className="w-full max-w-lg overflow-hidden rounded-t-[28px] border border-[#E3EBDE] bg-white shadow-2xl sm:rounded-[28px]" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-x-0 top-[58px] bottom-0 z-[80] flex items-start justify-center overflow-y-auto bg-[#1D2B1F]/45 p-2 backdrop-blur-sm sm:top-[60px] sm:p-4" dir="rtl" onClick={onClose}>
+      <div className="w-full max-w-lg overflow-hidden rounded-[24px] border border-[#E3EBDE] bg-white shadow-2xl" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-center justify-between border-b border-[#E3EBDE] bg-[#F7FAF6] px-4 py-3">
           <div>
             <h2 className="text-sm font-black text-[#1D2B1F]">بیمه جم</h2>
