@@ -67,7 +67,7 @@ export const BUSINESS_CATEGORIES = [
   { slug: "florist", name: "گل‌فروشی", icon: "🌷" },
   { slug: "pet", name: "پت‌شاپ و خدمات حیوانات", icon: "🐾" },
   { slug: "laundry", name: "خشکشویی و شست‌وشو", icon: "👔" },
-  { slug: "delivery", name: "پیک و ارسال", icon: "🛵" },
+  { slug: "delivery", name: "حمل و نقل", icon: "🚚" },
   { slug: "services", name: "خدمات عمومی", icon: "🛠️" },
 
   { slug: "shop", name: "فروشگاه", icon: "🛍️" },
