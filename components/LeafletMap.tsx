@@ -284,10 +284,17 @@ export default function LeafletMap({ markers, city }: { markers: MapMarker[]; ci
           });
         }
       } else {
-        map.fitBounds(JAM_BOUNDS, {
-          animate: false,
-          padding: [18, 18],
-        });
+        // در حالت چندشهری، وقتی مارکری وجود ندارد، محدوده همان شهر فعال را نشان بده.
+        map.fitBounds(
+          [
+            [city.south_lat, city.west_lng],
+            [city.north_lat, city.east_lng],
+          ],
+          {
+            animate: false,
+            padding: [18, 18],
+          }
+        );
       }
 
       spreadMarkers();
