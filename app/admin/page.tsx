@@ -788,44 +788,6 @@ export default function AdminPage() {
     }
   }
 
-    setBusyId(id);
-
-    try {
-      const name = editingBusinessName.trim();
-      const icon = editingBusinessIcon.trim();
-
-      if (!name) {
-        alert("❌ عنوان کسب‌وکار نمی‌تواند خالی باشد.");
-        return;
-      }
-
-      const { error } = await supabase
-        .from("businesses")
-        .update({ name, icon: icon || "🏪" })
-        .eq("id", id);
-
-      if (error) {
-        console.error("UPDATE BUSINESS TITLE/ICON ERROR:", error);
-        alert("❌ ذخیره انجام نشد:\n" + error.message);
-        return;
-      }
-
-      setBusinesses((prev) =>
-        (prev ?? []).map((b) =>
-          b.id === id ? { ...b, name, icon: icon || "🏪" } : b
-        )
-      );
-
-      setEditingBusinessId(null);
-      alert("✅ عنوان و آیکون کسب‌وکار ذخیره شد.");
-    } catch (error) {
-      console.error("UPDATE BUSINESS TITLE/ICON UNEXPECTED ERROR:", error);
-      alert("❌ خطای غیرمنتظره هنگام ذخیره.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
   async function updateBusinessCategory(
     id: string,
     category: string,
