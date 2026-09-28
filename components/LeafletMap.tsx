@@ -133,7 +133,7 @@ export default function LeafletMap({ markers, city }: { markers: MapMarker[]; ci
       }
       map = null;
     };
-  }, []);
+  }, [city]);
 
   useEffect(() => {
     let cancelled = false;
