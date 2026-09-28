@@ -5,8 +5,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ErrorState } from "@/components/Feedback";
+import { useAuth } from "@/lib/auth-context";
+
+function normalizePhone(value: string) {
+  return value
+    .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
+    .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)))
+    .replace(/\D/g, "");
+}
 
 function LoginForm() {
+  const { city } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const supabase = createClient();
@@ -21,19 +30,40 @@ function LoginForm() {
     setError(null);
     setLoading(true);
 
-    const cleanPhone = phone.replace(/\D/g, "");
-    const email = `${cleanPhone}@wall.jamcity.local`;
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    setLoading(false);
-
-    if (error) {
-      setError("شماره موبایل یا رمز عبور اشتباه است.");
+    const cleanPhone = normalizePhone(phone);
+    if (!/^09\d{9}$/.test(cleanPhone)) {
+      setLoading(false);
+      setError("شماره موبایل صحیح نیست.");
       return;
+    }
+
+    try {
+      const resolveResponse = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone }),
+      });
+      const resolveData = await resolveResponse.json().catch(() => ({}));
+
+      if (!resolveResponse.ok || !resolveData.email) {
+        setError(resolveData.error || "حساب کاربری پیدا نشد.");
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: resolveData.email,
+        password,
+      });
+
+      if (signInError) {
+        setError("شماره موبایل یا رمز عبور اشتباه است.");
+        return;
+      }
+    } catch {
+      setError("خطا در ورود. دوباره تلاش کنید.");
+      return;
+    } finally {
+      setLoading(false);
     }
 
     const redirect = params.get("redirect") || "/";
@@ -45,7 +75,7 @@ function LoginForm() {
     <div className="fade-in mx-auto flex max-w-md flex-col gap-6 py-10">
       <div className="text-center">
         <h1 className="text-2xl font-extrabold text-slate-800">
-          ورود به شهر جم
+          ورود به شهر {city.name}
         </h1>
         <p className="mt-1 text-sm text-slate-400">
           برای ورود، شماره موبایل و رمز عبور خود را وارد کنید
