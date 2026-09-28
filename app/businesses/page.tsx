@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { BUSINESS_CATEGORIES, businessCategoryLabel, tierMeta } from "@/lib/constants";
 import { CardSkeleton, EmptyState } from "@/components/Feedback";
 import type { Database } from "@/lib/supabase/types";
@@ -11,6 +12,7 @@ type Business = Database["public"]["Tables"]["businesses"]["Row"];
 
 export default function BusinessesPage() {
   const supabase = createClient();
+  const { city } = useAuth();
   const [businesses, setBusinesses] = useState<Business[] | null>(null);
   const [category, setCategory] = useState("all");
   const [query, setQuery] = useState("");
@@ -22,6 +24,7 @@ export default function BusinessesPage() {
         .from("businesses")
         .select("*")
         .eq("subscription_status", "approved")
+        .eq("city_id", city.id)
         .order("name");
       if (category !== "all") builder = builder.eq("category", category);
       if (query.trim()) builder = builder.ilike("name", `%${query.trim()}%`);
@@ -29,13 +32,13 @@ export default function BusinessesPage() {
       setBusinesses((data as Business[]) ?? []);
     }, 250);
     return () => clearTimeout(t);
-  }, [category, query, supabase]);
+  }, [category, query, supabase, city.id]);
 
   return (
     <div className="fade-in space-y-6 pt-3">
       <div>
-        <h1 className="text-2xl font-extrabold text-slate-800">کسب‌وکارهای جم</h1>
-        <p className="text-sm text-slate-500">رستوران، فروشگاه و خدمات شهر جم</p>
+        <h1 className="text-2xl font-extrabold text-slate-800">کسب‌وکارهای {city.name}</h1>
+        <p className="text-sm text-slate-500">رستوران، فروشگاه و خدمات شهر {city.name}</p>
       </div>
 
       <div className="space-y-3 rounded-xl2 glass p-4 shadow-soft">
