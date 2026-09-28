@@ -122,6 +122,7 @@ export default function WallPage() {
       const { data, error } = await supabase
         .from("wall_messages")
         .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
         .lt("created_at", cursor)
         .order("created_at", { ascending: false })
         .limit(20);
@@ -151,6 +152,7 @@ export default function WallPage() {
           ? supabase
               .from("wall_messages")
               .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
               .in("id", missingReplyIds)
           : Promise.resolve({ data: [] as unknown as WallMessage[] }),
       ]);
@@ -238,6 +240,7 @@ export default function WallPage() {
     const { data } = await supabase
       .from("wall_messages")
       .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,is_pinned,pinned_at")
+      .eq("city_id", city.id)
       .eq("city_id", city.id)
       .eq("id", message.id)
       .maybeSingle();
@@ -466,6 +469,7 @@ export default function WallPage() {
         .from("ads")
         .insert({
           user_id: user.id,
+          city_id: city.id,
           title: adTitle.trim(),
           description: adDescription.trim(),
           price: adPrice ? Number(adPrice) : null,
@@ -636,11 +640,13 @@ export default function WallPage() {
         supabase
           .from("wall_messages")
           .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
           .order("created_at", { ascending: false })
           .limit(20),
         (supabase as any)
           .from("wall_messages")
           .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
           .eq("is_pinned", true)
           .order("pinned_at", { ascending: false })
           .limit(1),
@@ -684,6 +690,7 @@ export default function WallPage() {
         ? await supabase
             .from("wall_messages")
             .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,reply_to,is_pinned,pinned_at")
+           .eq("city_id", city.id)
             .in("id", missingReplyIds)
         : { data: [] };
 
