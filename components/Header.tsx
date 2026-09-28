@@ -6,10 +6,12 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
 import CitySelector from "@/components/CitySelector";
+import InsurancePanel from "@/components/InsurancePanel";
 
 export default function Header() {
   const { user, profile, unreadCount, wallUnreadCount, isAdmin, city } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [insuranceOpen, setInsuranceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -35,7 +37,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-red-100 bg-white">
       <div
-        className="mx-auto flex max-w-6xl items-center justify-between gap-1.5 px-2.5 py-2 sm:gap-2 sm:px-4"
+        className="relative mx-auto flex max-w-6xl items-center justify-between gap-1.5 px-2.5 py-2 sm:gap-2 sm:px-4"
         dir="rtl"
       >
         <a
@@ -68,7 +70,19 @@ export default function Header() {
           <span className="sr-only sm:not-sr-only">اخبار</span>
         </Link>
 
-        <CitySelector />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          <CitySelector />
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setInsuranceOpen(true)}
+          aria-label="بیمه"
+          title="بیمه"
+          className="absolute left-2 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-[#CBE2D1] bg-[#F2FAF4] text-base shadow-sm transition hover:bg-[#EAF6EC] focus:outline-none focus:ring-2 focus:ring-jam-green/30 sm:left-4 sm:h-10 sm:w-10"
+        >
+          <span aria-hidden="true">🛡️</span>
+        </button>
 
         {!user ? (
           <Link
@@ -121,6 +135,7 @@ export default function Header() {
         )}
       </div>
 
+      {insuranceOpen && <InsurancePanel userId={user?.id ?? null} onClose={() => setInsuranceOpen(false)} />}
 
       {!pathname.startsWith("/wall") && (
         <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
