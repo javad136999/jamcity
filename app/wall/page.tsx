@@ -1040,7 +1040,7 @@ function handleReply(message: WallMessage) {
               💬
             </span>
             <div className="text-center">
-              <h1 className="text-[13px] font-black text-[#1D2B1F]">دیوار شهر جم</h1>
+              <h1 className="text-[13px] font-black text-[#1D2B1F]">دیوار شهر {city.name}</h1>
               <p className="text-[9px] font-bold text-[#E2574C]">
                 {memberCount !== null ? `${memberCount.toLocaleString("fa-IR")} عضو` : "عضو"}
               </p>
@@ -1612,7 +1612,7 @@ function handleReply(message: WallMessage) {
             <div className="mb-4 flex items-center justify-between">
               <div>
                 <h2 className="text-base font-black text-[#1D2B1F]">ثبت آگهی جدید</h2>
-                <p className="mt-0.5 text-[10px] text-[#8A968C]">آگهی خود را برای دیوار جم ثبت کنید</p>
+                <p className="mt-0.5 text-[10px] text-[#8A968C]">آگهی خود را برای دیوار {city.name} ثبت کنید</p>
               </div>
               <button
                 type="button"
