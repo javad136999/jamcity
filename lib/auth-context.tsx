@@ -192,7 +192,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     supabase.from("cities").select("*").eq("is_active", true).order("name").then(({ data }) => {
-      if (data?.length) setCities(data as City[]);
+      const activeCities = (data ?? []) as City[];
+      if (activeCities.length) {
+        setCities(activeCities);
+        setCityState((current) => {
+          if (current.id && activeCities.some((item) => item.id === current.id)) return current;
+          return activeCities.find((item) => item.slug === "jam") ?? activeCities[0];
+        });
+      }
     });
 
     supabase.auth.getUser().then(({ data }) => {
