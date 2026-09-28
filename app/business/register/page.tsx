@@ -24,7 +24,7 @@ const LocationPicker = dynamic(() => import("@/components/LocationPicker"), {
 });
 
 export default function BusinessRegisterPage() {
-  const { user, city, loading: authLoading } = useAuth();
+  const { user, profile, city, loading: authLoading } = useAuth();
   const router = useRouter();
   const supabase = createClient();
 
