@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import {
   BUSINESS_CATEGORIES,
   businessCategoryLabel,
@@ -50,6 +51,7 @@ type Product = {
 
 export default function MapPage() {
   const supabase = createClient();
+  const { city } = useAuth();
 
   const [markers, setMarkers] = useState<MapMarker[] | null>(null);
   const [goldBusinesses, setGoldBusinesses] = useState<GoldBusiness[]>([]);
@@ -123,7 +125,7 @@ export default function MapPage() {
     }
 
     load();
-  }, [supabase]);
+  }, [supabase, city.id]);
 
   /*
    * تعویض خودکار کارت‌ها
@@ -179,7 +181,7 @@ export default function MapPage() {
       {markers === null ? (
         <Spinner label="در حال بارگذاری موقعیت‌ها..." />
       ) : (
-        <LeafletMap markers={markers} />
+        <LeafletMap markers={markers} city={city} />
       )}
 
       {/* =====================================================
