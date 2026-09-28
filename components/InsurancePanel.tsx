@@ -19,7 +19,7 @@ const OPTIONS: Array<{ type: InsuranceType; title: string; icon: string; tone: s
 const DISCOUNTS = ["ندارم", "۵٪", "۱۰٪", "۱۵٪", "۲۰٪", "۲۵٪", "۳۰٪", "۳۵٪", "۴۰٪", "۴۵٪", "۵۰٪", "نامشخص"];
 
 export default function InsurancePanel({ userId, onClose }: { userId: string | null; onClose: () => void }) {
-  const supabase = createClient();
+  const supabase = createClient() as any;
   const [selected, setSelected] = useState<InsuranceType | null>(null);
   const [phone, setPhone] = useState("");
   const [discount, setDiscount] = useState("");
