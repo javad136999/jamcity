@@ -63,10 +63,14 @@ export default function Header() {
           <span>اخبار</span>
         </Link>
 
-        <span className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#CBE2D1] bg-[#F2FAF4] px-2 py-1.5 text-[9px] font-black text-[#35704A] sm:h-10 sm:px-3 sm:text-[11px]">
+        <button
+          type="button"
+          onClick={() => setInsuranceOpen(true)}
+          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#CBE2D1] bg-[#F2FAF4] px-2 py-1.5 text-[9px] font-black text-[#35704A] shadow-sm transition hover:bg-[#EAF6EC] sm:h-10 sm:px-3 sm:text-[11px]"
+        >
           <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DCEFD9] text-xs">🛡️</span>
           <span>بیمه</span>
-        </span>
+        </button>
 
         {!user ? (
           <Link
