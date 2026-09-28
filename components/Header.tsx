@@ -38,39 +38,40 @@ export default function Header() {
       >
         <a
           href="tel:09030827988"
-          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-white px-2 py-1.5 text-[9px] font-bold text-red-500 shadow-sm transition hover:bg-red-50 sm:px-3 sm:text-[11px]"
+          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-[#FFF5F5] px-2 py-1.5 text-[9px] font-black text-red-500 shadow-sm transition hover:bg-red-50 sm:h-10 sm:px-3 sm:text-[11px]"
         >
-          ☎️ <span className="sm:hidden">تماس</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 text-xs">☎️</span>
+          <span className="sm:hidden">تماس</span>
           <span className="hidden sm:inline">تماس با مدیر</span>
         </a>
 
         <Link
           href="/business/manage"
-          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-[#D8B66A] bg-white px-2 py-1.5 text-[9px] font-black text-[#8B691F] shadow-sm transition hover:bg-[#FFF9E8] sm:px-3 sm:py-2 sm:text-[11px]"
+          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-xl border border-[#D8B66A] bg-[#FFF9E8] px-2 py-1.5 text-[9px] font-black text-[#8B691F] shadow-sm transition hover:bg-[#FFF3C9] sm:h-10 sm:px-3 sm:text-[11px]"
         >
-          <span className="flex h-5 w-5 items-center justify-center rounded-md text-[11px] sm:h-6 sm:w-6 sm:text-sm">
-            🏬
-          </span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F5E5B7] text-xs">🏬</span>
           <span>پنل کسب‌وکار</span>
         </Link>
 
         <Link
           href="/news"
-          className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#E3EBDE] bg-white px-2 py-1.5 text-[9px] font-black text-[#4B5A4E] shadow-sm transition hover:bg-[#F3F8F2] sm:px-3 sm:text-[11px]"
+          className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#BFD7F2] bg-[#F3F8FF] px-2 py-1.5 text-[9px] font-black text-[#35658F] shadow-sm transition hover:bg-[#EAF3FF] sm:h-10 sm:px-3 sm:text-[11px]"
         >
-          📰 <span>اخبار</span>
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DCEBFA] text-xs">📰</span>
+          <span>اخبار</span>
         </Link>
 
-        <span className="flex shrink-0 items-center whitespace-nowrap rounded-full border border-[#E3EBDE] bg-white px-2 py-1.5 text-[9px] font-black text-[#4B5A4E] sm:px-3 sm:text-[11px]">
-          بیمه
+        <span className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#CBE2D1] bg-[#F2FAF4] px-2 py-1.5 text-[9px] font-black text-[#35704A] sm:h-10 sm:px-3 sm:text-[11px]">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#DCEFD9] text-xs">🛡️</span>
+          <span>بیمه</span>
         </span>
 
         {!user ? (
           <Link
             href="/login"
-            className="flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-red-200 bg-white px-2 py-1.5 text-[9px] font-bold text-red-500 shadow-sm transition hover:bg-red-50 sm:px-2.5 sm:text-[11px]"
+            className="flex h-9 shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-[#D7DFD9] bg-[#F7F9F7] px-2 py-1.5 text-[9px] font-black text-[#4B5A4E] shadow-sm transition hover:bg-[#EEF4EF] sm:h-10 sm:px-2.5 sm:text-[11px]"
           >
-            <span className="text-sm">👤</span>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E5ECE7] text-xs">👤</span>
             <span>پروفایل</span>
           </Link>
         ) : (
@@ -79,12 +80,12 @@ export default function Header() {
               type="button"
               onClick={() => setMenuOpen((v) => !v)}
               aria-label="پروفایل"
-              className="flex items-center gap-1 whitespace-nowrap rounded-full border border-[#E3EBDE] bg-white px-1.5 py-1 transition hover:bg-[#F3F8F2] sm:gap-1.5 sm:px-2"
+              className="flex h-9 items-center gap-1 whitespace-nowrap rounded-full border border-[#D7DFD9] bg-[#F7F9F7] px-1.5 py-1 transition hover:bg-[#EEF4EF] sm:h-10 sm:gap-1.5 sm:px-2"
             >
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#F3F8F2] text-[10px] text-[#66766A] shadow-sm sm:h-7 sm:w-7 sm:text-xs">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E5ECE7] text-[10px] text-[#4B5A4E] shadow-sm sm:h-6 sm:w-6 sm:text-xs">
                 {(profile?.display_name || "ک").charAt(0)}
               </span>
-              <span className="text-[9px] font-bold text-[#4B5A4E] sm:text-[11px]">
+              <span className="text-[9px] font-black text-[#4B5A4E] sm:text-[11px]">
                 پروفایل
               </span>
             </button>
@@ -93,9 +94,7 @@ export default function Header() {
               <div className="fade-in absolute left-0 top-10 z-50 w-52 overflow-hidden rounded-xl2 border border-red-100 bg-white shadow-soft">
                 <div className="border-b border-red-50 px-4 py-2.5">
                   <span className="block text-[11px] font-bold text-slate-800">شهر جم</span>
-                  <span className="block text-[10px] text-slate-400">
-                    {profile?.display_name || "کاربر"}
-                  </span>
+                  <span className="block text-[10px] text-slate-400">{profile?.display_name || "کاربر"}</span>
                 </div>
                 <Link href="/profile" className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50" onClick={() => setMenuOpen(false)}>پروفایل من</Link>
                 <Link href="/chat" className="block px-4 py-3 text-sm text-slate-700 hover:bg-red-50" onClick={() => setMenuOpen(false)}>پیام‌ها</Link>
