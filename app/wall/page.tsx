@@ -77,7 +77,7 @@ function formatSeconds(total: number) {
 export default function WallPage() {
   const supabase = createClient();
   const router = useRouter();
-  const { user, profile, loading: authLoading, wallUnreadCount, markWallRead } = useAuth();
+  const { user, profile, city, loading: authLoading, wallUnreadCount, markWallRead } = useAuth();
   const [messages, setMessages] = useState<WallMessage[] | null>(null);
   const [pinnedMessage, setPinnedMessage] = useState<WallMessage | null>(null);
   const [pinMenuMessage, setPinMenuMessage] = useState<WallMessage | null>(null);
@@ -238,6 +238,7 @@ export default function WallPage() {
     const { data } = await supabase
       .from("wall_messages")
       .select("id,user_id,content,image_url,audio_url,is_promo,is_auto_republish,business_id,category,ad_id,created_at,is_pinned,pinned_at")
+      .eq("city_id", city.id)
       .eq("id", message.id)
       .maybeSingle();
 
@@ -333,9 +334,9 @@ export default function WallPage() {
   const myTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !city.id) return;
 
-    const channel = supabase.channel("wall-presence", {
+    const channel = supabase.channel(`wall-presence:${city.id}`, {
       config: { presence: { key: user.id } },
     });
 
@@ -381,7 +382,7 @@ export default function WallPage() {
       presenceChannelRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, city.id]);
 
   function broadcastTyping(typing: boolean) {
     if (!user || !presenceChannelRef.current) return;
@@ -567,6 +568,7 @@ export default function WallPage() {
 
       const messageData = {
         user_id: user.id,
+        city_id: city.id,
         content: null,
         audio_url,
         reply_to: replyingTo?.id ?? null,
@@ -811,7 +813,7 @@ export default function WallPage() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, city.id]);
 
   // =====================================================
   // اسکرول اولیه به آخرین پیام
@@ -867,6 +869,7 @@ export default function WallPage() {
       }
       const messageData = {
   user_id: user.id,
+  city_id: city.id,
   content: text.trim() || null,
   image_url,
   reply_to: replyingTo?.id ?? null,
