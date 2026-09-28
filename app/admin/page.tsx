@@ -1078,7 +1078,26 @@ export default function AdminPage() {
                     </div>
                   )}
 
-                  <p className="break-all text-[8px] text-slate-300">شناسه کاربر: {request.user_id}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="min-w-0 break-all text-[8px] text-slate-300">شناسه کاربر: {request.user_id}</p>
+                    <button type="button" onClick={async () => {
+                      if (!confirm("این درخواست بیمه حذف شود؟")) return;
+                      setBusyId(request.id);
+                      const { error } = await (supabase as any).from("insurance_requests").delete().eq("id", request.id);
+                      if (error) {
+                        alert("❌ حذف درخواست انجام نشد:\n" + error.message);
+                        setBusyId(null);
+                        return;
+                      }
+                      if (request.vehicle_card_image_path) {
+                        await supabase.storage.from("insurance-documents").remove([request.vehicle_card_image_path]);
+                      }
+                      setInsuranceRequests((prev) => (prev ?? []).filter((item) => item.id !== request.id));
+                      setBusyId(null);
+                    }} disabled={busyId === request.id} className="shrink-0 rounded-xl bg-red-50 px-3 py-2 text-[9px] font-black text-red-600 hover:bg-red-100 disabled:opacity-50">
+                      {busyId === request.id ? "در حال حذف..." : "حذف"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
