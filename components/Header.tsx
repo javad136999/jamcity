@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createClient } from "@/lib/supabase/client";
@@ -14,6 +14,7 @@ export default function Header() {
   const [insuranceOpen, setInsuranceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const pathname = usePathname();
   const supabase = createClient();
 
   useEffect(() => {
@@ -135,7 +136,8 @@ export default function Header() {
 
       {insuranceOpen && <InsurancePanel userId={user?.id ?? null} onClose={() => setInsuranceOpen(false)} />}
 
-      <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
+      {!pathname.startsWith("/wall") && (
+        <nav className="hidden items-center justify-center gap-6 border-t border-red-50/70 py-1.5 text-sm text-slate-600 md:flex">
         <Link href="/" className="transition hover:text-red-500">خانه</Link>
         <Link href="/wall" className="relative transition hover:text-red-500">
           دیوار شهر {city.name}
@@ -156,7 +158,8 @@ export default function Header() {
             )}
           </Link>
         )}
-      </nav>
+        </nav>
+      )}
 
     </header>
   );
