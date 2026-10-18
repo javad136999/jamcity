@@ -12,7 +12,7 @@ const supabase = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const DAYS = 7;
-const PAGE_SIZE = 200;
+const MAX_ROWS_PER_RUN = 10000;
 const BUCKETS = new Set(["wall-images", "wall-audio"]);
 
 function objectFromPublicUrl(value) {
@@ -36,63 +36,65 @@ function objectFromPublicUrl(value) {
 
 async function main() {
   const cutoff = new Date(Date.now() - DAYS * 24 * 60 * 60 * 1000).toISOString();
-  let scanned = 0;
+  const { data: rows, error } = await supabase
+    .from("wall_messages")
+    .select("id, image_url, audio_url")
+    .lt("created_at", cutoff)
+    .or("image_url.not.is.null,audio_url.not.is.null")
+    .order("created_at", { ascending: true })
+    .limit(MAX_ROWS_PER_RUN);
+
+  if (error) throw error;
   let cleared = 0;
   let failed = 0;
-  let offset = 0;
 
-  while (true) {
-    const { data: rows, error } = await supabase
-      .from("wall_messages")
-      .select("id, image_url, audio_url")
-      .lt("created_at", cutoff)
-      .or("image_url.not.is.null,audio_url.not.is.null")
-      .order("created_at", { ascending: true })
-      .range(offset, offset + PAGE_SIZE - 1);
-
-    if (error) throw error;
-    if (!rows?.length) break;
-    scanned += rows.length;
-
-    // Process one record at a time: clear its URL only after its file was removed.
-    for (const row of rows) {
-      let changed = false;
-      const patch = {};
-      for (const column of ["image_url", "audio_url"]) {
-        const object = objectFromPublicUrl(row[column]);
-        if (!object) continue; // Leave unknown/external URLs untouched.
-        const { error: removeError } = await supabase.storage
-          .from(object.bucket)
-          .remove([object.path]);
-        if (removeError) {
-          failed++;
-          console.error("Storage remove failed", { messageId: row.id, bucket: object.bucket, error: removeError.message });
-          continue;
-        }
-        patch[column] = null;
-        changed = true;
+  // Only load a bounded batch; each successful row is processed before moving on.
+  for (const row of rows ?? []) {
+    const patch = {};
+    for (const column of ["image_url", "audio_url"]) {
+      const object = objectFromPublicUrl(row[column]);
+      if (!object) continue; // Leave unknown/external URLs untouched.
+      const { error: removeError } = await supabase.storage
+        .from(object.bucket)
+        .remove([object.path]);
+      if (removeError) {
+        failed++;
+        console.error("Storage remove failed", {
+          messageId: row.id,
+          bucket: object.bucket,
+          error: removeError.message,
+        });
+        continue;
       }
-
-      if (changed) {
-        const { error: updateError } = await supabase
-          .from("wall_messages")
-          .update(patch)
-          .eq("id", row.id);
-        if (updateError) {
-          failed++;
-          console.error("Could not clear old media URL", { messageId: row.id, error: updateError.message });
-        } else {
-          cleared++;
-        }
-      }
+      patch[column] = null;
     }
 
-    if (rows.length < PAGE_SIZE) break;
-    offset += PAGE_SIZE;
+    if (Object.keys(patch).length > 0) {
+      const { error: updateError } = await supabase
+        .from("wall_messages")
+        .update(patch)
+        .eq("id", row.id);
+      if (updateError) {
+        failed++;
+        console.error("Could not clear old media URL", {
+          messageId: row.id,
+          error: updateError.message,
+        });
+      } else {
+        cleared++;
+      }
+    }
   }
 
-  console.log(JSON.stringify({ success: failed === 0, cutoff, scanned, recordsCleared: cleared, failures: failed }));
-  if (failed > 0) process.exitCode = 1;
+  console.log(JSON.stringify({
+    success: failed === 0,
+    cutoff,
+    scanned: rows?.length ?? 0,
+    recordsCleared: cleared,
+    failures: failed,
+    hitBatchLimit: (rows?.length ?? 0) === MAX_ROWS_PER_RUN,
+  }));
+  if (failed > 0 || (rows?.length ?? 0) === MAX_ROWS_PER_RUN) process.exitCode = 1;
 }
 
 main().catch((error) => {
