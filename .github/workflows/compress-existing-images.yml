@@ -1,0 +1,23 @@
+name: Compress existing images (manual)
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only report, change nothing"
+        type: boolean
+        default: true
+permissions:
+  contents: read
+jobs:
+  compress:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - run: npm ci
+      - env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/compress-existing-images.js ${{ inputs.dry_run && '--dry-run' || '' }}

@@ -9,14 +9,16 @@ export type UploadBucket =
   | "voice-messages"
   | "product-images";
 
-const MAX_IMAGE_EDGE = 1200;
-const WEBP_QUALITY = 0.78;
+const MAX_IMAGE_EDGE = 1280;
+const AVATAR_MAX_EDGE = 400;
+const WEBP_QUALITY = 0.7;
+const SKIP_BELOW_BYTES = 200 * 1024;
 
 /**
  * Re-encode common raster images before upload to reduce Storage usage.
  * GIF/SVG and formats the browser cannot decode are kept unchanged.
  */
-async function optimizeImage(file: File): Promise<File> {
+async function optimizeImage(file: File | Blob, maxEdge = MAX_IMAGE_EDGE, fileName = "image"): Promise<File | Blob> {
   if (!file.type.startsWith("image/") || /image\/(gif|svg\+xml)/i.test(file.type)) {
     return file;
   }
@@ -26,11 +28,11 @@ async function optimizeImage(file: File): Promise<File> {
   let bitmap: ImageBitmap | undefined;
   try {
     bitmap = await createImageBitmap(file);
-    if (bitmap.width <= MAX_IMAGE_EDGE && bitmap.height <= MAX_IMAGE_EDGE && file.size < 350 * 1024) {
+    if (bitmap.width <= maxEdge && bitmap.height <= maxEdge && file.size < SKIP_BELOW_BYTES) {
       return file;
     }
 
-    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(bitmap.width, bitmap.height));
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.max(1, Math.round(bitmap.width * scale));
     canvas.height = Math.max(1, Math.round(bitmap.height * scale));
@@ -43,7 +45,8 @@ async function optimizeImage(file: File): Promise<File> {
     );
     if (!blob || blob.size >= file.size) return file;
 
-    const baseName = file.name.replace(/\.[^.]+$/, "") || "image";
+    const originalName = file instanceof File ? file.name : fileName;
+    const baseName = originalName.replace(/\.[^.]+$/, "") || "image";
     return new File([blob], `${baseName}.webp`, {
       type: "image/webp",
       lastModified: Date.now(),
@@ -65,7 +68,7 @@ export async function uploadImages(
   const urls: string[] = [];
 
   for (const originalFile of files) {
-    const file = await optimizeImage(originalFile);
+    const file = (await optimizeImage(originalFile, bucket === "avatars" ? AVATAR_MAX_EDGE : MAX_IMAGE_EDGE)) as File;
     const ext = file.name.split(".").pop() || "bin";
     const path = `${userId}/${crypto.randomUUID()}.${ext}`;
     const { error } = await supabase.storage.from(bucket).upload(path, file, {
@@ -82,12 +85,15 @@ export async function uploadImages(
 }
 
 export async function uploadSingleFile(
-  file: File | Blob,
+  input: File | Blob,
   bucket: UploadBucket,
   userId: string,
   extHint = "bin"
 ): Promise<string> {
   const supabase = createClient();
+  const file = input.type.startsWith("image/")
+    ? await optimizeImage(input, bucket === "avatars" ? AVATAR_MAX_EDGE : MAX_IMAGE_EDGE)
+    : input;
   const ext = file instanceof File ? file.name.split(".").pop() || extHint : extHint;
   const path = `${userId}/${crypto.randomUUID()}.${ext}`;
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
